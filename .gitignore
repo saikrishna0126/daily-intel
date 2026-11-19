@@ -1,0 +1,8 @@
+# never commit secrets
+*token*
+*.token
+.env
+*.pem
+*.key
+# unreviewed old file
+2026-11-17.html
