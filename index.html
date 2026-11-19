@@ -850,6 +850,93 @@ print(msg.content[0].text)</code></pre>
 <tr><td>DevOps Architect / Engineering Lead</td><td>Set direction, standards, DR and cost strategy</td><td>Multi-cloud design, governance, compliance, FinOps</td><td>Communicating with CTOs, budgets, hiring, trade-off decisions</td></tr>
 </tbody></table></div></div>
 <!-- NEW-CAREER-ENTRY-HERE -->
+<article class="entry" id="career-2026-11-19"><h3>Career and industry: 19 Nov 2026</h3>
+<p class="meta">Topics today: document = Architecture and design docs; skill = Linux processes and troubleshooting; scenario = production server is down; AIOps = AI log analysis; interview = basic DevOps; career = roadmap. Thursday, so no weekend assessment.</p>
+
+<h4>1. Industry pulse: real incidents and what to learn</h4>
+<p>No brand-new hyperscaler outage was found today, so these are recent well-documented ones from the companies' own reports (read on 19 Nov 2026). Money figures are not found in the sources, so none are quoted.</p>
+<ul>
+<li><strong>Microsoft 365 / Teams outage, 12 to 14 Nov 2026</strong> <span class="tag warn">Reported (preliminary report)</span>. <em>What happened:</em> began with a Teams failover at 01:07 UTC on 12 Nov; at the worst point over 80% of affected servers did not respond; Downdetector had reports from 74 countries. <em>Root cause:</em> a hidden defect in a July update to network gateway servers; lock contention in an internal Windows process used up CPU and memory. Load tests had run on weaker hardware, so it was not seen. <em>Fix:</em> engineers wrote an update that put the code path back to its earlier state and rolled it out to server groups one after another (from 07:20 UTC on 13 Nov); last customer update 04:15 UTC on 14 Nov. <em>Prevent:</em> the article names no actions; a final report was planned for 20 Nov, so check it. <em>Lesson:</em> test at production hardware and load; a failover can spread a bug instead of containing it. Source: <a href="https://thenextweb.com/news/microsoft-365-outage-july-defect-post-incident-report" target="_blank" rel="noopener">The Next Web, 16 Nov 2026</a>.</li>
+<li><strong>Inngest, four incidents in July 2026</strong> <span class="tag ok">Confirmed (company RCA, 23 Jul 2026)</span>. <em>Causes:</em> loss of a third-party feature-flag service made fallback defaults overload the internal network (10 Jul, about 60 min); a startup dependency in an upgrade-readiness path (16 Jul, about 168 min); configuration drift removed broker permissions (16 Jul, metrics); capacity-allocation failure in a new storage backend (23 Jul, about 37 min). <em>Fixes:</em> rollback, disabling the path, re-applying permissions. <em>Prevent:</em> remove startup dependencies, drift detection in CI, higher-priority alerts, pause the storage rollout. <em>Lesson:</em> safe defaults when a third party fails, and drift checks. Source: <a href="https://www.inngest.com/blog/2026-07-23-incident-rca-july-2026" target="_blank" rel="noopener">Inngest RCA</a>.</li>
+<li><strong>Nebius us-central1, 10 Mar 2026</strong> <span class="tag ok">Confirmed (company post-mortem, 20 Mar 2026)</span>. <em>What happened:</em> provider power maintenance went beyond its planned scope; racks lost power. VM external connectivity was lost 15:18 to 17:04 UTC, public S3 was unavailable 15:24 to 16:46 UTC, managed Kubernetes was degraded; fully mitigated 00:50 UTC on 11 Mar (about 9.5 hours). <em>Why slow:</em> some hosts came back before shared control services were healthy. <em>Fix:</em> manual reconciliation of network, control-plane and storage workloads. <em>Prevent:</em> stricter maintenance scoping, stop-and-review on unexpected interruptions, recovery drills in dependency order. <em>Lesson:</em> practise the restart order of your platform. Source: <a href="https://nebius.com/blog/posts/incident-post-mortem-analysis-us-central1-service-disruption-on-march-10" target="_blank" rel="noopener">Nebius post-mortem</a>.</li>
+</ul>
+<p><strong>What companies expect from DevOps engineers now</strong> <span class="tag info">Direction</span> (from training and hiring blogs, not hard data; e.g. <a href="https://harveynash.co.uk/latest-news/the-devops-skills-employers-are-looking-for-in-2026" target="_blank" rel="noopener">Harvey Nash</a>, <a href="https://codelabsacademy.com/en/blog/devops-skills-2026-ci-cd-platform-engineering" target="_blank" rel="noopener">Codelabs Academy</a>):</p>
+<ul><li>Kubernetes plus Terraform is the baseline; pipeline-only skills are seen as not enough.</li><li>Platform engineering: self-service infrastructure, internal developer platforms, "golden paths".</li><li>Job titles are shifting to platform engineer, SRE, infrastructure automation engineer.</li><li>Security knowledge together with cloud and automation.</li><li>AI infrastructure knowledge is said to be valued; salary claims in these blogs are unverified.</li></ul>
+
+<h4>2. Corporate document of the day: architecture and design documents (overview)</h4>
+<p><strong>What:</strong> a written explanation of how a system is built and why. The family: HLD (big picture), LLD (details), ADR (one decision), RFC (a proposal for review). <strong>Who writes:</strong> the engineer or architect who owns the change. <strong>Who reads:</strong> engineers (to build), managers (scope, effort), architects (fit with standards), CTO (cost, risk). <strong>When:</strong> before building anything big or risky, and updated after major changes.</p>
+<p><strong>Fillable template:</strong></p>
+<pre>Title / Owner / Reviewers / Date / Status (draft, approved)
+1. Problem: what hurts today, in 3 lines
+2. Goals and NON-goals
+3. Proposed design (diagram + short text)
+4. Alternatives considered and why rejected
+5. Risks, failure modes, rollback plan
+6. Security and compliance
+7. Cost estimate (monthly)
+8. Rollout plan and owners
+9. Open questions</pre>
+<p><strong>Short example:</strong> Problem: deploys to production take 45 min by hand and failed twice last month. Goal: deploy in under 10 min with automatic rollback. Non-goal: moving to a new cloud. Design: GitHub Actions builds an image, Argo CD syncs to the cluster, canary 10% then 100%. Alternative rejected: keep scripts (no audit trail). Risk: a wrong canary metric; rollback = revert the Git commit. Cost: about one extra small node (an estimate to be checked).</p>
+<p><strong>Common mistakes:</strong> no non-goals, no alternatives, no rollback plan, a diagram nobody can read, a document written after the work is done, and never updated.</p>
+
+<h4>3. Hands-on skill of the day: Linux processes, systemd, journald, CPU/memory/disk troubleshooting</h4>
+<p><strong>Fundamentals:</strong> a process has a PID, a parent and a state (R running, S sleeping, D waiting on disk, Z zombie). systemd starts and watches services as "units"; journald stores their logs. <strong>In production:</strong> every service runs as a systemd unit with Restart=on-failure and resource limits, logs go to a central system, and you check the basics first: CPU, memory, disk, network.</p>
+<pre>uptime                         # load average vs number of CPUs (nproc)
+top -o %CPU   |  ps aux --sort=-%mem | head
+free -h                        # look at "available", not "free"
+df -h ; df -i                  # disk space and inodes
+du -xh / --max-depth=1 | sort -h | tail
+systemctl status myapp ; systemctl --failed
+journalctl -u myapp --since "30 min ago" -p err
+journalctl -k | grep -i 'out of memory'   # OOM killer
+lsof +L1                       # deleted files still holding disk</pre>
+<pre># /etc/systemd/system/myapp.service (sketch)
+[Service]
+ExecStart=/usr/local/bin/myapp
+Restart=on-failure
+MemoryMax=512M
+LimitNOFILE=65536</pre>
+<p><strong>Mini exercise:</strong> on a test VM, run <code>stress-ng --cpu 2 --timeout 60s</code> (if installed) and find the busy process with top; then give a test unit a small MemoryMax and watch it get killed in journalctl.</p>
+<p><strong>Interview questions:</strong> (1) Load average is 8 on a 4-core box: what does it mean and what do you check? (2) df shows 100% but du shows much less: why? (3) A service keeps restarting: where do you look first?</p>
+<p><strong>Short answers:</strong> (1) about twice as many runnable or waiting tasks as cores; check top, iowait and D-state processes. (2) A deleted file is still open by a process (lsof +L1), or inodes are used up (df -i). (3) systemctl status, then journalctl -u for the exit code and last log lines.</p>
+
+<h4>4. Production scenario of the day: the production server is down</h4>
+<pre>User -> Load balancer -> Server (app)
+          | health check fails -> no healthy targets -> 502/503</pre>
+<p><strong>Problem:</strong> customers report the site is not loading. <strong>Investigation:</strong></p>
+<ol>
+<li>Confirm and scope: one server or all? <code>curl -sv https://site/health</code>, check load balancer target health, check your cloud's status page.</li>
+<li>Can you reach the host? <code>ping</code>, <code>ssh</code>. If not: cloud console (instance state, system status checks, recent changes, security group edits).</li>
+<li>If you can log in: <code>uptime; free -h; df -h; systemctl --failed; journalctl -p err --since "1 hour ago"</code>.</li>
+<li>Ask what changed: last deploy, config change, certificate, disk, patch reboot. <code>last -x | head</code> shows reboots.</li>
+</ol>
+<p><strong>Resolution:</strong> restore service first (restart the service, roll back the last deploy, or move traffic to a healthy node), then find the root cause. <strong>Long-term prevention:</strong> at least two instances behind the load balancer, health checks with auto-replace, alerts on disk and memory before 100%, a runbook, and a blameless RCA. <strong>Message for the incident channel:</strong></p>
+<pre>[INCIDENT] 14:05 IST - Checkout site unavailable. Impact: all users.
+I am incident lead. Status: investigating; LB shows 0 healthy targets.
+Last change: deploy at 13:50 (checking). Next update at 14:20.</pre>
+
+<h4>5. AIOps of the day: AI-powered log analysis</h4>
+<p><strong>How:</strong> an AI model reads a bounded slice of logs (for example 200 lines around an error), groups similar errors and proposes likely causes. It speeds up reading; a human still decides. <strong>Prompt example:</strong> "Here are 150 log lines from service X between 14:00 and 14:10 IST (secrets removed). Group them by error type, show the first occurrence of each, and list 3 possible causes with the command I should run to check each." <strong>Benefits:</strong> faster triage and plain-language summaries for the incident channel. <strong>Risks and guardrails:</strong> logs can hold passwords, tokens and personal data, so mask them before sharing with any external tool; the model can sound sure and be wrong, so verify with a command; log text can contain instructions (prompt injection), so never let the AI run commands by itself. I did not verify a specific vendor feature today, so check your own tool's official docs first.</p>
+
+<h4>6. Interview practice: basic DevOps (2 to 3 years)</h4>
+<ol>
+<li><strong>CI, continuous delivery and continuous deployment: what is the difference?</strong> CI = every push is built and tested automatically. Delivery = every passing build is ready to release, but a person presses the button. Deployment = it goes to production automatically. Many teams use delivery for production and full automation for staging.</li>
+<li><strong>A pipeline that passed yesterday fails today with no code change. What do you do?</strong> Read the first error, not the last. Check what changed outside the code: base image tag "latest", dependency versions, expired token or certificate, runner disk full, an external service down. Re-run once to rule out a flaky test. Then fix by pinning versions and adding a cache.</li>
+<li><strong>Why Infrastructure as Code?</strong> Repeatable environments, review through pull requests, history in Git, easy recovery. Example: a security group changed by hand in the console stays invisible until <code>terraform plan</code> shows drift.</li>
+<li><strong>How do you roll back a bad release?</strong> Redeploy the previous image tag or revert the Git commit (GitOps). Rollback must be rehearsed, and database changes must be backward compatible, otherwise rollback is not safe.</li>
+<li><strong>Troubleshooting: a deployed app returns 502 from the load balancer.</strong> Check target health, the app process and port, the health check path, the security group between LB and app, then app logs for crashes at start-up. Common causes: the app listens on 127.0.0.1 instead of 0.0.0.0, or the health check path returns 404.</li>
+</ol>
+
+<h4>7. Career growth: the roadmap</h4>
+<p>Your path has four stations. <strong>DevOps Engineer</strong> (you now): you run pipelines and deployments and fix problems with some guidance; the work is "do the task well". <strong>Senior DevOps Engineer</strong> (often after several more years, but it depends on the company): you own a whole service or platform area, design pipelines, lead incidents and review others' work. The change is from "do the task" to "own the outcome". <strong>SRE or Platform Engineer:</strong> you own reliability targets (SLOs) or build an internal platform that other teams use like a product; you write more code and measure toil. <strong>Architect or Engineering Lead:</strong> you set standards, DR and cost strategy, and spend more time on trade-offs, documents and people than on the keyboard.</p>
+<p>What to do in the next 12 months: pick one cloud (AWS or Azure) and go deep on networking, IAM and cost; get comfortable with production Kubernetes (requests and limits, probes, upgrades); write Terraform modules with reviews; learn observability (metrics, logs, traces) and SLOs; and write one design document and one post-incident report. Certifications such as CKA, an associate cloud exam and Terraform Associate show structure but do not replace real incidents handled. Seniors are trusted because they are predictable: they write things down, warn early, and leave systems easier to run than they found them.</p>
+<p><strong>Senior engineer mindset:</strong> before you act, ask "what is the blast radius, how do I undo it, and who needs to know?"</p>
+<p><strong>Say it like this</strong> (to a manager or CTO): "The deploy process takes 45 minutes and failed twice last month. I propose automated canary deploys; it takes about two weeks, the risk is a wrong metric rule, and rollback is one Git revert. Can I get review time on Tuesday?"</p>
+
+<h4>8. Skill-gap check</h4>
+<ol><li>Can you find out, without searching, why a Linux server is slow (CPU, memory, disk, I/O)? yes / no</li><li>Have you written a design document with non-goals and a rollback plan? yes / no</li><li>Can you explain CI vs delivery vs deployment in 30 seconds? yes / no</li></ol>
+<p><strong>Today's action:</strong> run the command list from section 3 on one of your servers and write 5 lines about what is normal for it.</p>
+</article>
 </section>
 <section id="learning">
 <h2 class="s-learn">Learning: theory + architecture (AWS and Azure)</h2>
@@ -1177,7 +1264,7 @@ On-premises network</code></pre>
 <h2 class="s-today">Today: Thursday 19 Nov 2026 (IST)</h2>
 <p class="meta">This single page is updated in place every day. New entries go on top, older ones stay below. No new files are created.</p>
 <div class="grid3">
-<div class="box" style="--c:#7c3aed"><h4>🎓 Today's lesson</h4><p><strong>Seven tools, topic 1 each:</strong> AWS accounts/regions/AZs, Azure tenants/subscriptions, Docker containers vs VMs, Kubernetes cluster architecture, Terraform init/plan/apply, CI vs CD, what an LLM is.</p><p>Plus a deep dive on Kubernetes cluster architecture and an AI Pro note on attention and context windows.</p><p><a href="#lesson-2026-11-19">Open today's lesson</a> · <a href="#ai-topics">AI in each topic</a></p></div>
+<div class="box" style="--c:#7c3aed"><h4>🎓 Today's lesson</h4><p><strong>Seven tools, topic 1 each:</strong> AWS accounts/regions/AZs, Azure tenants/subscriptions, Docker containers vs VMs, Kubernetes cluster architecture, Terraform init/plan/apply, CI vs CD, what an LLM is.</p><p>Plus a deep dive on Kubernetes cluster architecture and an AI Pro note on attention and context windows.</p><p><strong>Career today:</strong> architecture docs, Linux troubleshooting, server-down scenario, AI log analysis. <a href="#career-2026-11-19">Open career entry</a></p><p><a href="#lesson-2026-11-19">Open today's lesson</a> · <a href="#ai-topics">AI in each topic</a></p></div>
 <div class="box" style="--c:#0369a1"><h4>🌍 Tech highlights</h4><ul>
 <li>Anthropic IPO priced at $83 (confirmed); ANT trades from 19 Nov</li>
 <li>Node.js security release 11 Nov: 16 fixes (confirmed)</li>
@@ -1186,7 +1273,7 @@ On-premises network</code></pre>
 <div class="box" style="--c:#15803d"><h4>📊 Market snapshot</h4><ul>
 <li>18 Nov: Sensex 82,031.81 (-0.61%), Nifty 25,227.95 (-0.63%)</li>
 <li>Metals and IT weak; PSU banks firm</li>
-<li>Study list: SBI, ITC, Infosys, Tata Motors PV (education only); Tata Motors PV fell 8 to 9% on 16 Nov after JLR cut guidance</li><li>19 Nov close was not yet available at update time</li></ul><p><a href="#market">Market notes + how to analyse stocks</a></p></div>
+<li>Study list: SBI, ITC, Infosys, Tata Motors PV (education only); Tata Motors PV fell 8 to 9% on 16 Nov after JLR cut guidance</li><li>19 Nov close: not found in sources at re-run time</li></ul><p><a href="#market">Market notes + how to analyse stocks</a></p></div>
 </div>
 </section>
 
