@@ -843,102 +843,326 @@ print(msg.content[0].text)</code></pre>
 <h2 style="background:#b45309">Career and industry growth (DevOps to Senior, SRE, Architect)</h2>
 <p class="meta">Daily: industry incidents, corporate documents (HLD, LLD, SOP, RCA, DR), hands-on skills, production scenarios, AIOps, interview practice and career lessons. Weekends: revision and assessment.</p>
 <!-- ROADMAP-START -->
-<div class="box" style="--c:#b45309"><h4>Career roadmap (static)</h4>
-<div class="tw"><table><thead><tr><th>Level</th><th>Responsibilities</th><th>Technical skills</th><th>Leadership skills</th></tr></thead><tbody>
-<tr><td>DevOps Engineer (you, 2y 3m)</td><td>Run pipelines, deployments, monitoring; fix incidents with guidance</td><td>Linux, Git, CI/CD, Docker, K8s basics, Terraform, one cloud well</td><td>Clear updates, asking good questions, writing runbooks</td></tr>
-<tr><td>Senior DevOps Engineer</td><td>Own services end to end; design pipelines and infra; lead incidents</td><td>Production K8s, IaC at scale, observability, security, cost</td><td>Mentoring, design reviews, RFCs, working with developers</td></tr>
-<tr><td>SRE / Platform Engineer</td><td>Own reliability targets (SLOs), build the internal platform</td><td>SLI/SLO, capacity, chaos, GitOps, IDPs, automation in code</td><td>Influence without authority, prioritising toil vs features</td></tr>
-<tr><td>DevOps Architect / Engineering Lead</td><td>Set direction, standards, DR and cost strategy</td><td>Multi-cloud design, governance, compliance, FinOps</td><td>Communicating with CTOs, budgets, hiring, trade-off decisions</td></tr>
+<div class="box" style="--c:#b45309"><h4>8-week roadmap (you are here: Week 1, Day 1)</h4>
+<div class="tw"><table><thead><tr><th>Week</th><th>Two themes</th><th>Outcome you can show</th></tr></thead><tbody>
+<tr style="background:#fef3c7"><td><strong>W1 (19-25 Nov) ◀ you are here</strong></td><td>Linux production troubleshooting, networking, shell scripting | Git/GitHub workflows</td><td>A triage runbook and a safe production shell script; a protected-branch repo with PR rules</td></tr>
+<tr><td>W2</td><td>Jenkins + CI/CD design (GitHub Actions/GitLab CI) | Docker in production and image security</td><td>A pipeline with test, scan, build and deploy stages; a hardened multi-stage image</td></tr>
+<tr><td>W3</td><td>Kubernetes core and production operations | Kubernetes troubleshooting, networking, RBAC, upgrades</td><td>A cluster with probes, limits, HPA, PDB and RBAC; a troubleshooting cheat sheet</td></tr>
+<tr><td>W4</td><td>Terraform and IaC at scale | AWS core (VPC, IAM, EC2/ASG, ELB, RDS, S3)</td><td>A Terraform module stack with remote state that builds a 3-tier AWS setup</td></tr>
+<tr><td>W5</td><td>AWS advanced and Azure core (Entra, VNets, AKS, policy) | GCP basics + Ansible</td><td>A multi-cloud comparison note; an Ansible role run against test hosts</td></tr>
+<tr><td>W6</td><td>Observability: Prometheus, Grafana, OpenTelemetry, ELK/OpenSearch | Python automation + GitOps (Argo CD, Helm)</td><td>Dashboards and alerts for a sample app; a GitOps repo deployed by Argo CD</td></tr>
+<tr><td>W7</td><td>DevSecOps and cloud security | SRE: SLI/SLO, incident response, DR, FinOps</td><td>A secured pipeline; SLOs with error-budget policy; a DR test report</td></tr>
+<tr><td>W8</td><td>Platform engineering, HA system design, AIOps | Interview + leadership readiness, 90-day senior plan</td><td>An HA design document; mock interview notes; your 90-day senior plan</td></tr>
 </tbody></table></div></div>
 <!-- ROADMAP-END -->
 <!-- NEW-CAREER-ENTRY-HERE -->
-<article class="entry" id="career-2026-11-19"><h3>Career and industry: 19 Nov 2026</h3>
-<p class="meta">Topics today: document = Architecture and design docs; skill = Linux processes and troubleshooting; scenario = production server is down; AIOps = AI log analysis; interview = basic DevOps; career = roadmap. Thursday, so no weekend assessment.</p>
+<article class="entry" id="career-2026-11-19"><h3>Study plan: 19 Nov 2026 (Week 1, Day 1)</h3>
+<p class="meta">Thursday, no weekend assessment. Classes: Linux processes and troubleshooting; Linux networking. Scenarios: production server down; Kubernetes node NotReady. Interview: basic DevOps. Career: the roadmap. AIOps: log analysis. Recap tools today (deep): Linux, Git, Jenkins. AI pro: transformer and attention.</p>
 
-<h4>1. Industry pulse: real incidents and what to learn</h4>
-<p>No brand-new hyperscaler outage was found today, so these are recent well-documented ones from the companies' own reports (read on 19 Nov 2026). Money figures are not found in the sources, so none are quoted.</p>
+<h4>1. You are here (roadmap)</h4>
+<p><strong>Week 1, Day 1 of 56.</strong> Week 1 themes: (1) Linux production troubleshooting, networking and shell scripting; (2) Git/GitHub workflows. Today we start theme 1 with processes and networking, because every later tool (Docker, Kubernetes, Jenkins agents) is Linux processes and sockets underneath. Next: Day 2 shell scripting for production and Git branching. Progress: 1/56 days, 0 weekends done. The full 8-week table with the marker is at the top of this section.</p>
+<p>Teacher's word: at 2y3m you can run commands. The jump to senior is a <em>method</em>: form a hypothesis, test it with one cheap command, narrow, then fix and prevent. Practise the method every day, not the commands.</p>
+
+<h4>2. Two classes of the day</h4>
+
+<div class="box" style="--c:#b45309"><h5>Class 1: Linux processes, systemd, journald and CPU/memory/disk triage</h5>
+<p><strong>Objective:</strong> in 5 minutes on an unknown, unhealthy host, say which resource is the bottleneck (CPU, memory, disk, or I/O) and which process causes it.</p>
+<p><strong>Theory.</strong> A process is a kernel task with a PID, memory map, file descriptors and a parent. States you must read in <code>ps</code>/<code>top</code>: R running, S sleeping, <strong>D uninterruptible sleep</strong> (waiting on I/O, cannot be killed, counts in load average), Z zombie (finished, parent has not called wait; harmless unless thousands). Load average counts runnable <em>plus</em> D-state tasks, so a load of 40 with idle CPU means an I/O or NFS problem, not CPU. Memory: "free" is misleading; read <code>MemAvailable</code> in /proc/meminfo. Page cache is reclaimable. When memory runs out the kernel OOM killer picks a victim by <code>oom_score</code>; in containers the cgroup limit triggers it earlier than the host would. Disk: a full filesystem has two forms, blocks (<code>df -h</code>) and inodes (<code>df -i</code>), and a third trap: a deleted file still held open by a process keeps its space (<code>lsof +L1</code>). systemd supervises services as units in cgroups: <code>Restart=</code>, <code>LimitNOFILE=</code>, <code>MemoryMax=</code> are your production levers. journald stores structured logs; filter by unit and time.</p>
+<pre>
+           +-------------- one host --------------+
+ request-> | app (PID) --threads--> CPU            |
+           |   |  fds --> sockets / files          |
+           |   +--> heap --> RAM --> swap/OOM      |
+           |   +--> writes --> page cache --> disk |
+           | systemd (PID 1) --> cgroup per unit   |
+           +---------------------------------------+
+ Triage order (USE method): Utilisation, Saturation, Errors
+ CPU -> mem -> disk -> network, for each resource
+</pre>
+<p><strong>In real companies.</strong> Nobody SSHes into every box; but on-call still starts here when metrics disagree. The USE method (Brendan Gregg) is the standard: for each resource check utilisation, saturation, errors. Teams keep a 60-second checklist in the runbook and node-exporter dashboards that show the same numbers.</p>
+<pre>
+uptime; nproc                         # load vs cores
+top -b -n1 | head -15                 # who burns CPU
+ps -eo pid,ppid,stat,%cpu,%mem,cmd --sort=-%mem | head
+vmstat 1 5                            # r=runqueue b=blocked si/so=swap wa=iowait
+free -m; grep -E 'MemAvailable|SwapFree' /proc/meminfo
+iostat -xz 1 3                        # %util, await per device
+df -hT; df -i; lsof +L1 | head        # blocks, inodes, deleted-but-open
+dmesg -T | grep -i -E 'oom|killed|i/o error'
+systemctl status myapp; systemctl --failed
+journalctl -u myapp --since "30 min ago" -p warning --no-pager
+cat /proc/$(pidof myapp)/limits | grep -i 'open files'
+</pre>
+<p><strong>LAB (20 min).</strong> On any Linux VM: (1) run <code>stress-ng --cpu 2 --timeout 120s</code> and find it with top, then see load climb in <code>uptime</code>; (2) run <code>stress-ng --vm 1 --vm-bytes 90% --timeout 60s</code> and watch <code>vmstat</code> and <code>dmesg</code>; (3) create a 1 GB file, keep it open with <code>tail -f</code>, delete it, and prove with <code>lsof +L1</code> that <code>df</code> still shows the space used; free it by stopping the tail. (4) Write a systemd unit with <code>Restart=on-failure</code> and <code>MemoryMax=200M</code>, kill the process, and read the restart in journalctl. <strong>Success:</strong> you can explain each number you saw in one sentence.</p>
+<p><strong>Assignment:</strong> write a 10-line "first 5 minutes on a slow server" checklist in your own notes with the command and the signal that means "bad" for each step.</p>
+<p>Source: <a href="https://www.brendangregg.com/usemethod.html" target="_blank" rel="noopener">Brendan Gregg, USE method</a> · <a href="https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html" target="_blank" rel="noopener">systemd.service manual</a> <span class="tag ok">Confirmed</span></p></div>
+
+<div class="box" style="--c:#b45309"><h5>Class 2: Linux networking: ss, tcpdump, DNS, iptables/nftables</h5>
+<p><strong>Objective:</strong> locate a network failure at the right layer (DNS, route, firewall, listener, application) with one command per layer.</p>
+<p><strong>Theory.</strong> Walk the stack bottom-up. L2/L3: <code>ip addr</code>, <code>ip route</code> (which interface and gateway will this destination use: <code>ip route get 10.0.0.5</code>). Name resolution: applications call the resolver per <code>/etc/nsswitch.conf</code>; on modern distros <code>systemd-resolved</code> stands in front, so <code>dig</code> (talks DNS directly) can succeed while the app fails; test with <code>getent hosts name</code> which follows the same path as the app. TCP: a connection is a 4-tuple; states you must know are LISTEN, ESTABLISHED, TIME_WAIT (normal, from the side that closes), CLOSE_WAIT (the <em>remote closed and your app did not</em>: an application bug, a leaked connection) and SYN-SENT (no answer to your SYN: firewall drop or wrong route). "Connection refused" means a host answered with RST (nothing listening); "timed out" means silence (drop, route, security group). Firewall: netfilter hooks (PREROUTING, INPUT, FORWARD, OUTPUT, POSTROUTING); iptables and nftables are front-ends; Kubernetes kube-proxy and Docker both write rules here. Conntrack tables can fill under heavy traffic and drop new connections (<code>nf_conntrack: table full</code> in dmesg).</p>
+<pre>
+ client --DNS--> resolver     (dig / getent)
+   |--route--> gateway        (ip route get)
+   |--SYN----> firewall/SG    (timeout = dropped here?)
+   |--------> host:port       (ss -ltnp: is anyone LISTENing?)
+   +--------> app             (curl -v: TLS, HTTP status)
+ tcpdump on both ends shows where the packet stops.
+</pre>
+<pre>
+ss -ltnp                               # listeners and owning process
+ss -tan state close-wait | wc -l       # leaked connections
+ss -s                                  # summary by state
+ip route get 10.20.0.15
+getent hosts api.internal; dig +short api.internal @10.0.0.2
+curl -sv --max-time 5 https://api.internal/health -o /dev/null
+nc -zv 10.20.0.15 5432                 # port reachable?
+tcpdump -ni eth0 'host 10.20.0.15 and port 5432' -c 20
+mtr -rwc 20 10.20.0.15                 # per-hop loss
+iptables -S | head -30; nft list ruleset | head -40
+conntrack -S; sysctl net.netfilter.nf_conntrack_max
+</pre>
+<p><strong>In real companies.</strong> Security groups and NACLs replace host firewalls in the cloud, but the failure shapes are the same. Seniors ask first: refused or timeout? That one word halves the search. Capture packets on the server <em>and</em> the client: if the SYN arrives and no SYN-ACK leaves, the problem is the host; if it never arrives, the network.</p>
+<p><strong>LAB (20 min).</strong> (1) Start <code>python3 -m http.server 8080</code>; confirm with <code>ss -ltnp</code>; <code>curl localhost:8080</code>. (2) Add <code>iptables -A INPUT -p tcp --dport 8080 -j DROP</code> (use a VM) and curl from a second machine: observe a timeout; replace DROP with REJECT: observe "refused". (3) Run tcpdump during both and see the difference. (4) Break DNS by pointing a test name to a wrong server in <code>/etc/hosts</code> and compare <code>dig</code> to <code>getent</code>. Remove your rules afterwards. <strong>Success:</strong> you can say from tcpdump output whether a packet was dropped, rejected, or answered.</p>
+<p><strong>Assignment:</strong> draw the layer-by-layer decision tree for "service A cannot reach service B" on one page, with the command at each branch.</p>
+<p>Source: <a href="https://man7.org/linux/man-pages/man8/ss.8.html" target="_blank" rel="noopener">ss(8) man page</a> · <a href="https://www.tcpdump.org/manpages/tcpdump.1.html" target="_blank" rel="noopener">tcpdump manual</a> <span class="tag ok">Confirmed</span></p></div>
+
+<h4>3. Scenario practice</h4>
+
+<div class="box" style="--c:#b45309"><h5>Scenario A (today's tools): the production server is down</h5>
+<p><strong>Symptoms.</strong> 02:10 IST: the pager says "orders-api health check failing" on one of two VMs behind a load balancer. The LB removed it; the other VM now runs at 85% CPU. SSH to the failed VM hangs for 20 seconds, then works.</p>
+<pre>
+$ uptime
+ 02:14:07 up 41 days, load average: 38.2, 35.9, 22.1     (4 vCPU)
+$ top -b -n1 | head -5
+%Cpu(s):  3.1 us,  2.0 sy,  0.0 ni,  0.0 id, 94.2 wa
+$ df -h /var/log
+/dev/nvme1n1  50G  50G  0  100% /var/log
+$ systemctl status orders-api
+Active: activating (auto-restart) (Result: exit-code)
+journalctl: ... write /var/log/orders/app.log: no space left on device
+</pre>
+<p><strong>Constraints.</strong> Peak traffic at 09:00; you may not reboot the only healthy node; logs are needed for audit for 90 days.</p>
+<p><strong>Questions:</strong> (1) What does 94% iowait with load 38 tell you, and what do you check next? (2) Why might freeing space by deleting a log not free any space? (3) What permanent changes stop a repeat?</p>
+<details><summary>Show solution</summary>
+<p><strong>Investigation.</strong> High iowait plus a full disk means processes are blocked on writes, so load is I/O, not CPU. Find the big consumers and open-deleted files:</p>
+<pre>
+du -xh /var/log --max-depth=2 | sort -h | tail
+lsof +L1 | grep /var/log           # deleted but still open
+df -i /var/log                      # inodes too
+journalctl --disk-usage
+</pre>
+<p>Result: <code>/var/log/orders/app.log</code> is 41 GB; DEBUG logging was switched on in the 18:00 release, and logrotate had been failing silently because its config referenced a missing group. A previous engineer had also deleted an older log with <code>rm</code> while the app held it open, so that space was never released.</p>
+<p><strong>Fix.</strong> Compress and move the large log to the archive bucket (audit need), truncate rather than delete the live file (<code>: > app.log</code> or restart the service to release handles), then <code>systemctl restart orders-api</code>; confirm health check green, LB re-adds the node, CPU on the other node falls. Set log level back to INFO.</p>
+<p><strong>Prevention.</strong> Fix the logrotate config and test with <code>logrotate -d</code>; <code>/var/log</code> on its own volume (done, but without alert); alert at 80% and on predicted full in 4 hours (<code>predict_linear</code>); log level as config checked in review; ship logs off-host so local retention can be 7 days; DEBUG in production needs an expiry.</p>
+<p><strong>Sample incident report (blameless RCA)</strong></p>
+<pre>
+INCIDENT REPORT: INC-2026-1119-01   Severity: SEV2   Status: Resolved
+Summary:  One of two orders-api nodes failed on 19 Nov 2026 because /var/log
+          filled to 100%, blocking writes and crash-looping the service.
+Impact:   02:05-02:41 IST (36 min). Remaining node ran at 85% CPU; p95 latency
+          rose from 180 ms to 900 ms; no orders lost; ~2% requests got 5xx.
+Detection: Health-check alert at 02:10 (5 min after start). No disk alert existed.
+Timeline (IST):
+  18:00 Release 4.12 deployed with LOG_LEVEL=DEBUG left in config.
+  02:05 /var/log reaches 100%; orders-api cannot write, exits, restarts.
+  02:10 Pager fires; on-call (A. Rao) acknowledges.
+  02:14 Triage: iowait 94%, df 100%, app log 41 GB.
+  02:25 Log archived to s3, live file truncated, lsof shows no deleted files left.
+  02:31 Service restarted; health check passes; LB re-adds node.
+  02:41 Latency normal; incident closed.
+Root cause: DEBUG logging produced ~2.5 GB/h; logrotate had silently failed
+          since 3 Nov (config referenced a missing group); no disk alert.
+Resolution: Archive + truncate + restart; log level set to INFO.
+What went well: fast acknowledgement; LB isolated the bad node.
+What went badly: no disk-usage alert; logrotate failures not monitored.
+Action items:
+  1. Add disk >80% and predict_linear alerts      Owner: SRE (R. Menon)   Due 26 Nov
+  2. Fix logrotate config and add CI lint          Owner: Platform (A. Rao) Due 22 Nov
+  3. Config review rule: no DEBUG in prod w/o TTL  Owner: Dev lead (S. Iyer) Due 30 Nov
+  4. Ship app logs to central store, 7-day local   Owner: Platform (K. Das)  Due 15 Dec
+</pre>
+</details></div>
+
+<div class="box" style="--c:#b45309"><h5>Scenario B (senior level): Kubernetes node goes NotReady during business hours</h5>
+<p><strong>Symptoms.</strong> 14:20: alert "KubeNodeNotReady" for node <code>ip-10-0-3-17</code> in a 12-node cluster. Pods on it show Terminating/Unknown. Two minutes later a second node flaps.</p>
+<pre>
+$ kubectl get nodes
+ip-10-0-3-17   NotReady   &lt;none&gt;  v1.33.x
+ip-10-0-3-21   Ready      &lt;none&gt;  v1.33.x
+$ kubectl describe node ip-10-0-3-17 | grep -A6 Conditions
+ MemoryPressure  Unknown  Kubelet stopped posting node status.
+ DiskPressure    Unknown
+$ kubectl get pods -A -o wide --field-selector spec.nodeName=ip-10-0-3-17 | wc -l
+31
+</pre>
+<p><strong>Constraints.</strong> A StatefulSet database replica is on that node; PodDisruptionBudgets exist; cluster autoscaler is on; no one may delete the node before data is safe.</p>
+<p><strong>Questions:</strong> (1) What does "kubelet stopped posting status" distinguish between? (2) What happens to the pods and to the StatefulSet pod automatically, and why can that be dangerous? (3) How do you find out why two nodes failed in two minutes?</p>
+<details><summary>Show solution</summary>
+<p><strong>Investigation.</strong> NotReady with Unknown conditions means the control plane lost heartbeats (node Lease not renewed): kubelet dead, node frozen, or network cut. Separate them:</p>
+<pre>
+kubectl get lease -n kube-node-lease ip-10-0-3-17 -o yaml | grep renewTime
+aws ec2 describe-instance-status --instance-ids i-0abc... (or cloud console)
+# via SSM/serial console, not SSH if network is suspect:
+systemctl status kubelet containerd; journalctl -u kubelet --since "20 min ago" | tail -50
+dmesg -T | grep -i -E 'oom|hung task|blocked for more'
+kubectl get events -A --sort-by=.lastTimestamp | tail -30
+</pre>
+<p>Found: a batch job without memory limits (BestEffort pods) consumed node memory, the kernel starved kubelet and containerd, heartbeats stopped. Both nodes ran the same batch job version.</p>
+<p><strong>What Kubernetes does.</strong> After the node taint <code>node.kubernetes.io/unreachable</code> and the default 300 s toleration, pods are evicted and controllers recreate Deployment pods elsewhere. A StatefulSet pod is <em>not</em> force-recreated while the node state is unknown, to avoid two writers on one volume; it stays Terminating until the node is confirmed gone. Do not run <code>--force --grace-period=0</code> on it unless you have proven the old node is dead (stop or terminate the instance first), otherwise you risk split-brain.</p>
+<p><strong>Fix.</strong> Cordon healthy nodes' batch workload source, stop the batch job, reboot/replace the stuck instance, confirm volume detaches, let the StatefulSet reschedule, verify replication caught up. Restore capacity via autoscaler.</p>
+<p><strong>Prevention.</strong> LimitRange/ResourceQuota requiring requests and limits per namespace; admission policy rejecting BestEffort in prod; <code>kubeReserved</code>/<code>systemReserved</code> and eviction thresholds on kubelets; separate node pool for batch with taints; PDBs and topology spread; alert on node memory saturation, not only on NotReady.</p>
+<p><strong>Sample incident report</strong></p>
+<pre>
+INCIDENT REPORT: INC-2026-1119-02   Severity: SEV2   Status: Resolved
+Summary:  Two worker nodes became NotReady after a batch job without memory
+          limits starved kubelet and containerd.
+Impact:   14:20-15:05 IST (45 min). 58 pods rescheduled; 1 DB replica unavailable
+          (primary healthy, no data loss); checkout latency +30% for 12 min.
+Detection: KubeNodeNotReady alert at 14:20.
+Timeline (IST):
+  14:12 Batch job "report-gen" v7 starts on pool general-1 (no limits).
+  14:19 Node memory >98%; kubelet heartbeats stop on ip-10-0-3-17.
+  14:20 Alert; on-call opens incident, assigns scribe.
+  14:27 Second node ip-10-0-3-21 flaps; job identified via kubectl top / events.
+  14:31 Batch CronJob suspended; job pods deleted.
+  14:40 Instance replaced; EBS volume detached and re-attached cleanly.
+  14:52 StatefulSet replica Running; replication lag 0 at 15:02.
+  15:05 All nodes Ready; incident closed.
+Root cause: Pods with no requests/limits (BestEffort) can consume all node memory;
+          no kubelet reservation protected system daemons.
+Resolution: Suspended job, replaced node, restored replica.
+Action items:
+  1. Policy: reject pods without limits in prod (Kyverno)  Owner: Platform (K. Das) Due 3 Dec
+  2. Set kubeReserved/systemReserved on all pools         Owner: SRE (R. Menon)  Due 10 Dec
+  3. Move batch to tainted pool with limits                Owner: Data eng (P. Shah) Due 28 Nov
+  4. Alert on node memory saturation >90% for 3 min        Owner: SRE (R. Menon)  Due 26 Nov
+</pre>
+</details></div>
+
+<h4>4. Interview practice (basic DevOps: CI/CD, IaC, Git)</h4>
+<div class="box" style="--c:#b45309">
+<p><strong>Q1.</strong> A developer says "it works on my machine but fails in the pipeline". What would you do?</p>
+<details><summary>Show answer</summary>
+<p>1) Read the failing job log from the first error, not the last line. 2) Compare environments: tool versions, OS, env vars, dependency lock files, container image (is the pipeline using a pinned image?). 3) Reproduce locally by running the same image the runner uses (<code>docker run</code> with the job's command). 4) Check for state differences: cache poisoning, files only on the laptop, secrets or network access the runner lacks. 5) Fix by pinning versions and moving the build into a container so both environments are identical; add the repro steps to the README. 6) If flaky, rerun to see whether it is deterministic before changing code. <em>What the interviewer is checking:</em> method over guessing, knowledge of environment parity and reproducibility.</p></details>
+<p><strong>Q2.</strong> Someone ran <code>terraform apply</code> from a laptop and the team's state is now out of sync with reality. What do you do?</p>
+<details><summary>Show answer</summary>
+<p>1) Stop further applies; tell the team. 2) Check that the backend is remote with locking; run <code>terraform plan</code> from the pipeline to see the drift. 3) If real resources were changed by that apply, state in the remote backend is the truth if the laptop used it; if it used a local state, import resources (<code>terraform import</code> or <code>import</code> blocks) and reconcile. 4) Review the diff, decide whether code or reality is right, then align them. 5) Prevention: remote state with locking, apply only from CI, least-privilege credentials so laptops cannot apply, PR review of plans. <em>Checking:</em> understanding of state, locking and why applies belong in CI.</p></details>
+<p><strong>Q3.</strong> A bad commit reached main and was deployed. How do you handle it with Git and the pipeline?</p>
+<details><summary>Show answer</summary>
+<p>1) Restore service first: roll back the deployment to the last good artifact (redeploy the previous tag), do not debug in production. 2) In Git use <code>git revert &lt;sha&gt;</code> (a new commit that undoes it, safe on a shared branch) rather than <code>reset --force</code>, which rewrites shared history. 3) Open a PR for the revert, let CI run, deploy. 4) Then root-cause: why did tests and review not catch it? Add a test. 5) Consider branch protection, required checks and a canary stage. <em>Checking:</em> priority of mitigation over diagnosis, safe Git practice, learning loop.</p></details>
+</div>
+
+<h4>5. Industry pulse</h4>
+<p>Researched 19 Nov 2026. Both are covered by the companies' own reports; the first is still preliminary.</p>
 <ul>
-<li><strong>Microsoft 365 / Teams outage, 12 to 14 Nov 2026</strong> <span class="tag warn">Reported (preliminary report)</span>. <em>What happened:</em> began with a Teams failover at 01:07 UTC on 12 Nov; at the worst point over 80% of affected servers did not respond; Downdetector had reports from 74 countries. <em>Root cause:</em> a hidden defect in a July update to network gateway servers; lock contention in an internal Windows process used up CPU and memory. Load tests had run on weaker hardware, so it was not seen. <em>Fix:</em> engineers wrote an update that put the code path back to its earlier state and rolled it out to server groups one after another (from 07:20 UTC on 13 Nov); last customer update 04:15 UTC on 14 Nov. <em>Prevent:</em> the article names no actions; a final report was planned for 20 Nov, so check it. <em>Lesson:</em> test at production hardware and load; a failover can spread a bug instead of containing it. Source: <a href="https://thenextweb.com/news/microsoft-365-outage-july-defect-post-incident-report" target="_blank" rel="noopener">The Next Web, 16 Nov 2026</a>.</li>
-<li><strong>Inngest, four incidents in July 2026</strong> <span class="tag ok">Confirmed (company RCA, 23 Jul 2026)</span>. <em>Causes:</em> loss of a third-party feature-flag service made fallback defaults overload the internal network (10 Jul, about 60 min); a startup dependency in an upgrade-readiness path (16 Jul, about 168 min); configuration drift removed broker permissions (16 Jul, metrics); capacity-allocation failure in a new storage backend (23 Jul, about 37 min). <em>Fixes:</em> rollback, disabling the path, re-applying permissions. <em>Prevent:</em> remove startup dependencies, drift detection in CI, higher-priority alerts, pause the storage rollout. <em>Lesson:</em> safe defaults when a third party fails, and drift checks. Source: <a href="https://www.inngest.com/blog/2026-07-23-incident-rca-july-2026" target="_blank" rel="noopener">Inngest RCA</a>.</li>
-<li><strong>Nebius us-central1, 10 Mar 2026</strong> <span class="tag ok">Confirmed (company post-mortem, 20 Mar 2026)</span>. <em>What happened:</em> provider power maintenance went beyond its planned scope; racks lost power. VM external connectivity was lost 15:18 to 17:04 UTC, public S3 was unavailable 15:24 to 16:46 UTC, managed Kubernetes was degraded; fully mitigated 00:50 UTC on 11 Mar (about 9.5 hours). <em>Why slow:</em> some hosts came back before shared control services were healthy. <em>Fix:</em> manual reconciliation of network, control-plane and storage workloads. <em>Prevent:</em> stricter maintenance scoping, stop-and-review on unexpected interruptions, recovery drills in dependency order. <em>Lesson:</em> practise the restart order of your platform. Source: <a href="https://nebius.com/blog/posts/incident-post-mortem-analysis-us-central1-service-disruption-on-march-10" target="_blank" rel="noopener">Nebius post-mortem</a>.</li>
+<li><strong>Microsoft 365 / Teams outage, 12 to 14 Nov 2026</strong> <span class="tag warn">Reported (preliminary report; secondary coverage)</span>. <em>What happened:</em> a Teams failover at 01:07 UTC on 12 Nov, followed by a long outage of Outlook and Teams. <em>Root cause (preliminary):</em> a latent defect introduced in a July 2026 update to networking gateway servers; traffic shifts during routine network maintenance exposed it, requests queued until servers ran out of capacity. Load tests had not caught it. <em>Impact:</em> global for many customers over about 36 hours per press coverage (not confirmed by the primary report in my search). <em>Prevention:</em> final report was due 20 Nov; check Microsoft's PIR reference EX1550543. <em>Lesson:</em> failover can spread a bug; test at production scale and hardware. Sources: <a href="https://www.theregister.com/2026/11/16/microsoft-blames-monster-email-outage-on-software-defect-introduced-in-july-fix/5310026" target="_blank" rel="noopener">The Register, 16 Nov 2026</a>, <a href="https://thenextweb.com/news/microsoft-365-outage-july-defect-post-incident-report" target="_blank" rel="noopener">The Next Web</a>. Changed since the earlier entry: final report still pending.</li>
+<li><strong>Cloudflare BYOIP outage, 20 Feb 2026</strong> <span class="tag ok">Confirmed (Cloudflare post-mortem)</span>. <em>What happened:</em> about 1,100 of 6,500 prefixes advertised to one BGP peer were withdrawn; about 25% of 4,306 BYOIP prefixes were unintentionally withdrawn; affected CDN, Spectrum, Dedicated Egress and Magic Transit. <em>Root cause:</em> a new cleanup sub-task called an API with an empty <code>pending_delete</code> value, which the server read as "all prefixes", so it deleted them and their service bindings. Deployed 20 Feb 17:46 UTC. <em>Duration:</em> impact start 17:56 (intro says 17:48) to 23:03 UTC; the post states 6h07m, which does not match its own timestamps (about 5h07m); I could not reconcile it. <em>Recovery:</em> job stopped 18:46; customers could re-advertise from 19:19; global config rollout from 21:08; about 300 prefixes restored manually. <em>Prevention:</em> strict API schema, health-mediated rollouts with fast rollback, circuit breakers on fast or broad changes, "Code Orange: Fail Small". <em>Lesson:</em> destructive automation needs dry-run, scope limits and a blast-radius brake; an empty parameter must never mean "all". Source: <a href="https://blog.cloudflare.com/cloudflare-outage-february-20-2026/" target="_blank" rel="noopener">Cloudflare, 20 Feb 2026</a>.</li>
 </ul>
-<p><strong>What companies expect from DevOps engineers now</strong> <span class="tag info">Direction</span> (from training and hiring blogs, not hard data; e.g. <a href="https://harveynash.co.uk/latest-news/the-devops-skills-employers-are-looking-for-in-2026" target="_blank" rel="noopener">Harvey Nash</a>, <a href="https://codelabsacademy.com/en/blog/devops-skills-2026-ci-cd-platform-engineering" target="_blank" rel="noopener">Codelabs Academy</a>):</p>
-<ul><li>Kubernetes plus Terraform is the baseline; pipeline-only skills are seen as not enough.</li><li>Platform engineering: self-service infrastructure, internal developer platforms, "golden paths".</li><li>Job titles are shifting to platform engineer, SRE, infrastructure automation engineer.</li><li>Security knowledge together with cloud and automation.</li><li>AI infrastructure knowledge is said to be valued; salary claims in these blogs are unverified.</li></ul>
+<p><strong>What companies expect from DevOps engineers now</strong> <span class="tag info">Direction</span> (hiring and training blogs, not hard data, e.g. <a href="https://harveynash.co.uk/latest-news/the-devops-skills-employers-are-looking-for-in-2026" target="_blank" rel="noopener">Harvey Nash</a>):</p>
+<ul><li>Kubernetes and Terraform as baseline; pipeline-only skills are seen as not enough.</li><li>Platform engineering: self-service golden paths and internal developer platforms.</li><li>Security and cost awareness alongside automation, and the habit of safe change (staged rollouts, rollback).</li></ul>
 
-<h4>2. Corporate document of the day: architecture and design documents (overview)</h4>
-<p><strong>What:</strong> a written explanation of how a system is built and why. The family: HLD (big picture), LLD (details), ADR (one decision), RFC (a proposal for review). <strong>Who writes:</strong> the engineer or architect who owns the change. <strong>Who reads:</strong> engineers (to build), managers (scope, effort), architects (fit with standards), CTO (cost, risk). <strong>When:</strong> before building anything big or risky, and updated after major changes.</p>
-<p><strong>Fillable template:</strong></p>
-<pre>Title / Owner / Reviewers / Date / Status (draft, approved)
-1. Problem: what hurts today, in 3 lines
-2. Goals and NON-goals
-3. Proposed design (diagram + short text)
-4. Alternatives considered and why rejected
-5. Risks, failure modes, rollback plan
-6. Security and compliance
-7. Cost estimate (monthly)
-8. Rollout plan and owners
-9. Open questions</pre>
-<p><strong>Short example:</strong> Problem: deploys to production take 45 min by hand and failed twice last month. Goal: deploy in under 10 min with automatic rollback. Non-goal: moving to a new cloud. Design: GitHub Actions builds an image, Argo CD syncs to the cluster, canary 10% then 100%. Alternative rejected: keep scripts (no audit trail). Risk: a wrong canary metric; rollback = revert the Git commit. Cost: about one extra small node (an estimate to be checked).</p>
-<p><strong>Common mistakes:</strong> no non-goals, no alternatives, no rollback plan, a diagram nobody can read, a document written after the work is done, and never updated.</p>
+<h4>6. AIOps: AI-powered log analysis</h4>
+<p><strong>How it helps.</strong> Logs are high-volume text; an LLM can cluster similar errors, summarise a 10-minute window and propose hypotheses, so you read 20 lines, not 20,000. <strong>Example prompt:</strong> "Here are 200 deduplicated error lines from orders-api between 02:00 and 02:10 IST with counts and the deploy time 18:00. Group them by cause, rank by likelihood, and for each give one read-only command to confirm. Do not suggest fixes yet." Tools: Elastic/OpenSearch ML anomaly detection, Datadog or Grafana assistants, or your own script that pipes <code>journalctl | sort | uniq -c | sort -rn | head -50</code> into a model. <strong>Risks and guardrails:</strong> redact secrets, tokens, emails and customer data before sending; models can invent causes, so confirm each hypothesis with a command; give read-only access only; keep a human approving any change; log the prompts used in the incident record.</p>
 
-<h4>3. Hands-on skill of the day: Linux processes, systemd, journald, CPU/memory/disk troubleshooting</h4>
-<p><strong>Fundamentals:</strong> a process has a PID, a parent and a state (R running, S sleeping, D waiting on disk, Z zombie). systemd starts and watches services as "units"; journald stores their logs. <strong>In production:</strong> every service runs as a systemd unit with Restart=on-failure and resource limits, logs go to a central system, and you check the basics first: CPU, memory, disk, network.</p>
-<pre>uptime                         # load average vs number of CPUs (nproc)
-top -o %CPU   |  ps aux --sort=-%mem | head
-free -h                        # look at "available", not "free"
-df -h ; df -i                  # disk space and inodes
-du -xh / --max-depth=1 | sort -h | tail
-systemctl status myapp ; systemctl --failed
-journalctl -u myapp --since "30 min ago" -p err
-journalctl -k | grep -i 'out of memory'   # OOM killer
-lsof +L1                       # deleted files still holding disk</pre>
-<pre># /etc/systemd/system/myapp.service (sketch)
-[Service]
-ExecStart=/usr/local/bin/myapp
-Restart=on-failure
-MemoryMax=512M
-LimitNOFILE=65536</pre>
-<p><strong>Mini exercise:</strong> on a test VM, run <code>stress-ng --cpu 2 --timeout 60s</code> (if installed) and find the busy process with top; then give a test unit a small MemoryMax and watch it get killed in journalctl.</p>
-<p><strong>Interview questions:</strong> (1) Load average is 8 on a 4-core box: what does it mean and what do you check? (2) df shows 100% but du shows much less: why? (3) A service keeps restarting: where do you look first?</p>
-<p><strong>Short answers:</strong> (1) about twice as many runnable or waiting tasks as cores; check top, iowait and D-state processes. (2) A deleted file is still open by a process (lsof +L1), or inodes are used up (df -i). (3) systemctl status, then journalctl -u for the exit code and last log lines.</p>
+<h4>7. Lab checklist</h4>
+<pre>
+[ ] Class 1 lab: stress-ng CPU and memory, read top, vmstat, dmesg
+[ ] Class 1 lab: deleted-but-open file, prove with lsof +L1, free the space
+[ ] Class 1 lab: systemd unit with Restart and MemoryMax, kill it, read journalctl
+[ ] Class 1 assignment: "first 5 minutes on a slow server" checklist (10 lines)
+[ ] Class 2 lab: DROP vs REJECT on port 8080, compare curl and tcpdump
+[ ] Class 2 lab: dig vs getent hosts with a bad /etc/hosts entry
+[ ] Class 2 assignment: one-page "A cannot reach B" decision tree
+[ ] Scenario A and B: answer the 3 questions before opening the solutions
+[ ] Interview Q1 to Q3: say the answers aloud in 2 minutes each
+[ ] Recap: answer the 3 recap questions
+</pre>
 
-<h4>4. Production scenario of the day: the production server is down</h4>
-<pre>User -> Load balancer -> Server (app)
-          | health check fails -> no healthy targets -> 502/503</pre>
-<p><strong>Problem:</strong> customers report the site is not loading. <strong>Investigation:</strong></p>
-<ol>
-<li>Confirm and scope: one server or all? <code>curl -sv https://site/health</code>, check load balancer target health, check your cloud's status page.</li>
-<li>Can you reach the host? <code>ping</code>, <code>ssh</code>. If not: cloud console (instance state, system status checks, recent changes, security group edits).</li>
-<li>If you can log in: <code>uptime; free -h; df -h; systemctl --failed; journalctl -p err --since "1 hour ago"</code>.</li>
-<li>Ask what changed: last deploy, config change, certificate, disk, patch reboot. <code>last -x | head</code> shows reboots.</li>
-</ol>
-<p><strong>Resolution:</strong> restore service first (restart the service, roll back the last deploy, or move traffic to a healthy node), then find the root cause. <strong>Long-term prevention:</strong> at least two instances behind the load balancer, health checks with auto-replace, alerts on disk and memory before 100%, a runbook, and a blameless RCA. <strong>Message for the incident channel:</strong></p>
-<pre>[INCIDENT] 14:05 IST - Checkout site unavailable. Impact: all users.
-I am incident lead. Status: investigating; LB shows 0 healthy targets.
-Last change: deploy at 13:50 (checking). Next update at 14:20.</pre>
+<h4>8. Career: the roadmap from DevOps Engineer to Architect</h4>
+<p>Teacher's lesson. Titles are less important than <strong>scope of ownership</strong>. A DevOps engineer with 2 to 3 years is trusted with tasks: "add this pipeline stage", "fix this alert". A senior is trusted with outcomes: "deployments for this product are safe and fast". An SRE or platform engineer owns a <em>system and its targets</em>: an SLO, a platform used by other teams. An architect or lead owns direction: standards, cost and risk across teams, and explains trade-offs to people who do not read YAML.</p>
+<p>What actually changes at each step: (1) <em>Depth</em>: you no longer stop at "the pod restarted"; you find why, and why nothing warned you. (2) <em>Breadth</em>: you can reason about network, identity, cost and failure modes of a design before it is built. (3) <em>Leverage</em>: you write things that make ten people faster: a module, a template, a runbook, a guardrail. (4) <em>Communication</em>: you give short, honest status updates, state risk and ask for decisions. (5) <em>Judgement</em>: you say no, or "not yet", with reasons.</p>
+<p>War story: early in my career I was the fastest person at fixing outages, and I thought that made me senior. My manager showed me the incident list: the same three causes repeated for a year, and I had fixed each one by hand. The senior move would have been to remove the cause once. That is the shift: from fixing to preventing, from being the hero to making heroes unnecessary.</p>
+<p>The next 8 weeks give you the technical breadth of a senior (Linux to Kubernetes to cloud to observability to SRE) and the final week the leadership pieces. Each week gives you one artifact you can show in an interview or review: a runbook, a pipeline, a module, a dashboard. Artifacts beat certificates.</p>
+<p><strong>Say it like this</strong> (to a manager or CTO): "I'm spending the next two months closing my gaps in production troubleshooting, infrastructure as code and reliability, so I can own deployments and incident response for our service end to end; I'll show the result as a runbook, a Terraform module and an SLO dashboard."</p>
+<p><strong>Skill-gap action for today (10 min):</strong> list 5 incidents you worked on in the last year; mark which were repeated and which had a written runbook. Pick the most repeated one and write its first five triage commands.</p>
 
-<h4>5. AIOps of the day: AI-powered log analysis</h4>
-<p><strong>How:</strong> an AI model reads a bounded slice of logs (for example 200 lines around an error), groups similar errors and proposes likely causes. It speeds up reading; a human still decides. <strong>Prompt example:</strong> "Here are 150 log lines from service X between 14:00 and 14:10 IST (secrets removed). Group them by error type, show the first occurrence of each, and list 3 possible causes with the command I should run to check each." <strong>Benefits:</strong> faster triage and plain-language summaries for the incident channel. <strong>Risks and guardrails:</strong> logs can hold passwords, tokens and personal data, so mask them before sharing with any external tool; the model can sound sure and be wrong, so verify with a command; log text can contain instructions (prompt injection), so never let the AI run commands by itself. I did not verify a specific vendor feature today, so check your own tool's official docs first.</p>
+<h4>9. Daily recap of all your tools</h4>
+<div class="tw"><table><thead><tr><th>Tool</th><th>Remember today</th><th>Command or config</th><th>Official doc</th></tr></thead><tbody>
+<tr><td>Linux and shell</td><td>Load average counts D-state (I/O wait) tasks too, not only CPU use.</td><td><code>vmstat 1 5</code></td><td><a href="https://man7.org/linux/man-pages/man8/vmstat.8.html" target="_blank" rel="noopener">vmstat(8)</a></td></tr>
+<tr><td>Git/GitHub</td><td>A commit is a snapshot with a hash; branches are just movable pointers to commits.</td><td><code>git log --oneline --graph --all</code></td><td><a href="https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell" target="_blank" rel="noopener">Git book</a></td></tr>
+<tr><td>Jenkins</td><td>The controller schedules; real work belongs on agents, keep executors on the controller at 0.</td><td><code>pipeline { agent { label 'linux' } ... }</code></td><td><a href="https://www.jenkins.io/doc/book/pipeline/" target="_blank" rel="noopener">Pipeline book</a></td></tr>
+<tr><td>CI/CD (Actions/GitLab CI)</td><td>CI proves the change builds and passes tests; delivery keeps it releasable at any time.</td><td><code>on: pull_request</code></td><td><a href="https://docs.github.com/en/actions" target="_blank" rel="noopener">GitHub Actions</a></td></tr>
+<tr><td>Docker</td><td>A container is a process with namespaces and cgroups, not a small VM.</td><td><code>docker run --rm -it alpine ps</code></td><td><a href="https://docs.docker.com/get-started/docker-overview/" target="_blank" rel="noopener">Docker overview</a></td></tr>
+<tr><td>Kubernetes</td><td>The API server is the only component that talks to etcd; everything else watches it.</td><td><code>kubectl get --raw /readyz</code></td><td><a href="https://kubernetes.io/docs/concepts/overview/components/" target="_blank" rel="noopener">K8s components</a></td></tr>
+<tr><td>Terraform</td><td>Plan compares config with state and real infrastructure; apply executes exactly that plan.</td><td><code>terraform plan -out tf.plan</code></td><td><a href="https://developer.hashicorp.com/terraform/cli/commands/plan" target="_blank" rel="noopener">terraform plan</a></td></tr>
+<tr><td>AWS</td><td>A region has several AZs; a subnet lives in exactly one AZ.</td><td><code>aws ec2 describe-availability-zones</code></td><td><a href="https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html" target="_blank" rel="noopener">VPC guide</a></td></tr>
+<tr><td>Azure</td><td>Hierarchy is tenant, management groups, subscriptions, resource groups, resources.</td><td><code>az account list -o table</code></td><td><a href="https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview" target="_blank" rel="noopener">Azure Resource Manager</a></td></tr>
+<tr><td>GCP</td><td>Project is the unit of billing, IAM and APIs; VPC networks are global, subnets regional.</td><td><code>gcloud projects list</code></td><td><a href="https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy" target="_blank" rel="noopener">Resource hierarchy</a></td></tr>
+<tr><td>Ansible</td><td>Modules are idempotent: running a playbook twice should change nothing the second time.</td><td><code>ansible-playbook site.yml --check --diff</code></td><td><a href="https://docs.ansible.com/ansible/latest/getting_started/index.html" target="_blank" rel="noopener">Getting started</a></td></tr>
+<tr><td>Prometheus and Grafana</td><td>Prometheus pulls (scrapes) metrics over HTTP; Grafana only visualises, it stores no metrics.</td><td><code>rate(http_requests_total[5m])</code></td><td><a href="https://prometheus.io/docs/introduction/overview/" target="_blank" rel="noopener">Overview</a></td></tr>
+<tr><td>ELK/OpenSearch</td><td>Logs go into indices; an index has shards, and too many small shards hurt the cluster.</td><td><code>GET _cat/indices?v</code></td><td><a href="https://opensearch.org/docs/latest/" target="_blank" rel="noopener">OpenSearch docs</a></td></tr>
+<tr><td>Python for DevOps</td><td>Use <code>subprocess.run(..., check=True)</code> with a list of args, never a shell string with user input.</td><td><code>subprocess.run(["ls","-l"],check=True)</code></td><td><a href="https://docs.python.org/3/library/subprocess.html" target="_blank" rel="noopener">subprocess</a></td></tr>
+<tr><td>GitOps (Argo CD/Helm)</td><td>Git is the desired state; the controller continuously pulls and reconciles the cluster to it.</td><td><code>argocd app diff myapp</code></td><td><a href="https://argo-cd.readthedocs.io/en/stable/" target="_blank" rel="noopener">Argo CD</a></td></tr>
+<tr><td>DevSecOps</td><td>Shift left: scan code, dependencies and images in the pipeline, before deploy.</td><td><code>trivy image myapp:1.0</code></td><td><a href="https://trivy.dev/latest/docs/" target="_blank" rel="noopener">Trivy docs</a></td></tr>
+<tr><td>SRE (SLI/SLO)</td><td>An SLI is a measurement, an SLO the target; the error budget is 100% minus the SLO.</td><td><code>99.9% over 30 d = 43.2 min budget</code></td><td><a href="https://sre.google/sre-book/service-level-objectives/" target="_blank" rel="noopener">SRE book</a></td></tr>
+<tr><td>FinOps/Platform</td><td>FinOps loop is inform, optimise, operate; tags are the base of cost allocation.</td><td><code>aws ce get-cost-and-usage --group-by Type=TAG,Key=team ...</code></td><td><a href="https://www.finops.org/framework/" target="_blank" rel="noopener">FinOps framework</a></td></tr>
+<tr><td>AI in DevOps</td><td>Treat model output as an unreviewed suggestion; humans approve changes.</td><td><code>prompt: "explain this error; read-only checks only"</code></td><td><a href="https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview" target="_blank" rel="noopener">Prompting guide</a></td></tr>
+</tbody></table></div>
 
-<h4>6. Interview practice: basic DevOps (2 to 3 years)</h4>
-<ol>
-<li><strong>CI, continuous delivery and continuous deployment: what is the difference?</strong> CI = every push is built and tested automatically. Delivery = every passing build is ready to release, but a person presses the button. Deployment = it goes to production automatically. Many teams use delivery for production and full automation for staging.</li>
-<li><strong>A pipeline that passed yesterday fails today with no code change. What do you do?</strong> Read the first error, not the last. Check what changed outside the code: base image tag "latest", dependency versions, expired token or certificate, runner disk full, an external service down. Re-run once to rule out a flaky test. Then fix by pinning versions and adding a cache.</li>
-<li><strong>Why Infrastructure as Code?</strong> Repeatable environments, review through pull requests, history in Git, easy recovery. Example: a security group changed by hand in the console stays invisible until <code>terraform plan</code> shows drift.</li>
-<li><strong>How do you roll back a bad release?</strong> Redeploy the previous image tag or revert the Git commit (GitOps). Rollback must be rehearsed, and database changes must be backward compatible, otherwise rollback is not safe.</li>
-<li><strong>Troubleshooting: a deployed app returns 502 from the load balancer.</strong> Check target health, the app process and port, the health check path, the security group between LB and app, then app logs for crashes at start-up. Common causes: the app listens on 127.0.0.1 instead of 0.0.0.0, or the health check path returns 404.</li>
-</ol>
+<h5>Linux and shell: the three-file view of a process</h5>
+<p><strong>What it is:</strong> every running process is described under <code>/proc/PID</code>. <strong>Why it matters:</strong> when tools are missing (minimal containers) you can still debug. <strong>How it works:</strong></p>
+<pre>/proc/PID/status  -> state, memory (VmRSS)
+/proc/PID/fd/     -> open files and sockets (ls -l)
+/proc/PID/limits  -> ulimits, e.g. Max open files</pre>
+<p>Example: <code>ls /proc/$(pidof nginx)/fd | wc -l</code> shows descriptors in use versus the limit; near the limit gives "too many open files". <strong>AI prompt:</strong> "Explain each field of this /proc/PID/status output and flag anything unusual for a web server."</p>
 
-<h4>7. Career growth: the roadmap</h4>
-<p>Your path has four stations. <strong>DevOps Engineer</strong> (you now): you run pipelines and deployments and fix problems with some guidance; the work is "do the task well". <strong>Senior DevOps Engineer</strong> (often after several more years, but it depends on the company): you own a whole service or platform area, design pipelines, lead incidents and review others' work. The change is from "do the task" to "own the outcome". <strong>SRE or Platform Engineer:</strong> you own reliability targets (SLOs) or build an internal platform that other teams use like a product; you write more code and measure toil. <strong>Architect or Engineering Lead:</strong> you set standards, DR and cost strategy, and spend more time on trade-offs, documents and people than on the keyboard.</p>
-<p>What to do in the next 12 months: pick one cloud (AWS or Azure) and go deep on networking, IAM and cost; get comfortable with production Kubernetes (requests and limits, probes, upgrades); write Terraform modules with reviews; learn observability (metrics, logs, traces) and SLOs; and write one design document and one post-incident report. Certifications such as CKA, an associate cloud exam and Terraform Associate show structure but do not replace real incidents handled. Seniors are trusted because they are predictable: they write things down, warn early, and leave systems easier to run than they found them.</p>
-<p><strong>Senior engineer mindset:</strong> before you act, ask "what is the blast radius, how do I undo it, and who needs to know?"</p>
-<p><strong>Say it like this</strong> (to a manager or CTO): "The deploy process takes 45 minutes and failed twice last month. I propose automated canary deploys; it takes about two weeks, the risk is a wrong metric rule, and rollback is one Git revert. Can I get review time on Tuesday?"</p>
+<h5>Git/GitHub: how a merge differs from a rebase</h5>
+<p><strong>What it is:</strong> two ways to integrate branches. <strong>Why it matters:</strong> history shape and safe collaboration. <strong>How it works:</strong></p>
+<pre>merge : A-B-C-----M      (keeps both lines, adds merge commit)
+             \  /
+              D-E
+rebase: A-B-C-D'-E'      (replays your commits on top, new hashes)</pre>
+<p>Rule: rebase your own unpushed branch; never rebase shared history. Squash-merge keeps main linear with one commit per PR. <strong>AI prompt:</strong> "Given this git log graph, tell me whether a rebase or merge is safer and the exact commands."</p>
 
-<h4>8. Skill-gap check</h4>
-<ol><li>Can you find out, without searching, why a Linux server is slow (CPU, memory, disk, I/O)? yes / no</li><li>Have you written a design document with non-goals and a rollback plan? yes / no</li><li>Can you explain CI vs delivery vs deployment in 30 seconds? yes / no</li></ol>
-<p><strong>Today's action:</strong> run the command list from section 3 on one of your servers and write 5 lines about what is normal for it.</p>
+<h5>Jenkins: controller and agents</h5>
+<p><strong>What it is:</strong> an automation server running pipelines defined in a Jenkinsfile. <strong>Why it matters:</strong> many companies still run it; a misconfigured controller is a security and stability risk. <strong>How it works:</strong></p>
+<pre>Git push -> webhook -> Controller (queue, UI, config)
+                          |-> Agent 1 (docker build)
+                          |-> Agent 2 (tests)</pre>
+<p>Keep the controller free of builds, use ephemeral agents (containers or cloud VMs), store the Jenkinsfile in the repo, keep credentials in the Jenkins credential store and use <code>withCredentials</code>. <strong>AI prompt:</strong> "Review this Jenkinsfile for security and speed issues; list changes as a diff."</p>
+
+<p><strong>Recap questions</strong></p>
+<p>1. Load average is 30 on a 4-core host but CPU is 95% idle. What is likely wrong?</p>
+<details><summary>Show answer</summary><p>Tasks in D state waiting for I/O (disk full or slow, NFS hang). Check <code>vmstat</code> (b and wa columns), <code>iostat -xz</code>, <code>df</code>, and processes with state D via <code>ps</code>.</p></details>
+<p>2. You pushed a bad commit to a shared main branch. Which command undoes it safely and why not reset?</p>
+<details><summary>Show answer</summary><p><code>git revert &lt;sha&gt;</code> adds a new commit that reverses it and keeps history intact; <code>reset</code> plus force-push rewrites history others have pulled.</p></details>
+<p>3. Why should Jenkins builds not run on the controller?</p>
+<details><summary>Show answer</summary><p>Build code can read controller secrets and config, and heavy builds can starve the scheduler and UI; use isolated, ephemeral agents and set controller executors to 0.</p></details>
+
+<h4>10. AI pro: transformer and attention intuition, context windows</h4>
+<p><strong>Concepts.</strong> A transformer processes text as tokens (sub-word pieces). Each token becomes a vector; <em>self-attention</em> lets every token compute weights over earlier tokens (query-key match) and mix their value vectors, so the meaning of "it" depends on the nouns before it. Decoder-only models (the family used for chat and code) generate one token at a time, each conditioned on everything in the context window. The window is the maximum tokens of input plus output the model can see; it is a hard limit, and attention cost grows roughly with the square of length unless optimised.</p>
+<p><strong>Design pattern.</strong> Treat the context as a scarce, billed, noisy buffer. Put stable instructions first, retrieved facts next, the question last; trim irrelevant logs; summarise long histories.</p>
+<pre>
+tokens in  ->  [system rules][retrieved docs][history][user ask]
+                         |        context budget (N tokens)
+model: attention over all -> next token -> append -> repeat
+cost  ~ input tokens + output tokens ; latency ~ output tokens
+</pre>
+<p><strong>Trade-offs.</strong> Bigger windows allow more evidence but cost more and can dilute attention: models can miss details buried in the middle of very long inputs ("lost in the middle", Liu et al.). Retrieval (RAG) sends only relevant chunks; long context sends everything. Output is sampled, so the same prompt can give different answers; lower temperature for operations tasks.</p>
+<p><strong>Failure modes.</strong> Truncation when input plus output exceeds the window (silent cut or an error); hallucination when evidence is missing; instruction dilution in long contexts; prompt injection hidden in logs or tickets you paste in; non-determinism breaking tests.</p>
+<p><strong>Code sketch</strong> (budget guard before calling any model):</p>
+<pre>
+def fit(chunks, limit_tokens, count):   # count = your tokenizer
+    out, used = [], 0
+    for c in sorted(chunks, key=lambda c: -c.score):
+        t = count(c.text)
+        if used + t &gt; limit_tokens: break
+        out.append(c.text); used += t
+    return "\n---\n".join(out)
+</pre>
+<p><strong>Evaluation, security, cost.</strong> Measure tokens per request, p95 latency, and answer quality on a fixed golden set whenever you change prompt or chunking. Treat any text from logs, tickets or the web as untrusted: never let it trigger actions. Cost is roughly proportional to tokens, so deduplicate logs, cap output length, and cache stable prefixes (tomorrow's AI pro topics cover caching). Sources: <a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Vaswani et al., Attention Is All You Need</a> · <a href="https://arxiv.org/abs/2307.03172" target="_blank" rel="noopener">Liu et al., Lost in the Middle</a> <span class="tag ok">Confirmed</span></p>
 </article>
+
 </section>
 <section id="learning">
 <h2 class="s-learn">Learning: theory + architecture (AWS and Azure)</h2>
