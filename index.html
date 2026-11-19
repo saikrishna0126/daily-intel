@@ -125,62 +125,109 @@ footer{margin-top:3em;color:var(--mut);font-size:.85rem;text-align:center}
 <!-- NEW-LOG-ENTRY-HERE -->
 <details open class="day" id="d-2026-11-19"><summary class="big">Thu 19 Nov 2026 <span class="hint">(click to open / close the full report)</span></summary><div class="entry">
 
-<p class="meta"><strong>Date:</strong> Thursday, 19 Nov 2026 (IST) · <strong>Period:</strong> ~18–19 Nov · <strong>Research:</strong> 7 live searches, most returned little or undated material ·
-Labels: <span class="tag ok">Confirmed</span><span class="tag warn">Reported / unverified</span><span class="tag bad">Claim / disputed</span></p>
-<div class="note"><strong>Honest limits:</strong> today's searches surfaced almost nothing dated 18–19 Nov. Rather than fill space, this report lists only what could be sourced and says plainly what could not be found. Check primary sources before acting.</div>
+<p class="meta"><strong>Date:</strong> Thursday, 19 Nov 2026 (IST) · <strong>Period:</strong> ~9–19 Nov (event dates shown per item) · <strong>Research:</strong> 40+ live searches and 5 page reads (re-run, improved) ·
+Labels: <span class="tag ok">Confirmed</span><span class="tag warn">Reported</span><span class="tag bad">Unverified</span><span class="tag info">Direction</span></p>
+<div class="note"><strong>Honest limits:</strong> many search results were aggregators or snippets. Items marked Confirmed were read on the primary page (Anthropic, Node.js) or are clearly official. Items marked Reported come from news or search snippets I did not open on the primary page. Check the primary source before acting.</div>
 
-<h4>1. Executive Summary</h4>
+<h4>1. Top developments of the day</h4>
 <ol>
-<li><span class="tag warn">Unverified</span> <strong>Anthropic IPO</strong>: sources found are all pre-pricing (planned 825M shares at $70–78, pricing 18 Nov US time, Nasdaq trading as ANT from 19 Nov). <em>No final price or first-day result was found.</em> Yesterday's "above $80" report is also still unconfirmed.</li>
-<li><span class="tag warn">Unverified</span> <strong>CISA KEV</strong>: search found CISA bulletins (SonicWall SMA1000, Citrix NetScaler, Cisco Catalyst SD-WAN Manager, Oracle E-Business Suite entries) but without dates, so I cannot say which were added on 18–19 Nov. Check the <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog">KEV catalog</a> directly.</li>
-<li><span class="tag ok">Confirmed</span> Carry-over: Cisco BroadWorks CVE-2026-20320 KEV deadline is still 24 Nov (no change found).</li>
-<li><span class="tag warn">Reported</span> <strong>India IT</strong>: TCS Q2 revenue $7.64B (+2.8% constant currency), annualised AI revenue reported at $3.1B (&gt;10% of revenue), per a trade publication dated 3 Nov. Older than today, listed for context.</li>
-<li><span class="tag warn">No change</span> Maersk, Vanderbilt, NVIDIA Q3: no new verified updates found since yesterday.</li>
-<li><span class="tag warn">Reported</span> GitLab 18.11 is reported to fully support Kubernetes 1.35 (release date not shown in the source).</li>
+<li><span class="tag ok">Confirmed</span> <strong>Anthropic priced its IPO at $83.00 per share</strong> (above the earlier $70–78 range). 980,000,000 Class A shares: 956,351,354 sold by Anthropic and 23,648,646 by selling stockholders; underwriters have a 30-day option for up to 147,000,000 more. Ticker ANT on Nasdaq Global Select, trading from 19 Nov, closing expected 20 Nov. Total is about $81.3B (my arithmetic: 980M × $83; the release states no total). Published 18 Nov. <em>First-day trading result: not found yet.</em> <a href="https://www.anthropic.com/news/anthropic-prices-initial-public-offering">Anthropic</a> · <span class="tag warn">Reported</span> "6–7x oversubscribed" and a 20–25% first-day jump predicted by derivatives traders are press claims and predictions, not results (<a href="https://www.cnbc.com/2026/11/18/anthropic-ipo-ai-offering-price.html">CNBC</a>).</li>
+<li><span class="tag ok">Confirmed</span> <strong>Node.js security release, 11 Nov:</strong> v26.13.1, v24.22.3 and v22.23.5 fix 16 advisories (7 High, 6 Medium, 3 Low; none Critical). Mainly HTTP/2 and TLS areas per secondary coverage. Node 20 and older get no fix. <a href="https://nodejs.org/en/blog/vulnerability/november-2026-security-releases">Node.js advisory</a></li>
+<li><span class="tag warn">Reported</span> <strong>Go 1.27.4 and 1.26.11</strong> security releases, 10 Nov, fixing 12 issues (pre-announced 5 Nov). Source is the oss-security mailing-list post. <a href="https://www.openwall.com/lists/oss-security/2026/11/10/28">oss-security</a></li>
+<li><span class="tag warn">Reported</span> <strong>Microsoft November Patch Tuesday (10 Nov):</strong> one exploited Outlook zero-day, CVE-2026-124194 (NTLM hash leak / spoofing). Total fix counts differ by outlet (about 1,090 to 1,235). Also a critical Windows Search RCE, CVE-2026-116928 (CVSS 9.8) per ZDI via Dark Reading. <a href="https://darkreading.com/vulnerabilities-threats/november-patch-tuesday-cornucopia-cves">Dark Reading</a> · <a href="https://www.csoonline.com/article/4247015/november-2026-patch-tuesday-63-critical-microsoft-fixes-plus-an-outlook-zero-day.html">CSO</a></li>
+<li><span class="tag warn">Reported</span> <strong>Microsoft Ignite 2026 (from 17 Nov):</strong> agent-focused Azure news: Azure Resource Manager MCP server, Azure SRE Agent and Azure Monitor updates, "Azure Catalyst" migration offering, Cobalt 200 VMs. Trade press, not the full official list. <a href="https://azure.microsoft.com/en-us/blog/microsoft-ignite-2026-whats-new-in-azure-the-platform-purpose-built-for-ai/">Azure blog</a> · <a href="https://virtualizationreview.com/articles/2026/11/17/microsoft-ignite-2026-top-azure-announcements-for-enterprise-it.aspx">Virtualization Review</a></li>
+<li><span class="tag warn">Reported</span> <strong>Rust 1.100 released 12 Nov:</strong> the never type (<code>!</code>) is stable, plus allocator API pieces and a Cargo <code>min-publish-age</code> setting. <a href="https://phoronix.com/news/Rust-1.100-Released">Phoronix</a></li>
+<li><span class="tag warn">Reported</span> <strong>Wall Street 18 Nov:</strong> Dow -1.11% to 50,198.17, S&amp;P 500 -0.23% to 7,323.63 (fifth straight loss), Nasdaq +0.42% to 24,429.88. Nvidia fell again despite strong results. Other outlets differ slightly. <a href="https://www.cnbc.com/2026/11/17/stock-market-today-live-updates.html">CNBC (live page)</a> · <a href="https://www.stocktitan.net/articles/stock-market-today-live-november-18-2026">StockTitan</a></li>
+<li><span class="tag ok">Confirmed</span> <strong>India close, 18 Nov:</strong> Sensex 82,031.81 (-0.61%), Nifty 25,227.95 (-0.63%); metals and IT led losses. Details in the Market section. <a href="https://www.kotakneo.com/news/market-news/market-wrap-18-november-2026-profit-booking-and-a-drag-in-metal-stocks-pull-benchmarks-down/">Kotak Neo</a></li>
+<li><span class="tag bad">Unverified</span> <strong>New AI models:</strong> aggregators list OpenAI "GPT-6.2 Astra / Sol" (17 or 18 Nov, sources disagree) and Google "Gemini 4 Neon" (18 Nov, $3 / $15 per million tokens in one digest). I found no vendor page, so treat as unconfirmed. <a href="https://www.theneuron.ai/digest/everything-that-happened-in-ai-today-thursday-november-19-2026/">The Neuron digest</a> · <a href="https://llmgateway.io/timeline">llmgateway timeline</a></li>
+<li><span class="tag warn">Reported</span> <strong>Kubernetes ingress-nginx CVE-2026-116472</strong> (mirror-target annotation: self-DoS). Announced on oss-security 5 Nov. <strong>No fix will be issued</strong> because ingress-nginx was retired in March 2026; mitigation is an admission rule that rejects that annotation. <a href="https://www.openwall.com/lists/oss-security/2026/11/05/4">oss-security</a></li>
 </ol>
 
-<h4>2. Global IT Industry News</h4>
-<p><strong>Anthropic IPO <span class="tag warn">Unverified outcome</span>:</strong> the only coverage found is pre-pricing. Planned terms: 825M shares, $70–78 range, Nasdaq ticker ANT, first trade 19 Nov. Forecasts of first-day market cap (e.g. ~$1.1T median) are speculation. <em>Learn:</em> the opening price is set by orders after listing, not by the offer price.</p>
-<p>Articles: <a href="https://investinglive.com/stocks/anthropic-ipo-targets-around-1-trillion-valuation-half-the-2-trillion-once-whispered/">investingLive</a> · <a href="https://leverageshares.com/us/insights/anthropic-ipo-date-vs-first-trading-day/">Leverage Shares research</a> · <a href="https://tastytrade.com/learn/markets/industry/anthropic-ipo/">tastytrade</a></p>
+<h4>2. Programming languages and runtimes</h4>
+<ul>
+<li><span class="tag ok">Confirmed</span> <strong>Node.js</strong> 26.13.1 / 24.22.3 / 22.23.5, 11 Nov (see above). If you run Node 20 or older, you are on an unsupported line.</li>
+<li><span class="tag warn">Reported</span> <strong>Go</strong> 1.27.4 and 1.26.11 (10 Nov); 1.26 line supported until about Feb 2027 per a distro advisory. Patch go toolchains and rebuild binaries (fixes are in the compiler/linker/cgo, so rebuilding matters).</li>
+<li><span class="tag warn">Reported</span> <strong>Rust</strong> 1.100.0 (12 Nov).</li>
+<li><span class="tag warn">Reported</span> <strong>Python 3.15:</strong> release candidate 3 was announced (post dated 2 Oct) after the final was postponed; I did not find the 3.15.0 final announcement. Notable: PEP 810 explicit lazy imports, PEP 831 frame pointers on by default. <a href="https://discuss.python.org/t/python-3-15-0-candidate-3-is-here/109327">discuss.python.org</a></li>
+<li><span class="tag warn">Reported</span> <strong>Java:</strong> JDK 27 reached release-candidate in Aug and GA was scheduled for 14–15 Sep 2026 (sources differ by a day). No new November OpenJDK update found. <a href="https://openjdk.org/projects/jdk/27">openjdk.org JDK 27</a></li>
+<li>.NET, TypeScript, Spring, Django: no verified November news found.</li>
+</ul>
 
-<h4>3. Cybersecurity &amp; Hacking Highlights</h4>
+<h4>3. DevOps tools and cloud releases</h4>
 <div class="tw"><table>
-<tr><th>#</th><th>Item</th><th>Status</th><th>Category</th></tr>
-<tr><td>1</td><td>CISA KEV batches incl. SonicWall SMA1000, Citrix NetScaler (CVE-2026-88779), Cisco Catalyst SD-WAN Manager (CVE-2026-76504), Oracle E-Business Suite (CVE-2026-46817)</td><td><span class="tag ok">CISA lists as exploited</span> <span class="tag warn">dates not verified</span></td><td>Actively exploited vulnerabilities</td></tr>
-<tr><td>2</td><td>Cisco BroadWorks CVE-2026-20320 (deadline 24 Nov)</td><td><span class="tag ok">Confirmed</span>, no change</td><td>Unauthenticated XXE</td></tr>
-<tr><td>3</td><td>Maersk legacy-system breach</td><td>No new info; ransom claim still unconfirmed</td><td>Intrusion</td></tr>
+<tr><th>Tool</th><th>Latest version found</th><th>Date</th><th>What is new</th><th>Link</th></tr>
+<tr><td>Node.js</td><td>26.13.1 / 24.22.3 / 22.23.5</td><td>11 Nov</td><td>16 security fixes <span class="tag ok">Confirmed</span></td><td><a href="https://nodejs.org/en/blog/vulnerability/november-2026-security-releases">advisory</a></td></tr>
+<tr><td>Go</td><td>1.27.4 / 1.26.11</td><td>10 Nov</td><td>12 security fixes <span class="tag warn">Reported</span></td><td><a href="https://www.openwall.com/lists/oss-security/2026/11/10/28">oss-security</a></td></tr>
+<tr><td>Rust</td><td>1.100.0</td><td>12 Nov</td><td>never type stable <span class="tag warn">Reported</span></td><td><a href="https://phoronix.com/news/Rust-1.100-Released">Phoronix</a></td></tr>
+<tr><td>Kubernetes</td><td>1.37 (v1.37.0 "Garhwal")</td><td>26 Aug</td><td>Latest patch not confirmed; 1.38 reported for 16 Dec; 1.34 reached EOL 27 Oct (secondary source) <span class="tag warn">Reported</span></td><td><a href="https://kubernetes.io/releases/1.37/">release page</a></td></tr>
+<tr><td>Terraform</td><td>1.17.2 (aggregator) / 1.17.0 (21 Oct)</td><td>11 Nov / 21 Oct</td><td>1.17.2: config-generation performance and provider dependency-cycle fixes; check GitHub for the official tag <span class="tag bad">Unverified</span></td><td><a href="https://releasebot.io/updates/categories/infrastructure-as-code">Releasebot</a></td></tr>
+<tr><td>OpenTofu</td><td>1.13.9 / 1.12.12 (changelog entries)</td><td>5 Nov</td><td>Patch releases, no notes read <span class="tag bad">Unverified</span></td><td><a href="https://releasebot.io/updates/categories/infrastructure-as-code">Releasebot</a></td></tr>
+<tr><td>Argo CD</td><td>3.5.6 / 3.4.12 / 3.3.18 (patches)</td><td>late Oct to early Nov</td><td>Patch releases in a weekly roundup <span class="tag warn">Reported</span></td><td><a href="https://buttondown.com/lwcn/archive/lwcn-week-44-oct-26-nov-1-2026/">Last Week in Cloud Native</a></td></tr>
+<tr><td>Jenkins</td><td>Advisory 2026-10-28</td><td>28 Oct</td><td>Two High XStream deserialization issues in core <span class="tag warn">Reported</span></td><td><a href="https://jenkins.io/security/advisory/2026-10-28/">advisory</a></td></tr>
+<tr><td>Grafana Alloy</td><td>1.21.0</td><td>22–23 Oct</td><td>Self-managed release <span class="tag warn">Reported</span></td><td><a href="https://grafana.com/whats-new/2026-10-22-alloy-v121/">Grafana</a></td></tr>
 </table></div>
 <ul>
-<li><strong>Action:</strong> if you run NetScaler, SD-WAN Manager, SonicWall SMA1000 or Oracle EBS, check the KEV entry and vendor advisory and patch per your SLA. CVE IDs above come from search snippets of CISA bulletins; verify on CISA.</li>
-<li>Sources: <a href="https://content.govdelivery.com/accounts/USDHSCISA/bulletins/4281a90">CISA bulletin (seven additions)</a> · <a href="https://content.govdelivery.com/accounts/USDHSCISA/bulletins/4304abd">CISA bulletin (single addition)</a></li>
-<li>No other new, dated breach reports were found today. Not claiming any.</li>
+<li><span class="tag warn">Reported</span> <strong>GitHub Actions:</strong> <code>ubuntu-latest</code> is moving from Ubuntu 24.04 to 26.04 (gradual rollout 19 Oct to 19 Nov, so it should finish today); from 2 Dec, <code>pull_request_target</code> is to be blocked by default in public repos unless a policy allows it. Both come from a mirror of the GitHub changelog; verify on github.blog. Pin your runner image if a job breaks. <a href="https://github.blog/changelog/2026-09-17-ubuntu-26-generally-available-and-latest-migration">GitHub changelog</a></li>
+<li><span class="tag warn">Reported</span> <strong>containerd:</strong> 2.2 reached end of life 6 Nov per the official release page; plan upgrades to a supported line. <a href="https://containerd.io/releases/">containerd releases</a></li>
+<li><span class="tag warn">Reported</span> <strong>AWS:</strong> re:Invent runs 30 Nov to 4 Dec. The 16 Nov weekly roundup mentions Amazon Quick, OpenSearch cross-Region domain pairing (3.7+) and ElastiCache Serverless for Valkey search. Snippet only. <a href="https://aws.amazon.com/blogs/aws/aws-weekly-roundup-aws-nitro-sandboxes-aws-emulator-and-more-november-16-2026/">AWS News Blog</a></li>
+<li><span class="tag warn">Reported</span> <strong>Azure:</strong> Ignite items listed above. Helm, Docker Engine, Prometheus, OpenTelemetry: no November 2026 release found.</li>
 </ul>
 
-<h4>4. India IT Industry Updates</h4>
+<h4>4. Cybersecurity</h4>
+<p><strong>Confirmed</strong></p>
 <ul>
-<li><span class="tag warn">Reported</span> TCS Q2: revenue $7.64B, +2.8% cc; annualised AI revenue $3.1B. Publication 3 Nov. <a href="https://www.staffingindustry.com/editorial/it-staffing-report/tcs-q2-revenue-climbs-2.8-as-ai-business-tops-3b">Staffing Industry Analysts</a></li>
-<li><span class="tag warn">Reported</span> Headcount stagnation across top firms continues to be discussed (<a href="https://india.entrepreneur.com/business-news/from-tcs-to-techm-headcount-declines-echo-vembus-it-hiring-concerns">Entrepreneur India</a>). Figures differ between outlets.</li>
-<li>No Infosys/Wipro/HCLTech news dated 18–19 Nov found.</li>
+<li><span class="tag ok">Confirmed</span> Node.js fixes (11 Nov), see above. Microsoft's own exploitation flag on the Outlook zero-day is described by multiple outlets (<span class="tag warn">Reported</span> for the counts).</li>
+<li><span class="tag ok">CISA lists as exploited</span> CISA KEV additions: 10 Nov, six entries including Cisco BroadWorks CVE-2026-20320 (<a href="https://content.govdelivery.com/accounts/USDHSCISA/bulletins/4325e4d">CISA bulletin</a>). 9 Nov, four entries (GPUStack, FreeSWITCH, OpenSSH, IBM Aspera Faspex) per a third-party tracker, deadline 12 Nov (<a href="https://tech-insider.org/cisa-kev-gpustack-freeswitch-openssh-aspera-faspex-nov-12-deadline-2026/">tech-insider</a>). <span class="tag bad">Check</span> The earlier hub entry said the BroadWorks deadline was 24 Nov; I could not confirm it today. Read the KEV catalog for due dates.</li>
 </ul>
-
-<h4>5. DevOps &amp; Cloud Updates</h4>
+<p><strong>Suspected / reported</strong></p>
 <ul>
-<li><span class="tag warn">Reported</span> GitLab 18.11: full Kubernetes 1.35 support. <a href="https://newreleases.io/project/gitlab/gitlab-org/gitlab-foss/release/v18.11.0">newreleases.io</a> (date not shown).</li>
-<li><span class="tag warn">Reported</span> GitLab Environment Toolkit 3.10.0: Gitaly on Kubernetes GA; minimum Terraform AWS provider 6.40. <a href="https://newreleases.io/project/gitlab/gitlab-org/gitlab-environment-toolkit/release/3.10.0">newreleases.io</a> (date not shown).</li>
-<li>Kubernetes, Terraform/OpenTofu, Jenkins, Argo CD, GitHub Actions, AWS, Azure: no new dated releases found today. Carry-over: Kubernetes v1.38 planned mid-Dec; Terraform 1.17.1 (28 Oct) last found.</li>
+<li><span class="tag warn">Reported</span> <strong>Supply chain:</strong> a vendor roundup (Corgea, 7–11 Nov) tracks malicious package clusters on crates.io, PyPI, npm and RubyGems, including fake MCP and TeamViewer-style typosquats (<code>dynamic-mcp</code>, <code>reqnests</code>, <code>ts-hyper-utils</code>). Vendor data, not independently confirmed. Background: the "Mini Shai-Hulud" npm/PyPI worm waves earlier in 2026. <a href="https://corgea.com/research/dynamic-mcp-labelearthengine-api-reqnest-mcp-teamviewer-pypi-november-2026">Corgea</a></li>
+<li><span class="tag warn">Reported</span> <strong>Cloud/Kubernetes:</strong> ingress-nginx CVE-2026-116472 has no fix (project retired). If you still run ingress-nginx, plan migration to a maintained ingress or Gateway API controller.</li>
+<li><span class="tag warn">Reported</span> <strong>India (CERT-In):</strong> Chrome advisory CIVN-2026-0544 (10 Nov, critical; one flaw exploited in the wild; update to 157.0.8103.50 or later per YourStory), Microsoft advisory CIAD-2026-0059 (12 Nov, updated 14 Nov, high; Outlook zero-day), eMudhra emBridge low-severity flaw (16 Nov, patched 11 Nov). <a href="https://yourstory.com/2026/11/cert-in-flags-security-flaws-urges-chrome-users-in-india-to-update-browsers">YourStory</a></li>
+</ul>
+<p><strong>Claimed by attackers (not confirmed)</strong></p>
+<ul>
+<li><span class="tag warn">Maersk:</span> the company confirmed on 11 Nov that data was extracted from a legacy IT system inherited through an acquisition, contained, with no core operational impact. <span class="tag bad">Claimed</span> The WhiteArmor gang says it did it and demands $5M; Maersk has not confirmed that group, the system or the data. <a href="https://www.bleepingcomputer.com/news/security/maersk-confirms-data-breach-as-whitearmor-ransomware-demands-5-million/">BleepingComputer</a></li>
+<li><span class="tag warn">Vanderbilt University:</span> incident declared 9 Nov, systems restored in stages, password reset required 12 Nov; a class action was filed. <span class="tag bad">Claimed</span> the BYOD ransomware group says it stole over 1 million Social Security numbers; unconfirmed. Latest reports I found are from 10–14 Nov. <a href="https://www.malwarebytes.com/blog/news/2026/11/vanderbilt-restores-systems-after-cyberattack-as-hackers-claim-data-theft">Malwarebytes</a></li>
+</ul>
+<p><strong>Action today:</strong> patch Node.js and Go toolchains; apply the November Microsoft updates (Outlook zero-day); check KEV for anything in your estate; pin or review GitHub runner images.</p>
+
+<h4>5. AI and AI-in-DevOps</h4>
+<ul>
+<li><span class="tag ok">Confirmed</span> Anthropic's IPO terms above (company release).</li>
+<li><span class="tag bad">Unverified</span> GPT-6.2 Astra/Sol and Gemini 4 Neon (aggregator digests only; dates and prices conflict). Not repeated elsewhere in the hub until a vendor page is found.</li>
+<li><span class="tag warn">Reported</span> Ignite 2026 positions agents as managed infrastructure actors: ARM MCP server, Azure SRE Agent, Azure Copilot. Agents act under existing identity and policy controls per Microsoft coverage. <span class="tag info">Direction</span> read-only access first, human approval for changes.</li>
+<li><span class="tag warn">Reported</span> AWS "What's Next" event introduced Amazon Quick (AI work assistant) and agentic Amazon Connect solutions (AWS roundup snippet).</li>
+<li><span class="tag warn">Reported</span> A digest lists Claude Fable 5.2 and Mythos 5.2 on 9 Nov (older than yesterday's window; GitHub digest, not a vendor page).</li>
 </ul>
 
-<h4>6. AI + DevOps</h4>
-<p>No new verified items today. Earlier-reported vendor agents (AWS DevOps Agent, Azure SRE Agent, PagerDuty, Dynatrace) are unchanged; their MTTR numbers remain vendor-reported.</p>
+<h4>6. Global IT industry</h4>
+<ul>
+<li><span class="tag warn">Reported</span> <strong>Layoffs:</strong> Squarespace about 300 (19%); SoundHound AI about 27% (announced 5 Nov); MegaETH 20% (13 Nov); Circle about 5% (4 Nov, Q3 release); Block second round (undisclosed size). Trackers disagree on totals (one counts 105 companies and 51,153 jobs for November, including non-tech firms such as BT). <a href="https://layoffhedge.com/trends/november-2026-layoffs">LayoffHedge</a></li>
+<li><span class="tag warn">Reported</span> <strong>Markets:</strong> US large-cap tech sold off for five sessions; Dow weak on UnitedHealth (-7% at midday per one report). Rate-hike worries for the Fed's December meeting were cited by one outlet. <a href="https://investrade.com/market-review-november-18-2026/">Investrade</a></li>
+<li>Data centers, big-tech deals: nothing new verified today beyond the IPO.</li>
+</ul>
 
-<h4>7. What changed since yesterday</h4>
-<ul><li>Anthropic IPO: trading day arrived; still no confirmed price.</li><li>KEV: more additions exist but dates unverified.</li><li>Everything else: no verified change.</li></ul>
+<h4>7. India IT</h4>
+<ul>
+<li><span class="tag ok">Confirmed</span> Nifty IT fell 1.24% on 18 Nov and was down about 1.5% in early trade on 19 Nov (Infosys, Wipro, HCLTech among the weakest). The sources do not state a reason. <a href="https://www.kotakneo.com/news/market-news/stock-market-update-19-november-2026-sensex-nifty/">Kotak Neo</a></li>
+<li><span class="tag warn">Reported</span> A brokerage note says Infosys and Coforge won mega deals in Q2 FY27, lifting deal bookings about 70% and 100% year on year, while Wipro, LTIMindtree and Mphasis stayed weak (substack summary; not checked against company filings). <a href="https://nikhil101.substack.com/p/indian-it-q2-fy27-si-or-ai">Substack</a></li>
+<li><span class="tag warn">Reported</span> Carry-over: TCS Q2 revenue $7.64B (+2.8% cc), AI annualised revenue $3.1B (3 Nov). No dated Infosys, Wipro or HCLTech announcement for 18–19 Nov found. Policy / CERT-In items are in section 4.</li>
+</ul>
 
-<h4>8. Top 5 to watch tomorrow (20 Nov)</h4>
-<ol><li>Anthropic IPO final price and first-day close.</li><li>CISA KEV additions and the BroadWorks 24 Nov deadline.</li><li>Maersk / Vanderbilt confirmations.</li><li>Kubernetes v1.38 release prep.</li><li>Indian IT stock reaction to US rate and AI news; Infosys/Wipro updates.</li></ol>
+<h4>8. What changed since yesterday</h4>
+<ul>
+<li>Anthropic IPO: <strong>now confirmed priced at $83</strong> (yesterday: "above $80", unconfirmed). First-day result still missing.</li>
+<li>New this run: Node.js, Go, Rust releases; Microsoft zero-day; Ignite; CERT-In advisories; Maersk and Vanderbilt claims updated with sources.</li>
+<li>India close for 18 Nov found (Sensex 82,031.81, Nifty 25,227.95), replacing "not found".</li>
+<li>Corrected: earlier "KEV dates unverified" now narrowed to 9 and 10 Nov batches; BroadWorks deadline is flagged for re-check.</li>
+</ul>
 
-<h4>9. Sources</h4>
-<ul><li><a href="https://content.govdelivery.com/accounts/USDHSCISA/bulletins/4281a90">CISA bulletins</a></li><li><a href="https://investinglive.com/stocks/anthropic-ipo-targets-around-1-trillion-valuation-half-the-2-trillion-once-whispered/">investingLive</a></li><li><a href="https://www.staffingindustry.com/editorial/it-staffing-report/tcs-q2-revenue-climbs-2.8-as-ai-business-tops-3b">Staffing Industry Analysts</a></li><li><a href="https://newreleases.io/project/gitlab/gitlab-org/gitlab-foss/release/v18.11.0">GitLab 18.11 (newreleases.io)</a></li></ul>
+<h4>9. Top 5 things to watch tomorrow (20 Nov)</h4>
+<ol><li>ANT first-day close and deal closing (expected 20 Nov).</li><li>CISA KEV additions; check due dates for BroadWorks and the 9 Nov batch.</li><li>Maersk and Vanderbilt: any confirmation of data types or numbers.</li><li>Whether Nifty IT stabilises after two weak sessions; US tech after five down days.</li><li>Kubernetes 1.38 prep (reported for 16 Dec) and any Terraform 1.17.x official tag.</li></ol>
+
+<h4>10. Sources</h4>
+<ul><li><a href="https://www.anthropic.com/news/anthropic-prices-initial-public-offering">Anthropic IPO release</a></li><li><a href="https://nodejs.org/en/blog/vulnerability/november-2026-security-releases">Node.js advisory</a></li><li><a href="https://www.openwall.com/lists/oss-security/2026/11/10/28">oss-security: Go</a></li><li><a href="https://darkreading.com/vulnerabilities-threats/november-patch-tuesday-cornucopia-cves">Dark Reading: Patch Tuesday</a></li><li><a href="https://content.govdelivery.com/accounts/USDHSCISA/bulletins/4325e4d">CISA KEV bulletin</a></li><li><a href="https://yourstory.com/2026/11/cert-in-flags-security-flaws-urges-chrome-users-in-india-to-update-browsers">CERT-In via YourStory</a></li><li><a href="https://www.bleepingcomputer.com/news/security/maersk-confirms-data-breach-as-whitearmor-ransomware-demands-5-million/">BleepingComputer: Maersk</a></li><li><a href="https://www.kotakneo.com/news/market-news/market-wrap-18-november-2026-profit-booking-and-a-drag-in-metal-stocks-pull-benchmarks-down/">Kotak Neo market wrap</a></li><li><a href="https://www.cnbc.com/2026/11/17/stock-market-today-live-updates.html">CNBC markets</a></li></ul>
 </div></details>
 <details class="day" id="d-2026-11-18"><summary class="big">Wed 18 Nov 2026 <span class="hint">(click to open / close the full report)</span></summary><div class="entry">
 
@@ -483,15 +530,55 @@ print(r.json())</code></pre>
 <h2 class="s-mkt">Market learning (information, not investment advice)</h2>
 <!-- NEW-MARKET-ENTRY-HERE -->
 <article class="entry"><h3>Market News: 19 Nov 2026 (IST)</h3>
-<p>Information only. Not investment advice. Check NSE/BSE or your broker for live prices.</p>
-<h4>India</h4>
-<ul><li><span class="tag warn">Not found</span> No Sensex/Nifty close report for 18 or 19 Nov turned up in today's searches, so I am not quoting levels. Last figures in this hub: 17 Nov close Sensex 82,532, Nifty 25,387.</li><li><span class="tag warn">Data conflict</span> A 9 Nov close report (<a href="https://hdfcsky.com/news/market-close-report-today-november-9-2026-nifty-sensex-post-modest-gains-as-diwali-party-pauses-for-breath">HDFC Sky</a>) gives Sensex 81,106.65 and Nifty 25,044.65, consistent with the 17 Nov levels. Other search snippets showed much lower October levels (Nifty ~23,053), which look inconsistent; treated as unverified.</li><li>FII/DII, crude and USD/INR for today: not found.</li></ul>
-<h4>US / global</h4>
-<ul><li>No verified 18 Nov US close found. Context from yesterday: US stocks fell four days, NVIDIA results sparked a rebound, Fed minutes due.</li></ul>
-<h4>Key events today</h4>
-<ul><li>Anthropic (ANT) scheduled to start trading on Nasdaq; final price not confirmed (<a href="https://leverageshares.com/us/insights/anthropic-ipo-date-vs-first-trading-day/">source</a>).</li><li>Reaction to Fed minutes and NVIDIA in Indian IT and chip-linked stocks.</li></ul>
-<h4>3 teaching points</h4>
-<ol><li><strong>Offer price vs opening price:</strong> an IPO is priced the night before; the first trade price is set by demand and can be far from it.</li><li><strong>Missing data is a result too:</strong> if you cannot verify a number, do not trade on it. Wait for the official close.</li><li><strong>Check data consistency:</strong> two sources showing very different index levels means one is wrong or stale. Cross-check with NSE.</li></ol></article>
+<p>Information only. Not investment advice. Numbers come from news reports; check NSE/BSE or your broker for live prices. The 19 Nov session was still open when this was written, so the "close" below is for 18 Nov.</p>
+<h4>a) Indices and drivers</h4>
+<div class="tw"><table><thead><tr><th>Item</th><th>Level / move</th><th>Note</th></tr></thead><tbody>
+<tr><td>Sensex (18 Nov close)</td><td>82,031.81, -500.38 (-0.61%)</td><td>Snapped a two-day gain <span class="tag ok">Confirmed</span></td></tr>
+<tr><td>Nifty 50 (18 Nov close)</td><td>25,227.95, -159.45 (-0.63%)</td><td>One report prints 25,277.95, which does not match its own point change; I use 25,227.95 (Business Standard) <span class="tag ok">Confirmed</span></td></tr>
+<tr><td>Midcap 100 / Smallcap 100</td><td>-1.22% / -0.35%</td><td>Broader market fell more than the Nifty</td></tr>
+<tr><td>19 Nov early trade (~9:50 IST)</td><td>Sensex 82,227.22 (+0.24%), Nifty 25,268.75 (+0.16%), Bank Nifty 62,389.15 (+0.56%)</td><td>Intraday only, will change <span class="tag warn">Reported</span></td></tr>
+<tr><td>India VIX</td><td>Not found</td><td></td></tr>
+<tr><td>FII / DII flows</td><td>18 Nov: not found. 16 Nov: FIIs net bought about ₹4,865 cr, DIIs net sold about ₹3,519 cr (tracker)</td><td>A 5paisa item for "18 Nov" had no year and mismatched index levels; ignored <span class="tag warn">Reported</span></td></tr>
+<tr><td>Crude (18 Nov, ~15:37 IST)</td><td>Brent Jan futures $92.11, WTI Jan $83.37</td><td>Kotak Neo ties it to West Asia hostilities and supply</td></tr>
+<tr><td>USD/INR</td><td>Opened flat at 93.44 on 19 Nov</td><td><span class="tag warn">Reported</span></td></tr>
+<tr><td>Gold / silver (MCX, 18 Nov)</td><td>Gold ₹1,31,106 per 10 g (-2.32%), silver ₹1,63,730 per kg (-3.52%)</td><td>Sharp metal-price fall helped weigh on metal stocks</td></tr>
+<tr><td>US 10-year yield</td><td>Not found</td><td></td></tr>
+<tr><td>US close (18 Nov)</td><td>Dow -1.11% (50,198.17), S&amp;P 500 -0.23% (7,323.63), Nasdaq +0.42% (24,429.88)</td><td>Fifth S&amp;P loss in a row; outlets differ slightly <span class="tag warn">Reported</span></td></tr>
+<tr><td>Asia, 19 Nov morning</td><td>S&amp;P futures +0.5%, Hang Seng -1.8%, Shanghai -0.9%, ASX 200 -0.9%</td><td>Mixed</td></tr>
+</tbody></table></div>
+<p>Why the 18 Nov fall: sources say <em>profit booking and weak metals</em> after the market hit a nine-month high on 17 Nov. Sources: <a href="https://www.kotakneo.com/news/market-news/market-wrap-18-november-2026-profit-booking-and-a-drag-in-metal-stocks-pull-benchmarks-down/" target="_blank" rel="noopener">Kotak Neo close</a>, <a href="https://www.zeebiz.com/market-news/news-closing-bell-nov-18-2026-sensex-nifty-action-key-drivers-405714" target="_blank" rel="noopener">Zee Business</a>, <a href="https://www.kotakneo.com/news/market-news/stock-market-update-19-november-2026-sensex-nifty/" target="_blank" rel="noopener">Kotak Neo 19 Nov</a>, <a href="https://www.cnbc.com/2026/11/17/stock-market-today-live-updates.html" target="_blank" rel="noopener">CNBC</a>.</p>
+
+<h4>b) Stocks in focus</h4>
+<p>Percent moves for single stocks were not given in the sources, so I show direction only. Reasons are stated only where a source gave one.</p>
+<div class="tw"><table><thead><tr><th>Stock</th><th>Move</th><th>Reason</th><th>Source</th></tr></thead><tbody>
+<tr><td>Titan</td><td>Top Nifty loser, 18 Nov</td><td>Not stated</td><td><a href="https://www.kotakneo.com/news/market-news/market-wrap-18-november-2026-profit-booking-and-a-drag-in-metal-stocks-pull-benchmarks-down/" target="_blank" rel="noopener">Kotak Neo</a></td></tr>
+<tr><td>Hindalco</td><td>Top Nifty loser, 18 Nov</td><td>Nifty Metal -2.46%; gold/silver and metal prices fell. Company-specific reason not found</td><td><a href="https://www.kotakneo.com/news/market-news/market-wrap-18-november-2026-profit-booking-and-a-drag-in-metal-stocks-pull-benchmarks-down/" target="_blank" rel="noopener">Kotak Neo</a></td></tr>
+<tr><td>HDFC Life</td><td>Top Nifty loser, 18 Nov</td><td>Not stated</td><td><a href="https://www.zeebiz.com/market-news/news-closing-bell-nov-18-2026-sensex-nifty-action-key-drivers-405714" target="_blank" rel="noopener">Zee Business</a></td></tr>
+<tr><td>SBI</td><td>Top Nifty gainer, 18 Nov</td><td>PSU banks outperformed; stock-specific reason not stated</td><td><a href="https://www.kotakneo.com/news/market-news/market-wrap-18-november-2026-profit-booking-and-a-drag-in-metal-stocks-pull-benchmarks-down/" target="_blank" rel="noopener">Kotak Neo</a></td></tr>
+<tr><td>Cipla, Tata Consumer, Apollo Hospitals, ITC</td><td>Nifty gainers, 18 Nov</td><td>Not stated (pharma/healthcare indices were slightly positive)</td><td><a href="https://www.kotakneo.com/news/market-news/market-wrap-18-november-2026-profit-booking-and-a-drag-in-metal-stocks-pull-benchmarks-down/" target="_blank" rel="noopener">Kotak Neo</a></td></tr>
+<tr><td>Infosys, Wipro, HCLTech</td><td>Among weakest in early trade, 19 Nov</td><td>Nifty IT -1.5% early; -1.24% on 18 Nov. Reason not stated by the source</td><td><a href="https://www.kotakneo.com/news/market-news/stock-market-update-19-november-2026-sensex-nifty/" target="_blank" rel="noopener">Kotak Neo</a></td></tr>
+<tr><td>Maruti, M&amp;M, Eicher Motors</td><td>Among early gainers, 19 Nov</td><td>Nifty Auto +2.4% early; reason not stated</td><td><a href="https://www.kotakneo.com/news/market-news/stock-market-update-19-november-2026-sensex-nifty/" target="_blank" rel="noopener">Kotak Neo</a></td></tr>
+</tbody></table></div>
+<p>I did not find a dated list of results, orders or brokerage upgrades for 19 Nov, so none are quoted.</p>
+
+<h4>c) Sector view</h4>
+<ul><li><strong>Lagged (18 Nov):</strong> Metal -2.46%, IT -1.24%, consumer durables, auto, financial services. Cause given: profit booking and weak global metal prices.</li><li><strong>Led (18 Nov):</strong> PSU Bank and Media; Pharma and Healthcare slightly up.</li><li><strong>Early 19 Nov:</strong> Auto +2.4%, PSU Bank +1.6%, Realty +0.8%, FMCG +0.7%; IT -1.5%. A reversal of the previous day for autos, which shows how fast sectors rotate.</li></ul>
+
+<h4>d) Study watchlist (education, not recommendations)</h4>
+<p><strong>Education only. These are not buy or sell calls. Returns are never guaranteed and you can lose money. A diversified index fund is a common default; for personal advice consult a SEBI-registered adviser.</strong> Valuation numbers were not found for any of these, so I do not quote them: open screener.in and fill the table yourself.</p>
+<div class="tw"><table><thead><tr><th>Stock</th><th>Why study it today (facts found)</th><th>Numbers (P/E, ROE, debt, growth)</th><th>Main risks</th><th>What would change the view</th></tr></thead><tbody>
+<tr><td>Infosys</td><td>IT index fell two sessions in a row; a brokerage note (unchecked) says Infosys deal bookings rose about 70% YoY in Q2 FY27</td><td>Not found</td><td>Sector sentiment, AI disruption fears, global demand</td><td>Next quarter's deal wins and margin vs peers; verify bookings in the company filing</td></tr>
+<tr><td>Hindalco</td><td>Among the largest Nifty losers on 18 Nov as metals fell 2.46%</td><td>Not found</td><td>Cyclical: depends on global metal prices and the dollar</td><td>Metal price trend, input costs, quarterly margins</td></tr>
+<tr><td>State Bank of India</td><td>Top Nifty gainer on 18 Nov while PSU banks outperformed</td><td>Not found</td><td>Credit quality, interest-rate cycle, PSU policy</td><td>Asset-quality and net interest margin trends in results</td></tr>
+<tr><td>Maruti Suzuki</td><td>Auto index rose about 2.4% in early trade on 19 Nov</td><td>Not found</td><td>Demand cycle, fuel prices, one-day moves reverse easily</td><td>Monthly sales data and margins; whether the early rise holds</td></tr>
+</tbody></table></div>
+<p>How to study: pick one stock, read its last two quarterly results, compare its P/E with peers and its own history, and write down what would prove you wrong. See the "How to analyse and choose stocks (beginner guide)" below.</p>
+
+<h4>e) US, global and key events ahead</h4>
+<ul><li>US: five straight S&amp;P losses; Nvidia fell despite strong results; one outlet cites rate-hike fears for the Fed's December meeting. Fed minutes coverage for this week: not found.</li><li><strong>Anthropic (ANT):</strong> first Nasdaq trading day is 19 Nov (US time); deal closing expected 20 Nov. Offer price $83; no first-day result found yet.</li><li>RBI and India data dates for tomorrow: not found. Check the NSE/RBI calendars.</li></ul>
+
+<h4>f) 3 teaching points</h4>
+<ol><li><strong>A winning day and a losing day for the same sector:</strong> autos fell in the 18 Nov wrap's worst-hit list but jumped early on 19 Nov. One-day moves are noise; judge trends over weeks.</li><li><strong>Metals follow global prices:</strong> gold, silver and metal futures fell on 18 Nov and the Nifty Metal index fell 2.46%. Commodity-linked stocks move with commodity prices more than with company news.</li><li><strong>Two sources, two numbers:</strong> one report printed Nifty 25,277.95; the point change proved it was 25,227.95. Always check that the levels and changes agree before you trust a figure.</li></ol></article>
 <article class="entry"><h3>Market News: 18 Nov 2026 (morning IST)</h3>
 <p>Information only. Not investment advice. Numbers come from news reports; check NSE/BSE or your broker for live prices.</p>
 <h4>India (close of 17 Nov)</h4>
@@ -711,9 +798,88 @@ print(msg.content[0].text)</code></pre>
 <section id="learning">
 <h2 class="s-learn">Learning: theory + architecture (AWS and Azure)</h2>
 <p>One new topic per day. Each lesson has theory, architecture diagrams, an AWS vs Azure view, recap questions, and an AI angle. Newest lesson first.</p>
-<h3>12-day plan</h3>
-<div class='tw'><table><thead><tr><th>Day</th><th>Topic</th><th>AI angle</th><th>Status</th></tr></thead><tbody><tr><td>1</td><td>Big picture: cloud, Terraform, Docker, Kubernetes, CI/CD, scripting</td><td>Service name map; AI as an assistant in each box</td><td>Done (below)</td></tr><tr><td>2</td><td>Cloud networking (VPC vs VNet)</td><td>AI network ops, flow-log explanation</td><td>Done (below)</td></tr><tr><td>3</td><td>Identity &amp; security (IAM vs Entra + RBAC)</td><td>AI-agent identities, ITDR</td><td>Next</td></tr><tr><td>4</td><td>Compute &amp; storage</td><td>Predictive autoscaling, right-sizing</td><td></td></tr><tr><td>5</td><td>Terraform deep dive</td><td>Terraform MCP server, AI plan review</td><td></td></tr><tr><td>6</td><td>Docker deep dive</td><td>AI Dockerfile review, scanning</td><td></td></tr><tr><td>7</td><td>Kubernetes deep dive</td><td>K8sGPT, read-only agents</td><td></td></tr><tr><td>8</td><td>CI/CD deep dive</td><td>AI failure analysis in pipelines</td><td></td></tr><tr><td>9</td><td>Bash &amp; Python for DevOps</td><td>AI-assisted scripts + shellcheck</td><td></td></tr><tr><td>10</td><td>Monitoring &amp; logging</td><td>Bits AI, Davis AI, Grafana assistant</td><td></td></tr><tr><td>11</td><td>Databases &amp; managed services</td><td>NL-to-SQL, tuning, safe access</td><td></td></tr><tr><td>12</td><td>Cost &amp; reliability</td><td>FinOps agents, SLOs, AIOps limits</td><td></td></tr></tbody></table></div>
+<h3>Learning tracks</h3>
+<div class='tw'><table><thead><tr><th>Tool</th><th>Next topic</th><th>Topics done</th></tr></thead><tbody><tr><td>AWS</td><td>IAM users, roles, policies</td><td>1</td></tr><tr><td>Azure</td><td>Entra ID and RBAC</td><td>1</td></tr><tr><td>Docker</td><td>Images and layers</td><td>1</td></tr><tr><td>Kubernetes</td><td>Pods</td><td>1</td></tr><tr><td>Terraform</td><td>State and drift</td><td>1</td></tr><tr><td>CI/CD</td><td>Pipeline stages</td><td>1</td></tr><tr><td>AI</td><td>Prompting basics</td><td>1</td></tr></tbody></table></div>
 <!-- NEW-LESSON-HERE -->
+<article class="lesson" id="lesson-2026-11-19"><h3>Daily lesson, 19 Nov 2026</h3>
+<p>Seven short blocks, one per tool. Each has four parts: what it is, why it matters, how it works, and how to use AI with it. Facts are from long-standing official documentation; open the links to confirm details.</p>
+
+<h4><span class="ol og-aws" role="img" aria-label="aws icon"></span>AWS: accounts, regions, AZs, Organizations</h4>
+<p><strong>What it is:</strong> An AWS <em>account</em> is the basic container for your resources and bills. A <em>Region</em> is a geographic area (for example Mumbai, <code>ap-south-1</code>). An <em>Availability Zone (AZ)</em> is one or more separate data centers inside a Region. <em>AWS Organizations</em> groups many accounts under one management account.</p>
+<p><strong>Why it matters:</strong> Accounts are the strongest isolation boundary (security and cost). Spreading across AZs keeps your app running if one data center fails.</p>
+<p><strong>How it works:</strong></p>
+<pre><code>Organization (management account)
+ ├─ OU: prod  ── account: app-prod
+ └─ OU: dev   ── account: app-dev
+Region ap-south-1
+ ├─ AZ a   ├─ AZ b   └─ AZ c   (separate failure domains)</code></pre>
+<p><strong>How to use AI with it:</strong> Prompt: "Suggest an AWS Organizations layout with OUs for prod, dev and security for a 10-person team, and explain why each account exists." <em>Safety tip:</em> never paste access keys or account IDs of production into a chat; ask for a design, then apply it yourself.</p>
+<p>Docs: <a href="https://docs.aws.amazon.com/organizations/latest/userguide/orgs_introduction.html">What is AWS Organizations</a> · <a href="https://aws.amazon.com/about-aws/global-infrastructure/regions_az/">Regions and Availability Zones</a></p>
+
+<h4><span class="ol og-azure" role="img" aria-label="azure icon"></span>Azure: tenants, subscriptions, resource groups</h4>
+<p><strong>What it is:</strong> A <em>tenant</em> is your organization's identity space (Microsoft Entra ID). A <em>subscription</em> is a billing and access boundary inside it. A <em>resource group</em> is a folder for related resources (VMs, databases) that share a life cycle. <em>Management groups</em> sit above subscriptions.</p>
+<p><strong>Why it matters:</strong> You apply policy, access (RBAC) and budgets at these levels, so a good layout saves you from messy permissions later.</p>
+<p><strong>How it works:</strong></p>
+<pre><code>Tenant (Entra ID)
+ └─ Management group
+     └─ Subscription
+         └─ Resource group
+             └─ Resource (VM, storage, ...)</code></pre>
+<p><strong>How to use AI with it:</strong> Prompt: "Compare an Azure subscription-per-environment layout with a single subscription and resource groups. List pros and cons for a small team." <em>Safety tip:</em> AI may mix up AWS and Azure terms (an AWS account is closest to an Azure subscription); check against the docs.</p>
+<p>Docs: <a href="https://learn.microsoft.com/azure/cloud-adoption-framework/ready/azure-setup-guide/organize-resources">Organize Azure resources</a></p>
+
+<h4><span class="logo lg-docker" role="img" aria-label="docker logo"></span>Docker: containers vs VMs</h4>
+<p><strong>What it is:</strong> A container packages an app and its libraries and runs as an isolated process on the host's kernel. A virtual machine runs a full guest operating system on a hypervisor.</p>
+<p><strong>Why it matters:</strong> Containers start in seconds, use less memory and run the same on a laptop and a server. The trade-off is weaker isolation than a VM because the kernel is shared.</p>
+<p><strong>How it works:</strong></p>
+<pre><code>VM:         App | Guest OS | Hypervisor | Hardware
+Container:  App + libs | Container runtime | Host OS kernel | Hardware</code></pre>
+<p><strong>How to use AI with it:</strong> Prompt: "Explain in five lines why a container is not a VM, then give me a quiz of three questions." <em>Safety tip:</em> do not run commands from an AI answer with <code>--privileged</code> or by mounting the Docker socket unless you understand why.</p>
+<p>Docs: <a href="https://docs.docker.com/get-started/docker-overview/">Docker overview</a></p>
+
+<h4><span class="logo og-k8s-off ol-lg" role="img" aria-label="kubernetes logo"></span>Kubernetes: cluster architecture</h4>
+<p><strong>What it is:</strong> A cluster has a <em>control plane</em> (API server, etcd, scheduler, controller manager) that decides what should run, and <em>worker nodes</em> (kubelet, container runtime, kube-proxy) that run your Pods.</p>
+<p><strong>Why it matters:</strong> Every kubectl command, deployment and failure ends up in these parts. Knowing them makes troubleshooting faster.</p>
+<p><strong>How it works:</strong></p>
+<pre><code>kubectl ──&gt; API server ──&gt; etcd (state)
+              │  scheduler picks a node
+              ▼
+        Node: kubelet ──&gt; container runtime ──&gt; Pods</code></pre>
+<p><strong>How to use AI with it:</strong> Prompt: "Walk through what happens, step by step, when I run <code>kubectl apply -f deploy.yaml</code>." <em>Safety tip:</em> give AI tools read-only cluster access first; never share kubeconfig files or Secrets.</p>
+<p>Docs: <a href="https://kubernetes.io/docs/concepts/architecture/">Cluster architecture</a></p>
+
+<h4><span class="logo lg-terraform" role="img" aria-label="terraform logo"></span>Terraform: declarative IaC, init, plan, apply</h4>
+<p><strong>What it is:</strong> Infrastructure as Code: you write what you want (a network, a VM) in files, and Terraform works out the steps to get there. This is <em>declarative</em>, unlike a script of commands.</p>
+<p><strong>Why it matters:</strong> Changes are reviewed, repeatable and stored in Git. <code>plan</code> shows the effect before anything changes.</p>
+<p><strong>How it works:</strong></p>
+<pre><code>terraform init   -&gt; download providers
+terraform plan   -&gt; show what will change
+terraform apply  -&gt; make the change, record it in state</code></pre>
+<p><strong>How to use AI with it:</strong> Prompt: "Explain this <code>terraform plan</code> output in plain English and flag anything that destroys or replaces a resource." <em>Safety tip:</em> remove secrets and account IDs from plans before pasting; never let an AI run <code>apply</code> or <code>destroy</code> without your review.</p>
+<p>Docs: <a href="https://developer.hashicorp.com/terraform/intro">What is Terraform</a></p>
+
+<h4><span class="logo lg-gitlab" role="img" aria-label="gitlab logo"></span>CI/CD: CI vs delivery vs deployment</h4>
+<p><strong>What it is:</strong> <em>Continuous Integration</em> merges and tests code often. <em>Continuous Delivery</em> keeps every passing build ready to release with a manual approval. <em>Continuous Deployment</em> releases automatically when tests pass.</p>
+<p><strong>Why it matters:</strong> Small, frequent, tested changes are safer than big releases, and problems show up early.</p>
+<p><strong>How it works:</strong></p>
+<pre><code>commit -&gt; build -&gt; test -&gt; (approve?) -&gt; deploy
+ CI = commit..test | Delivery = + ready to deploy | Deployment = + auto deploy</code></pre>
+<p><strong>How to use AI with it:</strong> Prompt: "Here is my pipeline YAML (secrets removed). Which stages could run in parallel, and what is missing: tests, scans, approval?" <em>Safety tip:</em> review AI-edited pipeline files like any code, as they can leak secrets or widen permissions.</p>
+<p>Docs: <a href="https://docs.gitlab.com/ci/">GitLab CI/CD</a> (example tool; concepts apply to Jenkins and GitHub Actions)</p>
+
+<h4>AI: what an LLM is, tokens, context</h4>
+<p><strong>What it is:</strong> A large language model predicts the next piece of text (a <em>token</em>, roughly a word fragment) from the text before it. The <em>context window</em> is how many tokens it can consider at once, including your prompt and its answer.</p>
+<p><strong>Why it matters:</strong> Cost and limits are counted in tokens, and anything outside the context window is not seen. It can sound sure and still be wrong.</p>
+<p><strong>How it works:</strong></p>
+<pre><code>your prompt -&gt; tokens -&gt; model -&gt; next token -&gt; next token ...
+[ system + your text + earlier chat + answer ] must fit in the context window</code></pre>
+<p><strong>How to use AI with it:</strong> Prompt: "Explain what a Kubernetes Pod is in 5 lines, then list 2 things you are unsure about." <em>Safety tip:</em> check every command and fact against official docs before using it in production.</p>
+<p>Docs: <a href="https://docs.claude.com/en/docs/intro">Claude documentation</a></p>
+
+<h4>Recap questions for today</h4>
+<ol><li>What is the difference between an AWS Region and an Availability Zone, and which Azure level is closest to an AWS account?</li><li>Why does a container start faster than a VM, and what do you give up?</li><li>Which Kubernetes component stores the cluster state, and which one picks the node for a Pod?</li></ol>
+<p><strong>Tomorrow:</strong> AWS IAM, Azure Entra ID and RBAC, Docker images and layers, Kubernetes Pods, Terraform state, CI pipeline stages, prompting basics.</p>
+</article>
 <article class="lesson" id="lesson-2"><h3>Day 2: Cloud Networking (AWS VPC vs Azure VNet)</h3>
 <p><strong>Today's goal:</strong> understand how cloud networks isolate and connect your workloads, and how AWS and Azure name the same ideas.</p>
 <h4>1. Theory: what, why, how</h4>
@@ -906,16 +1072,16 @@ On-premises network</code></pre>
 <h2 class="s-today">Today: Thursday 19 Nov 2026 (IST)</h2>
 <p class="meta">This single page is updated in place every day. New entries go on top, older ones stay below. No new files are created.</p>
 <div class="grid3">
-<div class="box" style="--c:#7c3aed"><h4>🎓 Today's lesson</h4><p><strong>Day 2: Cloud networking.</strong> VPC vs VNet, subnets, firewalls and gateways on AWS and Azure.</p><p><a href="#lesson-2">Open Day 2</a> · <a href="#ai-topics">AI in each topic</a></p></div>
+<div class="box" style="--c:#7c3aed"><h4>🎓 Today's lesson</h4><p><strong>Seven tools, topic 1 each:</strong> AWS accounts/regions/AZs, Azure tenants/subscriptions, Docker containers vs VMs, Kubernetes cluster architecture, Terraform init/plan/apply, CI vs CD, what an LLM is.</p><p><a href="#lesson-2026-11-19">Open today's lesson</a> · <a href="#ai-topics">AI in each topic</a></p></div>
 <div class="box" style="--c:#0369a1"><h4>🌍 Tech highlights</h4><ul>
-<li>Anthropic IPO: trading scheduled 19 Nov; final price not found</li>
-<li>CISA KEV: new batches (Citrix, SonicWall, Cisco SD-WAN); dates unverified</li>
-<li>Cisco BroadWorks KEV deadline still 24 Nov</li>
-<li>Quiet day for verified DevOps releases</li></ul><p><a href="#log">Full daily report</a></p></div>
+<li>Anthropic IPO priced at $83 (confirmed); ANT trades from 19 Nov</li>
+<li>Node.js security release 11 Nov: 16 fixes (confirmed)</li>
+<li>Go, Rust releases; Microsoft Outlook zero-day (reported)</li>
+<li>Maersk and Vanderbilt: attacker claims unconfirmed</li></ul><p><a href="#log">Full daily report</a></p></div>
 <div class="box" style="--c:#15803d"><h4>📊 Market snapshot</h4><ul>
-<li>No 18/19 Nov India close found; last: Nifty 25,387, Sensex 82,532 (17 Nov)</li>
-<li>Anthropic (ANT) first trading day on Nasdaq</li>
-<li>Offer price is not the opening price</li></ul><p><a href="#market">Market notes + how to analyse stocks</a></p></div>
+<li>18 Nov: Sensex 82,031.81 (-0.61%), Nifty 25,227.95 (-0.63%)</li>
+<li>Metals and IT weak; PSU banks firm</li>
+<li>Study list: Infosys, Hindalco, SBI, Maruti (education only)</li></ul><p><a href="#market">Market notes + how to analyse stocks</a></p></div>
 </div>
 </section>
 
