@@ -940,7 +940,7 @@ print(msg.content[0].text)</code></pre>
 <h2 style="background:#b45309">Career and industry growth (DevOps to Senior, SRE, Architect)</h2>
 <p class="meta">Daily: industry incidents, corporate documents (HLD, LLD, SOP, RCA, DR), hands-on skills, production scenarios, AIOps, interview practice and career lessons. Weekends: revision and assessment.</p>
 <!-- ROADMAP-START -->
-<div class="box" style="--c:#b45309"><h4>8-week roadmap (you are here: Week 1, Day 1)</h4>
+<div class="box" style="--c:#b45309"><h4>8-week roadmap (you are here: Week 1, Day 2)</h4>
 <div class="tw"><table><thead><tr><th>Week</th><th>Two themes</th><th>Outcome you can show</th></tr></thead><tbody>
 <tr style="background:#fef3c7"><td><strong>W1 (19-25 Nov) ◀ you are here</strong></td><td>Linux production troubleshooting, networking, shell scripting | Git/GitHub workflows</td><td>A triage runbook and a safe production shell script; a protected-branch repo with PR rules</td></tr>
 <tr><td>W2</td><td>Jenkins + CI/CD design (GitHub Actions/GitLab CI) | Docker in production and image security</td><td>A pipeline with test, scan, build and deploy stages; a hardened multi-stage image</td></tr>
@@ -953,6 +953,332 @@ print(msg.content[0].text)</code></pre>
 </tbody></table></div></div>
 <!-- ROADMAP-END -->
 <!-- NEW-CAREER-ENTRY-HERE -->
+<article class="entry" id="career-2026-11-20"><h3>Study plan: 20 Nov 2026 (Week 1, Day 2)</h3>
+<p class="meta">Friday, no weekend assessment (the weekend assessment comes tomorrow). Classes: shell scripting for production; Git and GitHub branching, PR reviews, protected branches. Scenarios: failed deployment and rollback; cloud region unavailable. Interview: intermediate DevOps. Career: what changes at each level. AIOps: alert correlation. Recap tools today (deep): CI/CD, Docker, Kubernetes. AI pro: prompt caching, batching and cost control.</p>
+
+<h4>1. You are here (roadmap)</h4>
+<p><strong>Week 1, Day 2 of 56.</strong> Week 1 themes: (1) Linux production troubleshooting, networking and shell scripting; (2) Git/GitHub workflows. Covered so far: Day 1 Linux processes and networking triage. Today: the shell scripts that run your production changes, and the Git rules that decide what is allowed to reach production. Next: Day 3 (Saturday) is the weekend: revision of Week 1 so far, an assessment and a mini-project (a safe deploy script behind a protected-branch repo). Progress: 2/56 days, 0 weekends done. The 8-week table with the "you are here" marker is at the top of this section.</p>
+<p>Teacher's word: the shell script is where most "small" production accidents are born, and the Git history is where you prove what happened. A senior treats both as production code.</p>
+
+<h4>2. Two classes of the day</h4>
+
+<div class="box" style="--c:#b45309"><h5>Class 1: Shell scripting for production (strict mode, traps, idempotency)</h5>
+<p><strong>Objective:</strong> write a Bash script that you can run twice, that fails loudly, cleans up after itself and cannot run two copies at once.</p>
+<p><strong>Theory.</strong> Bash is glue, not a language for logic; use it for sequencing commands and switch to Python when you need data structures or tests. Production rules, in order of how often they bite. (1) <em>Strict mode</em>: <code>set -Eeuo pipefail</code>. <code>-e</code> exits on a failing command, <code>-u</code> errors on unset variables, <code>pipefail</code> makes a pipeline fail if any stage fails (otherwise <code>migrate | tee log</code> hides a migrate failure), <code>-E</code> lets the ERR trap fire inside functions. (2) <em>Know where -e is silent</em>: it is ignored inside <code>if</code> conditions, on the left of <code>&amp;&amp;</code>/<code>||</code>, and in <code>local x=$(cmd)</code> (the exit status of <code>local</code> wins; declare then assign). Greg's wiki BashFAQ/105 lists the traps; treat <code>set -e</code> as a safety net, not as error handling. (3) <em>Quote everything</em>: <code>"$var"</code>; unquoted variables split on spaces and glob. (4) <em>Guard destructive paths</em>: <code>rm -rf "${BUILD_DIR:?}/"*</code> aborts if the variable is empty, which prevents the classic <code>rm -rf /*</code>. (5) <em>Traps</em>: <code>trap cleanup EXIT</code> runs on success, failure and most signals; use <code>mktemp</code> for temp files. (6) <em>Idempotency</em>: check state before changing it (<code>mkdir -p</code>, <code>grep -q || echo &gt;&gt;</code>, "if release already deployed, exit 0"). (7) <em>Locking</em>: <code>flock</code> stops two cron or CI runs overlapping. (8) <em>Logging</em>: logs and errors to stderr with timestamps, a <code>--dry-run</code> flag, exit codes that mean something. (9) Run <strong>ShellCheck</strong> in CI; it catches most quoting and logic bugs.</p>
+<pre>
+ trigger (CI / cron / human)
+        |
+   +----v-----------------------------+
+   | lock (flock) -> validate inputs  |  fail fast, exit 2
+   | dry-run? print plan, exit 0      |
+   | do change (idempotent steps)     |  each step checks state first
+   | verify (health check)            |  fail -> rollback function
+   +----+-----------------------------+
+        v  trap EXIT: cleanup temp, release lock, log result
+</pre>
+<p><strong>In real companies.</strong> Seniors keep scripts in Git, lint them with ShellCheck, run them from CI (not laptops) with least-privilege credentials, and replace anything over about 100 lines or with real branching logic with Python or a proper tool (Ansible, Terraform). The scripts that survive are boring: small, idempotent, with <code>--dry-run</code>.</p>
+<pre>
+#!/usr/bin/env bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+readonly APP="${1:?usage: deploy.sh &lt;version&gt; [--dry-run]}"
+DRY="${2:-}"
+log() { printf '%s %s\n' "$(date -u +%FT%TZ)" "$*" &gt;&amp;2; }
+tmp="$(mktemp -d)"
+cleanup() { rc=$?; rm -rf "${tmp:?}"; log "exit rc=$rc"; }
+trap cleanup EXIT
+trap 'log "failed at line $LINENO"' ERR
+
+exec 9&gt;/var/lock/deploy.lock
+flock -n 9 || { log "another deploy is running"; exit 2; }
+
+current="$(cat /opt/app/current_version 2&gt;/dev/null || true)"
+[[ "$current" == "$APP" ]] &amp;&amp; { log "already on $APP, nothing to do"; exit 0; }
+if [[ "$DRY" == "--dry-run" ]]; then log "would deploy $APP (now $current)"; exit 0; fi
+
+retry() { local n=0; until "$@"; do ((++n&gt;=3)) &amp;&amp; return 1; sleep $((n*2)); done; }
+retry curl -fsS -o "$tmp/app.tgz" "https://artifacts.example.com/app-$APP.tgz"
+sha256sum -c &lt;(curl -fsS "https://artifacts.example.com/app-$APP.sha256") --status || { log "checksum mismatch"; exit 1; }
+# ... unpack, switch symlink, restart, health check, rollback on failure
+</pre>
+<p><strong>LAB (25 min).</strong> (1) Run <code>false | true; echo $?</code> then <code>set -o pipefail; false | true; echo $?</code> and explain the difference. (2) Write <code>f(){ local x=$(false); echo "still here"; }</code> under <code>set -e</code>; see it continue; fix with separate declare and assign. (3) Copy the sketch above, fill the missing steps with a harmless action (write a version file), run it twice (second run must say "nothing to do"), run it in two terminals at once (one must exit 2). (4) Install ShellCheck and fix every warning in your script. <strong>Success:</strong> idempotent second run, lock works, ShellCheck clean, and you can name two places where <code>set -e</code> does not protect you.</p>
+<p><strong>Assignment:</strong> take one real manual runbook step list from your job and turn it into a script with <code>--dry-run</code>, a lock and a verify step; commit it to a private repo with a ShellCheck CI job.</p>
+<p>Source: <a href="https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html" target="_blank" rel="noopener">GNU Bash manual, The Set Builtin</a> · <a href="https://mywiki.wooledge.org/BashFAQ/105" target="_blank" rel="noopener">BashFAQ/105: why set -e is unreliable</a> · <a href="https://www.shellcheck.net/" target="_blank" rel="noopener">ShellCheck</a> <span class="tag ok">Confirmed</span></p></div>
+
+<div class="box" style="--c:#b45309"><h5>Class 2: Git and GitHub: branching strategies, PR reviews, protected branches</h5>
+<p><strong>Objective:</strong> design the branch and review rules so that nothing reaches production unreviewed and tested, and recover calmly when something does.</p>
+<p><strong>Theory.</strong> Git stores snapshots; a branch is a movable pointer. Three strategies you will meet. <em>Trunk-based development</em>: short-lived branches (hours to 2 days) merged to main many times a day, unfinished work hidden behind feature flags; fits continuous delivery and is what DORA research associates with high performance. <em>GitHub flow</em>: branch, PR, review, merge to main, deploy; the common default. <em>GitFlow</em>: long-lived develop, release and hotfix branches; heavy, suits versioned products shipped to customers, painful for web services because long-lived branches mean big, risky merges. Senior view: the real variable is <strong>batch size and branch lifetime</strong>; small and frequent merges are safer than big and rare ones.</p>
+<p><strong>Merge methods.</strong> Merge commit (keeps the branch shape), squash (one commit per PR, clean main, easy to revert one unit), rebase-and-merge (linear, each commit kept). Squash is the usual choice for services because <code>git revert</code> of one commit undoes the whole PR. Reverting a merge commit needs <code>git revert -m 1 &lt;merge-sha&gt;</code> (choose the mainline parent).</p>
+<p><strong>Protection.</strong> On GitHub use branch protection or the newer <em>rulesets</em> (can be applied org-wide): require a PR, require N approvals, dismiss stale approvals on new commits, require status checks (build, test, scan) and branches up to date, require <code>CODEOWNERS</code> review for sensitive paths (<code>/terraform/</code>, <code>/.github/workflows/</code>), block force-push and deletion, require signed commits or linear history if you need it, use a <em>merge queue</em> on busy repos so main is always green, and apply the rule to admins too. Review culture: small PRs (under about 400 changed lines), a description that says why, reviewer checks behaviour, tests, security and rollback, not formatting (linters do that).</p>
+<pre>
+ feature/x --PR--> [ required: review + CI checks + CODEOWNERS ] --> main
+     ^                         | fail                                  |
+     +---- push fixes ---------+                                       v
+ hotfix: branch from main tag, same rules, revert-first culture   deploy (tag)
+ Recovery tools: git revert | git reflog | git bisect | git cherry-pick
+</pre>
+<pre>
+git switch -c feature/payment-retry
+git commit -s -m "Retry payment on 503 (max 3)"      # -s sign-off, add -S to GPG/SSH-sign
+git push -u origin HEAD &amp;&amp; gh pr create --fill
+git revert -m 1 &lt;merge-sha&gt;        # undo a merge commit safely
+git reflog                          # find a commit after a bad reset
+git bisect start; git bisect bad; git bisect good v1.4.0   # find the breaking commit
+git rebase --onto main old-base feature     # move a branch off a stale base
+git log --oneline --graph --decorate -20
+gh api repos/OWNER/REPO/branches/main/protection | head      # inspect the rules (needs admin)
+</pre>
+<p><strong>In real companies.</strong> Rules live as code (Terraform GitHub provider or org rulesets) so settings do not drift, and an "emergency bypass" exists but is logged and reviewed afterwards. The pipeline file itself is protected by CODEOWNERS: an attacker or careless developer who can edit the workflow can read your secrets.</p>
+<p><strong>LAB (25 min).</strong> (1) Create a private GitHub repo with a trivial app and a CI workflow that runs on <code>pull_request</code>. (2) Add a rule on main: PR required, 1 approval, required status check, no force-push, CODEOWNERS file requiring you on <code>/.github/</code>. (3) Try to push straight to main: observe the rejection. (4) Open a PR with a deliberate bug, merge it (squash) after green CI, then undo it with <code>git revert</code> via a new PR. (5) Practise <code>git reset --hard HEAD~2</code> on a scratch branch then recover with <code>git reflog</code>. (6) Make a bug appear across 20 commits and find it with <code>git bisect run ./test.sh</code>. <strong>Success:</strong> direct push rejected, revert PR merged, reflog recovery done, bisect found the commit.</p>
+<p><strong>Assignment:</strong> write a half-page "branch and review policy" for your team (strategy, branch lifetime, merge method, required checks, who approves what, emergency bypass) as you would propose it in an RFC.</p>
+<p>Source: <a href="https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches" target="_blank" rel="noopener">GitHub: about protected branches</a> · <a href="https://git-scm.com/docs/git-revert" target="_blank" rel="noopener">git-revert (merge commits, -m)</a> · <a href="https://trunkbaseddevelopment.com/" target="_blank" rel="noopener">Trunk Based Development</a> <span class="tag ok">Confirmed</span></p></div>
+
+<h4>3. Scenario practice</h4>
+
+<div class="box" style="--c:#b45309"><h5>Scenario A (today's tools): deployment "succeeded" but checkout is broken</h5>
+<p><strong>Symptoms.</strong> 16:05 IST: the release pipeline went green for <code>orders-api 4.13</code> (rolling update on Kubernetes, deploy done by a shell script). At 16:12 the 5xx rate climbs from 0.1% to 18%; support reports "cannot place order". The pipeline log shows a warning but exit code 0.</p>
+<pre>
+$ tail -5 deploy.log
+[16:03:41] running migrations...
+psql: error: connection to server at "orders-db" failed: timeout expired
+[16:03:56] migrations done
+[16:03:57] kubectl set image deploy/orders-api app=registry/orders-api:4.13
+[16:04:40] rollout complete
+$ kubectl logs deploy/orders-api | tail -3
+ERROR column "discount_code" of relation "orders" does not exist
+$ grep -n "migrate" deploy.sh
+41: ./migrate.sh | tee -a deploy.log
+</pre>
+<p><strong>Constraints.</strong> Rolling the image back is possible but the old code must still work with the database; the migration may be half-applied; peak sales window ends at 20:00; the deploy script runs without <code>set -e</code> and <code>pipefail</code>.</p>
+<p><strong>Questions:</strong> (1) Why was the pipeline green? (2) What do you do in the first 10 minutes, and is "roll back" safe? (3) What changes to the script, the pipeline and the release process stop this class of failure?</p>
+<details><summary>Show solution</summary>
+<p><strong>Investigation.</strong> Line 41 pipes the migration through <code>tee</code>; without <code>pipefail</code> the pipeline's exit status is that of <code>tee</code> (0), and without <code>set -e</code> the script carried on to deploy the new image. The migration never ran, so new code queries a missing column.</p>
+<pre>
+kubectl rollout history deploy/orders-api
+kubectl rollout undo deploy/orders-api            # back to 4.12 (old code, old schema: compatible)
+kubectl rollout status deploy/orders-api --timeout=120s
+psql -h orders-db -c "\d orders" | grep discount_code   # confirm the schema state
+psql -h orders-db -c "select * from schema_migrations order by version desc limit 3"
+</pre>
+<p><strong>Mitigate first.</strong> Because the migration never applied, 4.12 and the schema agree, so <code>rollout undo</code> is safe. Had the migration applied a destructive change (dropped or renamed column), rollback of code alone would break, which is why schema changes follow <em>expand and contract</em>: add the new column (compatible with old code), deploy code that uses it, and only in a later release remove the old one. After the undo, 5xx fell to baseline at 16:21.</p>
+<p><strong>Fix.</strong> Add <code>set -Eeuo pipefail</code>; run the migration as a separate pipeline stage that must pass before the deploy stage; add a post-deploy smoke test and automatic <code>rollout undo</code> if the error rate rises (progressive delivery or a verify step); migrations tested against a copy of production schema in CI.</p>
+<p><strong>Prevention.</strong> ShellCheck and a shell-strictness lint in CI; canary 10% for 10 minutes with SLO-based abort; required "rollback plan" field in the change template; backward-compatible migrations as a review rule; alert on deploy-time error-rate jump posted into the deploy channel.</p>
+<p><strong>Sample incident report (blameless RCA)</strong></p>
+<pre>
+INCIDENT REPORT: INC-2026-1120-01   Severity: SEV2   Status: Resolved
+Summary:  Release orders-api 4.13 was deployed although its DB migration failed,
+          because the deploy script ignored the failure; new code errored on a
+          missing column and checkout failed for part of the traffic.
+Impact:   16:04-16:21 IST (17 min). 5xx peaked at 18%; about 310 orders failed
+          to place (customers retried; 94 abandoned per analytics). No data loss.
+Detection: 5xx alert at 16:12 (8 min after rollout); no deploy-time check existed.
+Timeline (IST):
+  16:03 Migration step times out connecting to the DB; script logs "done".
+  16:04 Image 4.13 rolled out; pipeline green.
+  16:12 Alert: orders-api 5xx > 5%. On-call (S. Khan) acknowledges.
+  16:15 Logs show missing column; migration table confirms not applied.
+  16:17 Decision: rollback (schema unchanged, so safe). rollout undo executed.
+  16:21 5xx at baseline; incident mitigated. 16:40 closed after verification.
+Root cause: deploy.sh ran without set -e/pipefail; "./migrate.sh | tee" returned
+          0 on failure; deploy step ran regardless.
+Contributing: migration and deploy in one script; no smoke test; no canary.
+Resolution: Rolled back to 4.12; release 4.13 re-run next day after fix.
+What went well: fast diagnosis; rollback was safe and rehearsed.
+What went badly: 8 minutes to detect; green pipeline gave false confidence.
+Action items:
+  1. Strict mode + ShellCheck gate on all deploy scripts  Owner: Platform (A. Rao)  Due 27 Nov
+  2. Split migration into a gated pipeline stage          Owner: Backend (P. Shah)  Due 4 Dec
+  3. Post-deploy smoke test + auto-rollback               Owner: SRE (R. Menon)     Due 11 Dec
+  4. Expand/contract migration rule in review checklist   Owner: Eng lead (S. Iyer) Due 30 Nov
+</pre>
+</details></div>
+
+<div class="box" style="--c:#b45309"><h5>Scenario B (senior level): the cloud region is impaired</h5>
+<p><strong>Symptoms.</strong> 11:30 IST: the provider status page shows "increased error rates" in <code>ap-south-1</code> (Mumbai). Your payments platform runs there in 3 AZs. Error budget alerts fire; new EC2 launches fail; some existing instances are fine. A VP asks in the incident channel: "Should we fail over to Singapore?"</p>
+<pre>
+dashboard: ALB 5xx 4% -> 31%     RDS Multi-AZ: failover event 11:36 (in progress)
+aws autoscaling describe-scaling-activities: "Insufficient capacity" / launch failed
+aws sts get-caller-identity   -> timeouts (intermittent)
+Route 53 health check (checks api.pay.example.com) -> unhealthy 3/8 regions
+DR region ap-southeast-1: warm standby, DB cross-region replica lag 4 s
+</pre>
+<p><strong>Constraints.</strong> RPO 1 minute and RTO 30 minutes were promised to enterprise customers; failover has been tested once, 5 months ago; failing back is slow and data can diverge; the status page is vague on scope and ETA.</p>
+<p><strong>Questions:</strong> (1) What facts decide fail over or ride it out? (2) Which dependencies could stop you from executing the failover itself? (3) What do you communicate, and how often?</p>
+<details><summary>Show solution</summary>
+<p><strong>Investigation.</strong> Establish scope and what is actually broken: data plane (running instances, load balancers) versus control plane (launching, IAM, console). Check your own symptoms, not just the status page: error rate by AZ, whether the failure is one AZ (then drain it, no region failover needed) or regional.</p>
+<pre>
+aws health describe-events --region us-east-1 --filter eventStatusCodes=open   # Health API endpoint region
+# per-AZ view of the load balancer and instance health
+aws elbv2 describe-target-health --target-group-arn $TG --query 'TargetHealthDescriptions[].[Target.Id,TargetHealth.State]'
+aws rds describe-events --duration 60 --source-type db-instance
+# DR readiness: replica lag, capacity reservations, certs and secrets present in DR region
+aws rds describe-db-instances --region ap-southeast-1 --query 'DBInstances[].[DBInstanceIdentifier,StatusInfos]'
+</pre>
+<p><strong>Decision rule (agreed before the incident).</strong> Fail over when: impact is regional, customer SLO is burning faster than the RTO allows (here 31% errors, budget gone in minutes), the provider gives no ETA inside RTO, and DR readiness checks pass. Ride it out when only one AZ is affected (drain it and scale in the others), or when the failover risk (data loss from replica promotion, untested path) exceeds the outage cost. Promoting the replica ends replication; the old region's later writes can be lost (RPO) and failback is a new migration.</p>
+<p><strong>Dependencies that break failover.</strong> The control plane is often impaired when the data plane is not: if IAM, STS or the provider API fails, scripts that need new credentials or launch capacity will fail, and capacity in the DR region is not guaranteed unless reserved or already running (warm standby). Also DNS: TTL on the record (use 60 s, not 3600 s), health-check dependencies, runbooks stored in the affected region, and your CI/CD or secrets store living in the failing region. Keep break-glass credentials and the runbook outside the primary region.</p>
+<p><strong>Execution.</strong> Incident commander declares the decision with the time; freeze deploys; scale DR to full capacity first; confirm replica lag, promote, repoint DNS (weighted shift 10%, 50%, 100%), run synthetic checks, watch DB write errors. Communicate every 30 minutes on the status page and internal channel with: what we know, what we do, next update time.</p>
+<p><strong>Prevention.</strong> Quarterly game-day failover with timing; multi-AZ by default and region failover only for tier-1 services; static stability (do not need to launch capacity to survive); DR runbook and credentials outside the primary region; pre-agreed decision criteria and an owner who may press the button.</p>
+<p><strong>Sample incident report</strong></p>
+<pre>
+INCIDENT REPORT: INC-2026-1120-02   Severity: SEV1   Status: Resolved
+Summary:  Provider impairment in ap-south-1 caused elevated errors on the payments
+          platform; we failed over to ap-southeast-1 under the DR plan.
+Impact:   11:30-12:18 IST. Error rate peaked at 31% (11:42); after failover 0.4%.
+          Estimated 2,100 failed payment attempts, all retried or reversed.
+          RPO observed 6 s of replica lag (within the 1-min target); RTO 48 min
+          against a 30-min target (breached).
+Detection: Synthetic checks and ALB 5xx alerts at 11:32.
+Timeline (IST):
+  11:30 Provider reports increased error rates; our 5xx rises.
+  11:36 RDS Multi-AZ failover starts in primary; control plane launches failing.
+  11:44 IC (N. Patel) convenes bridge; scope: regional, not one AZ.
+  11:52 Decision to fail over; deploy freeze; DR scaled to full capacity.
+  12:03 Replica promoted (lag 6 s). 12:07 DNS weighted 10% -> 50% -> 100% by 12:14.
+  12:18 Errors at baseline; status page updated; incident mitigated.
+Root cause: External provider regional impairment. Our contribution to the delay:
+          DR autoscaling took 11 min (no pre-warmed capacity); runbook step to fetch
+          credentials depended on a secret store in the failed region.
+Resolution: Regional failover; failback planned after provider confirms recovery.
+What went well: pre-agreed decision rule; replica lag low; clear comms cadence.
+What went badly: RTO missed by 18 min; failback plan undocumented.
+Action items:
+  1. Keep DR at 60% warm capacity                        Owner: SRE (R. Menon)  Due 15 Dec
+  2. Replicate secrets + runbook to DR region            Owner: Platform (K. Das) Due 5 Dec
+  3. Write and test failback procedure                   Owner: DBA (V. Rao)    Due 20 Dec
+  4. Quarterly failover game day on the calendar         Owner: Eng manager (S. Iyer) Due 15 Jan
+</pre>
+</details></div>
+
+<h4>4. Interview practice (intermediate DevOps)</h4>
+<div class="box" style="--c:#b45309">
+<p><strong>Q1.</strong> Your CI pipeline takes 40 minutes and developers have started to merge without waiting. What would you do?</p>
+<details><summary>Show answer</summary>
+<p>1) Measure first: get per-stage timings from the CI tool and find the longest path; do not guess. 2) Quick wins: cache dependencies and Docker layers, use a pinned slim base image, run unit tests, lint and scans in parallel, shard slow test suites across runners, cancel superseded runs on the same branch (<code>concurrency</code>). 3) Run only what a change needs (path filters, affected-module tests), move slow end-to-end and security deep-scans to a post-merge or nightly job while keeping a fast required gate (target under 10 minutes). 4) Check runner capacity: queue time is often the real delay; use autoscaling ephemeral runners. 5) Track the median and p90 pipeline time as a metric and share it. 6) Do not remove the checks that protect main just to be fast. <em>What the interviewer is checking:</em> data-driven approach, knowledge of caching and parallelism, and a balance between speed and safety.</p></details>
+<p><strong>Q2.</strong> You find an AWS access key committed to a public GitHub repo 20 minutes ago. What do you do?</p>
+<details><summary>Show answer</summary>
+<p>1) Treat it as compromised immediately; do not first clean Git history. 2) Revoke or deactivate the key now, then check CloudTrail for what it did since the commit (new users, EC2 launches, S3 reads, region changes). 3) If activity looks suspicious, escalate to security, rotate related secrets, and follow the incident process. 4) Then remove the secret from the repo and history (<code>git filter-repo</code> or BFG), knowing that forks and caches may still hold it, so rotation is the real fix. 5) Prevention: secret scanning and push protection on GitHub, pre-commit hooks (gitleaks), short-lived credentials via OIDC and IAM roles instead of static keys, and a blameless write-up. <em>Checking:</em> revoke before cleanup, awareness that history rewriting does not un-leak, and preventive design.</p></details>
+<p><strong>Q3.</strong> A release needs a database column renamed with zero downtime. How do you do it?</p>
+<details><summary>Show answer</summary>
+<p>Use expand and contract in several releases. 1) Expand: add the new column (nullable or with default), keeping the old one. 2) Deploy code that writes to both and reads the old; backfill existing rows in batches to avoid locking. 3) Deploy code that reads the new column; verify. 4) Stop writing the old column. 5) Contract: drop the old column in a later release once no running version uses it. Each step is backward compatible so a rollback of code at any point still works; migrations are tested against a production-sized copy and run as a separate gated stage. <em>Checking:</em> understanding that code and schema deploy separately, rollback safety, and online-migration discipline.</p></details>
+</div>
+
+<h4>5. Industry pulse</h4>
+<p>Researched 20 Nov 2026. Event dates and publication dates are shown where they differ.</p>
+<ul>
+<li><strong>AWS us-east-1 DynamoDB DNS outage, 19 to 20 Oct 2025</strong> <span class="tag ok">Confirmed (AWS post-event summary; I read it through search results, not the full page)</span>. <em>What happened:</em> from 11:48 PM PDT on 19 Oct to about 2:20 PM PDT on 20 Oct, in three impact periods: DynamoDB API errors (to about 2:40 AM), EC2 launch errors (to about 1:50 PM) and Network Load Balancer connection errors (5:30 AM to 2:09 PM). <em>Root cause:</em> a latent race condition in DynamoDB's automated DNS management left an empty DNS record for the regional endpoint <code>dynamodb.us-east-1.amazonaws.com</code>; clients could not resolve the service, and dependent services (EC2 launches, load balancer health checks) failed in a cascade. <em>Impact:</em> many customer applications and AWS services in the region. <em>Prevention:</em> AWS committed to fixes and safeguards; read the summary for the exact list. <em>Lesson:</em> automation that can write an empty or wrong state needs validation and a human-reachable recovery path; a region's foundation services (DNS, DynamoDB, IAM) are hidden dependencies, so test "what if this primitive disappears" and keep break-glass access outside the region (ties to Scenario B). Source: <a href="https://aws.amazon.com/message/101925/" target="_blank" rel="noopener">AWS, summary of the DynamoDB service disruption in Northern Virginia</a>. Event 19 to 20 Oct 2025; summary published afterwards.</li>
+<li><strong>Azure Front Door global disruption, 29 to 30 Oct 2025</strong> <span class="tag warn">Reported (Microsoft preliminary review, via ThousandEyes and press; I did not read the final PIR)</span>. <em>What happened:</em> from about 15:45 UTC on 29 Oct to about 00:05 UTC on 30 Oct, Azure Front Door nodes failed to load configuration properly, causing latency, timeouts and connection errors for Microsoft services and customer sites behind it. <em>Root cause (preliminary):</em> an inadvertent tenant configuration change; one preliminary account says a defect in the deployment system let it bypass safety validation, which I could not confirm in a primary source. <em>Recovery:</em> Microsoft blocked further configuration changes and rolled back to a last known good configuration. <em>Follow-up:</em> Microsoft's networking blog describes hardening work after the event. <em>Lesson:</em> a global config push is a deployment: stage it, validate it, keep last-known-good and a way to stop all changes (Scenario A in global form). Sources: <a href="https://www.thousandeyes.com/blog/microsoft-azure-front-door-outage-analysis-october-29-2025" target="_blank" rel="noopener">ThousandEyes analysis</a> · <a href="https://techcommunity.microsoft.com/t5/azure-networking-blog/azure-front-door-resiliency-series-part-2-faster-recovery-rto/ba-p/4503091" target="_blank" rel="noopener">Microsoft Azure Networking blog</a>.</li>
+</ul>
+<p><strong>Changed since the earlier entry:</strong> the Microsoft 365 outage of 12 to 13 Nov 2026 (yesterday's item): coverage still cites the preliminary report (a latent bug, a Teams failover surge and reduced capacity, with an impact window of about 16:20 UTC on 12 Nov to 16:10 UTC on 13 Nov); I could not find the final report (due around 20 Nov) today <span class="tag warn">Reported</span>. <a href="https://www.bleepingcomputer.com/news/microsoft/microsoft-says-months-old-bug-caused-global-microsoft-365-outage/" target="_blank" rel="noopener">BleepingComputer</a>.</p>
+<p><strong>What companies expect from DevOps engineers now</strong> <span class="tag info">Direction</span> (my reading of recent incidents and hiring commentary, not hard data):</p>
+<ul><li>Safe change: staged rollouts, validation of config and automation, fast rollback, and the ability to explain blast radius.</li><li>Resilience thinking: know your dependencies (DNS, identity, region) and have tested failover, not only a diagram.</li><li>Clear communication in incidents: short updates, decisions with times, blameless write-ups.</li></ul>
+
+<h4>6. AIOps: intelligent alert correlation</h4>
+<p><strong>How it helps.</strong> One failing database can fire 60 alerts across 12 services. Correlation groups alerts by time, topology (service map, deploy events) and similarity into one incident with a probable source, so the pager shows "1 incident, suspected: orders-db latency" instead of 60 pages. Tools: PagerDuty Event Intelligence, Grafana and Datadog correlation features, Alertmanager grouping and inhibition (rule-based, free, and the place to start). <strong>Example prompt:</strong> "Here are 40 alerts fired between 16:10 and 16:14 IST with service, severity and timestamps, plus the service dependency list and the deploy log. Group them into probable incidents, name the most likely upstream cause for each group with the evidence from the data, and list one read-only check per group. Do not propose changes." <strong>Risks and guardrails:</strong> correlation can hide a second, unrelated incident inside a group; keep the raw alerts one click away; do not auto-suppress pages from model output without a rule you can read; review the grouping after each incident and tune; remove customer data before sending alerts to an external model.</p>
+
+<h4>7. Lab checklist</h4>
+<pre>
+[ ] Class 1 lab: pipefail demo, local x=$(cmd) trap, explained in your own words
+[ ] Class 1 lab: idempotent deploy script with flock and --dry-run, run twice and in parallel
+[ ] Class 1 lab: ShellCheck clean
+[ ] Class 1 assignment: one real runbook turned into a script, committed with a ShellCheck CI job
+[ ] Class 2 lab: repo with protected main, required check, CODEOWNERS, direct push rejected
+[ ] Class 2 lab: revert PR, reflog recovery, git bisect run
+[ ] Class 2 assignment: half-page branch and review policy
+[ ] Scenario A and B: answer the 3 questions before opening the solutions
+[ ] Interview Q1 to Q3: say the answers aloud in 2 minutes each
+[ ] Recap: answer the 3 recap questions
+[ ] Career action: write down your level rubric gaps (section 8)
+</pre>
+
+<h4>8. Career: what changes at each level</h4>
+<p>Teacher's lesson. Yesterday we named the shift from tasks to outcomes. Today let us make it concrete, because "be more senior" is useless advice until you can see the rubric. Most companies judge four things, and the weight moves with level.</p>
+<p><strong>Scope.</strong> Engineer: a ticket or a pipeline. Senior: a service or a whole delivery path across teams. Staff, lead or architect: a domain (all infrastructure for a product line, or the platform every team uses). <strong>Ambiguity.</strong> The engineer is given "add a health check". The senior is given "deploys are scary" and must define what scary means, measure it, choose the work and say what will not be done. <strong>Impact through others.</strong> A junior's output is what they type. A senior's output includes reviews that stop incidents, runbooks others use, templates others copy, and people they unblock. <strong>Risk judgement.</strong> The engineer asks "does it work?" The senior asks "how does it fail, how will we know, how do we undo it, who is hurt?" Look at today's scenarios: in Scenario A the engineer fixed the script; the senior also asked why a green pipeline could mean a failed migration, and moved the check into the pipeline so no future script author has to remember.</p>
+<p>War story: I once watched a brilliant engineer miss promotion two cycles in a row. Their work was excellent but always arrived as a surprise: no design note, no heads-up, no handover. Their manager could not defend what they could not see. The fix was not more code: it was a weekly written update of three lines (done, next, risk) and one short design note before every large change. Visible reasoning is part of the job at senior level.</p>
+<p>Practical rubric to self-score (1 to 5) this week: (1) I can debug a failure outside my own tools; (2) I make decisions with trade-offs written down; (3) I reduce repeat incidents, not only fix them; (4) I teach or review others weekly; (5) I tell my manager risks before they become incidents. Anything below 3 is your target for the 90-day plan in Week 8.</p>
+<p><strong>Say it like this</strong> (to a manager or CTO): "I want to move from completing tasks to owning an outcome; I'd like to own deployment safety for the orders service, with a target for failed releases and a rollback time, and I'll send you a three-line update every Friday."</p>
+<p><strong>Skill-gap action for today (10 min):</strong> score yourself 1 to 5 on the five rubric lines above, write one piece of evidence per line, and circle the lowest score.</p>
+
+<h4>9. Daily recap of all your tools</h4>
+<div class="tw"><table><thead><tr><th>Tool</th><th>Remember today</th><th>Command or config</th><th>Official doc</th></tr></thead><tbody>
+<tr><td>Linux and shell</td><td>SIGTERM can be caught for graceful stop; SIGKILL cannot, so send TERM first, then KILL.</td><td><code>kill -TERM $PID; sleep 10; kill -KILL $PID</code></td><td><a href="https://man7.org/linux/man-pages/man7/signal.7.html" target="_blank" rel="noopener">signal(7)</a></td></tr>
+<tr><td>Git/GitHub</td><td>The reflog records where HEAD has been, so "lost" commits are usually recoverable for weeks.</td><td><code>git reflog</code></td><td><a href="https://git-scm.com/docs/git-reflog" target="_blank" rel="noopener">git-reflog</a></td></tr>
+<tr><td>Jenkins</td><td>Set a build timeout so a hung step cannot hold an agent forever.</td><td><code>options { timeout(time: 30, unit: 'MINUTES') }</code></td><td><a href="https://www.jenkins.io/doc/book/pipeline/syntax/" target="_blank" rel="noopener">Pipeline syntax</a></td></tr>
+<tr><td>CI/CD (Actions/GitLab CI)</td><td>A concurrency group cancels superseded runs, saving runner minutes and avoiding deploy races.</td><td><code>concurrency: { group: deploy-${{ github.ref }}, cancel-in-progress: true }</code></td><td><a href="https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions" target="_blank" rel="noopener">Workflow syntax</a></td></tr>
+<tr><td>Docker</td><td>Use exec-form ENTRYPOINT so your app is PID 1 and receives SIGTERM from docker stop.</td><td><code>ENTRYPOINT ["./app"]</code></td><td><a href="https://docs.docker.com/reference/dockerfile/#entrypoint" target="_blank" rel="noopener">Dockerfile ENTRYPOINT</a></td></tr>
+<tr><td>Kubernetes</td><td>On delete, a pod gets SIGTERM, then SIGKILL after terminationGracePeriodSeconds (default 30).</td><td><code>kubectl get pod p -o jsonpath='{.spec.terminationGracePeriodSeconds}'</code></td><td><a href="https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination" target="_blank" rel="noopener">Pod termination</a></td></tr>
+<tr><td>Terraform</td><td>State lists what Terraform manages; check it before importing or removing resources.</td><td><code>terraform state list</code></td><td><a href="https://developer.hashicorp.com/terraform/cli/commands/state/list" target="_blank" rel="noopener">state list</a></td></tr>
+<tr><td>AWS</td><td>Prefer IAM roles (temporary credentials via STS) over long-lived access keys.</td><td><code>aws sts get-caller-identity</code></td><td><a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html" target="_blank" rel="noopener">IAM roles</a></td></tr>
+<tr><td>Azure</td><td>Role assignments are inherited down the scope: management group, subscription, resource group, resource.</td><td><code>az role assignment list --all -o table</code></td><td><a href="https://learn.microsoft.com/en-us/azure/role-based-access-control/overview" target="_blank" rel="noopener">Azure RBAC</a></td></tr>
+<tr><td>GCP</td><td>Service accounts are workload identities; avoid downloaded JSON keys, use attached identities.</td><td><code>gcloud iam service-accounts list</code></td><td><a href="https://cloud.google.com/iam/docs/service-account-overview" target="_blank" rel="noopener">Service accounts</a></td></tr>
+<tr><td>Ansible</td><td>Inventory groups and host_vars decide which hosts and settings a play uses; limit runs with --limit.</td><td><code>ansible-playbook site.yml --limit web1 --check</code></td><td><a href="https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html" target="_blank" rel="noopener">Inventory guide</a></td></tr>
+<tr><td>Prometheus and Grafana</td><td>Counters only go up and reset on restart; always wrap them in rate() or increase().</td><td><code>increase(http_requests_total[1h])</code></td><td><a href="https://prometheus.io/docs/concepts/metric_types/" target="_blank" rel="noopener">Metric types</a></td></tr>
+<tr><td>ELK/OpenSearch</td><td>Use lifecycle policies (ISM in OpenSearch) to roll over and delete old indices automatically.</td><td><code>GET _plugins/_ism/policies</code></td><td><a href="https://opensearch.org/docs/latest/im-plugin/ism/index/" target="_blank" rel="noopener">Index State Management</a></td></tr>
+<tr><td>Python for DevOps</td><td>Use a virtual environment per project and pin dependencies so scripts run the same everywhere.</td><td><code>python3 -m venv .venv &amp;&amp; . .venv/bin/activate</code></td><td><a href="https://docs.python.org/3/library/venv.html" target="_blank" rel="noopener">venv</a></td></tr>
+<tr><td>GitOps (Argo CD/Helm)</td><td>Helm keeps release revisions, so a bad chart upgrade can be rolled back to a known revision.</td><td><code>helm history myapp; helm rollback myapp 3</code></td><td><a href="https://helm.sh/docs/helm/helm_rollback/" target="_blank" rel="noopener">helm rollback</a></td></tr>
+<tr><td>DevSecOps</td><td>A secret deleted from Git still lives in history and forks; rotate it, then scan for more.</td><td><code>gitleaks detect --source .</code></td><td><a href="https://github.com/gitleaks/gitleaks" target="_blank" rel="noopener">gitleaks</a></td></tr>
+<tr><td>SRE (SLI/SLO)</td><td>Alert on SLO burn rate (symptoms users feel), not on every cause such as CPU.</td><td><code>burn rate 14.4 over 1h = 2% of a 30-day budget</code></td><td><a href="https://sre.google/workbook/alerting-on-slos/" target="_blank" rel="noopener">Alerting on SLOs</a></td></tr>
+<tr><td>FinOps/Platform</td><td>Costs cannot be allocated to untagged resources; enforce tags at creation, not afterwards.</td><td><code>aws resourcegroupstaggingapi get-resources --tag-filters Key=team</code></td><td><a href="https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/cost-alloc-tags.html" target="_blank" rel="noopener">Cost allocation tags</a></td></tr>
+<tr><td>AI in DevOps</td><td>State the task, the context and the limits (read-only, cite evidence); vague prompts give vague answers.</td><td><code>prompt: "Cite the log line behind each hypothesis."</code></td><td><a href="https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/be-clear-and-direct" target="_blank" rel="noopener">Be clear and direct</a></td></tr>
+</tbody></table></div>
+
+<h5>CI/CD: a pipeline is a promotion path for one artifact</h5>
+<p><strong>What it is:</strong> stages that move a single built artifact toward production. <strong>Why it matters:</strong> if you rebuild per environment you deploy something you never tested. <strong>How it works:</strong></p>
+<pre>commit -> build once -> unit tests -> scan -> artifact (tag = git sha)
+                                         |-> deploy dev -> staging (smoke) -> prod (approval, canary)</pre>
+<p>Promote the same immutable image digest through environments; only configuration changes. Gate production on approvals and a rollback step. <strong>AI prompt:</strong> "Review this workflow YAML: does it build once and promote the same artifact? List pinned and unpinned actions."</p>
+
+<h5>Docker: layers and the build cache</h5>
+<p><strong>What it is:</strong> an image is a stack of read-only layers, one per Dockerfile instruction. <strong>Why it matters:</strong> order decides build speed and image size. <strong>How it works:</strong></p>
+<pre>FROM python:3.12-slim      # layer 1 (base)
+COPY requirements.txt .    # layer 2: changes rarely
+RUN pip install -r requirements.txt   # cached while layer 2 unchanged
+COPY . .                   # layer 4: changes every commit</pre>
+<p>Put rarely changing steps first, so a code change reuses the dependency layer. A changed layer invalidates every layer after it. Use <code>.dockerignore</code> to keep <code>.git</code> and secrets out of the build context. <strong>AI prompt:</strong> "Reorder this Dockerfile for best cache use and explain each move."</p>
+
+<h5>Kubernetes: how a Deployment rolls out</h5>
+<p><strong>What it is:</strong> a Deployment manages ReplicaSets to move pods from the old version to the new. <strong>Why it matters:</strong> bad probes or limits turn a rolling update into an outage. <strong>How it works:</strong></p>
+<pre>Deployment -> new ReplicaSet (v2) scales up
+           -> old ReplicaSet (v1) scales down
+   maxSurge / maxUnavailable bound the pace; readiness probe gates traffic</pre>
+<p>A new pod receives traffic only when its readiness probe passes; <code>kubectl rollout status</code> waits, and <code>kubectl rollout undo</code> returns to the previous ReplicaSet. Set <code>maxUnavailable: 0</code> for zero-capacity-loss updates. <strong>AI prompt:</strong> "Explain why this rollout is stuck from the output of kubectl describe deploy and the pod events; give read-only checks."</p>
+
+<p><strong>Recap questions</strong></p>
+<p>1. A pipeline step runs <code>./migrate.sh | tee log</code> and the migration fails but the job is green. Why, and what is the fix?</p>
+<details><summary>Show answer</summary><p>Without <code>pipefail</code> a pipeline returns the last command's status (tee, 0). Use <code>set -o pipefail</code> (or <code>set -Eeuo pipefail</code>) and run the migration as its own gated stage.</p></details>
+<p>2. Why does ordering COPY of the dependency file before COPY of the source speed up Docker builds?</p>
+<details><summary>Show answer</summary><p>Layers are cached until an instruction or its inputs change; the dependency layer stays valid when only source changes, so the slow install step is reused.</p></details>
+<p>3. During a rolling update new pods are Running but receive no traffic and the rollout stalls. What do you check first?</p>
+<details><summary>Show answer</summary><p>The readiness probe (path, port, timing) via <code>kubectl describe pod</code> events; pods only join the Service endpoints when ready. Then check <code>kubectl rollout status</code> and logs, and undo if the new version is unhealthy.</p></details>
+
+<h4>10. AI pro: prompt caching, batching and cost control</h4>
+<p><strong>Concepts.</strong> LLM cost is mostly tokens in and out. Three levers: (1) <em>prompt caching</em>: the provider stores the processed prefix of your prompt (system rules, tool definitions, a large runbook or document) so later requests that begin with the identical prefix are billed at a reduced rate for those tokens and respond faster; (2) <em>batch processing</em>: submit many non-urgent requests asynchronously for a lower price (for example overnight log classification); (3) <em>right-sizing</em>: use a smaller model for easy steps, cap output length, trim inputs.</p>
+<p><strong>Design pattern.</strong> Order the prompt from most stable to most volatile, because caching matches an exact prefix: any change early in the prompt invalidates everything after it.</p>
+<pre>
+[ tools + system rules ]  stable   \  cache breakpoint here
+[ runbook / reference docs ] stable /  (identical across requests)
+[ incident-specific logs ]   changes every request  (not cached)
+[ user question ]            changes
+route: easy classification -> small model (batch, nightly)
+       live incident help  -> larger model (synchronous, cached prefix)
+</pre>
+<p><strong>Code sketch</strong> (Anthropic Python SDK; check the docs for current field names and minimum cacheable lengths):</p>
+<pre>
+import anthropic
+client = anthropic.Anthropic()          # key from environment, never in code
+resp = client.messages.create(
+    model="claude-sonnet-5-5", max_tokens=600,
+    system=[{"type": "text", "text": RUNBOOK_TEXT,
+             "cache_control": {"type": "ephemeral"}}],   # cache the stable prefix
+    messages=[{"role": "user", "content": f"Logs:\n{redacted_logs}\nWhat failed?"}],
+)
+u = resp.usage
+print(u.input_tokens, u.cache_creation_input_tokens, u.cache_read_input_tokens)
+</pre>
+<p><strong>Trade-offs.</strong> Caching has a time-to-live (minutes, refreshed on use; longer options exist), so it pays off only with repeated, close-in-time requests; a cache write can cost a little more than a normal input, so a prompt used once gains nothing. Batches trade latency (results within hours) for price, so they suit offline work, not on-call help. Smaller models are cheaper but less reliable on reasoning; measure on your golden set before switching.</p>
+<p><strong>Failure modes.</strong> Putting a timestamp or request ID at the top of the prompt, which silently breaks cache hits (watch the cache-read counter, expect near zero if broken); caching content that includes secrets or customer data; unbounded output; retry storms that multiply cost; batch jobs with no result validation.</p>
+<p><strong>Evaluation, security, cost.</strong> Log per request: input, cache-read, cache-write and output tokens, latency and cost, and alert on cost per request drifting up. Keep a golden set so a cheaper model or a changed prompt cannot lower quality unnoticed. Cached prompts are still sent to the provider: apply the same redaction and data-handling rules. Set per-team budgets and rate limits at your gateway (a later AI pro topic). Check current prices and cache rules on the provider pages before you plan a budget. Sources: <a href="https://docs.claude.com/en/docs/build-with-claude/prompt-caching" target="_blank" rel="noopener">Anthropic: prompt caching</a> · <a href="https://docs.claude.com/en/docs/build-with-claude/batch-processing" target="_blank" rel="noopener">Anthropic: batch processing</a> <span class="tag ok">Confirmed</span> (concepts; I did not re-verify current prices or limits today).</p>
+</article>
+
 <article class="entry" id="career-2026-11-19"><h3>Study plan: 19 Nov 2026 (Week 1, Day 1)</h3>
 <p class="meta">Thursday, no weekend assessment. Classes: Linux processes and troubleshooting; Linux networking. Scenarios: production server down; Kubernetes node NotReady. Interview: basic DevOps. Career: the roadmap. AIOps: log analysis. Recap tools today (deep): Linux, Git, Jenkins. AI pro: transformer and attention.</p>
 
