@@ -120,10 +120,67 @@ footer{margin-top:3em;color:var(--mut);font-size:.85rem;text-align:center}
 
 <section id="log">
 <h2 class="s-log">Daily log: intelligence reports (newest first)</h2>
-<p class="logidx"><strong>Read the whole report:</strong> <a href="#d-2026-11-19" class="rd">Thu 19 Nov 2026 →</a><a href="#d-2026-11-18" class="rd">Wed 18 Nov 2026 →</a> <a href="#d-2026-11-17" class="rd">Tue 17 Nov 2026 →</a></p>
+<p class="logidx"><strong>Read the whole report:</strong> <a href="#d-2026-11-20" class="rd">Fri 20 Nov 2026 →</a><a href="#d-2026-11-19" class="rd">Thu 19 Nov 2026 →</a><a href="#d-2026-11-18" class="rd">Wed 18 Nov 2026 →</a> <a href="#d-2026-11-17" class="rd">Tue 17 Nov 2026 →</a></p>
 <!-- NEW-LOG-INDEX-ABOVE -->
 <!-- NEW-LOG-ENTRY-HERE -->
-<details open class="day" id="d-2026-11-19"><summary class="big">Thu 19 Nov 2026 <span class="hint">(click to open / close the full report)</span></summary><div class="entry">
+<details open class="day" id="d-2026-11-20"><summary class="big">Fri 20 Nov 2026 <span class="hint">(click to open / close the full report)</span></summary><div class="entry">
+
+<p class="meta"><strong>Date:</strong> Friday, 20 Nov 2026 (IST) · <strong>Research:</strong> about 17 searches; the search index returned almost nothing dated 19–20 Nov, so this entry is short and mostly confirms or corrects earlier items ·
+Labels: <span class="tag ok">Confirmed</span><span class="tag warn">Reported</span><span class="tag bad">Unverified</span><span class="tag info">Direction</span></p>
+<div class="note"><strong>Honest limits:</strong> I could not open primary pages in this run; items come from search results. Anything marked Reported should be checked on the original page before you act.</div>
+
+<h4>1. Top developments of the day</h4>
+<ol>
+<li><span class="tag warn">Reported</span> <strong>Anthropic (ANT) debut:</strong> Nasdaq's trader notice lists 19 Nov as first trading day; offer price $83 (confirmed 18 Nov). <em>First-day open/close: not found.</em> Why it matters: a big AI-vendor listing shapes sentiment for AI and IT-services stocks. <a href="https://www.anthropic.com/news/anthropic-prices-initial-public-offering">Anthropic release</a></li>
+<li><span class="tag ok">Confirmed</span> <strong>Node.js security release (11 Nov):</strong> 26.13.1, 24.22.3, 22.23.5 fix 16 advisories; Node 20 and older get nothing. Patch your base images. <a href="https://nodejs.org/en/blog/vulnerability/november-2026-security-releases">Node.js</a></li>
+<li><span class="tag warn">Reported</span> <strong>Chrome zero-day CVE-2026-125350:</strong> CISA listed a Chromium use-after-free as exploited on 10 Nov; CERT-In CIVN-2026-0544 (critical) says update to 157.0.8103.50 or later. Why: browsers on dev laptops and CI agents. <a href="https://content.govdelivery.com/accounts/USDHSCISA/bulletins/4325e4d">CISA bulletin</a></li>
+<li><span class="tag warn">Reported</span> <strong>Outlook zero-day CVE-2026-124194</strong> is in the same 10 Nov CISA KEV batch (with Cisco BroadWorks CVE-2026-20320 and a Barracuda command injection). Apply the November updates. <a href="https://content.govdelivery.com/accounts/USDHSCISA/bulletins/4325e4d">CISA bulletin</a></li>
+<li><span class="tag warn">Reported</span> <strong>Go 1.27.4 / 1.26.11</strong> security releases (10 Nov): rebuild binaries, not just the toolchain. <a href="https://www.openwall.com/lists/oss-security/2026/11/10/28">oss-security</a></li>
+<li><span class="tag warn">Reported</span> <strong>Ingress-nginx CVE-2026-116472:</strong> no fix, project retired; use an admission rule or move to Gateway API. <a href="https://www.openwall.com/lists/oss-security/2026/11/05/4">oss-security</a></li>
+<li><span class="tag warn">Reported</span> <strong>Nvidia CEO change (event 12 Nov):</strong> Jensen Huang left as CEO and board member; CFO Colette Kress is interim CEO; shares fell about 4.3% that day (Reuters-syndicated). Why: AI-stock mood moves Nifty IT. <a href="https://www.devdiscourse.com/article/international/4006189-us-stocks-equities-close-lower-as-nvidia-drop-outweighs-energy-gains">Reuters via Devdiscourse</a></li>
+</ol>
+
+<h4>2. Programming languages and runtimes</h4>
+<ul>
+<li><span class="tag ok">Confirmed</span> Node.js release as above. <span class="tag warn">Reported</span> Go, Rust 1.100 (12 Nov), Python 3.15.0 (9 Oct), JDK 27 (15 Sep): no change since yesterday. .NET, TypeScript, Spring, Django: nothing new verified.</li>
+</ul>
+
+<h4>3. DevOps tools and cloud releases</h4>
+<div class="tw"><table>
+<tr><th>Tool</th><th>Latest version found</th><th>Date</th><th>What is new</th><th>Link</th></tr>
+<tr><td>Kubernetes</td><td>1.37 "Garhwal"</td><td>26 Aug</td><td>No new minor in November; Akamai LKE Enterprise added 1.36 support on 16 Nov, so providers still lag <span class="tag ok">Confirmed</span> (release post)</td><td><a href="https://kubernetes.io/blog/2026/08/26/Kubernetes-v1-37-release/">k8s blog</a></td></tr>
+<tr><td>Node.js</td><td>26.13.1 / 24.22.3 / 22.23.5</td><td>11 Nov</td><td>16 security fixes <span class="tag ok">Confirmed</span></td><td><a href="https://nodejs.org/en/blog/vulnerability/november-2026-security-releases">advisory</a></td></tr>
+<tr><td>Go</td><td>1.27.4 / 1.26.11</td><td>10 Nov</td><td>12 security fixes <span class="tag warn">Reported</span></td><td><a href="https://www.openwall.com/lists/oss-security/2026/11/10/28">oss-security</a></td></tr>
+</table></div>
+<ul><li>Terraform, OpenTofu, Argo CD, Jenkins, Helm, Docker, Prometheus, OpenTelemetry, GitHub Actions, AWS, Azure: no change found since yesterday's table. AWS re:Invent starts 30 Nov.</li></ul>
+
+<h4>4. Cybersecurity</h4>
+<ul>
+<li><span class="tag ok">Confirmed</span> CISA KEV, 10 Nov: six entries (Cisco BroadWorks, Barracuda, Outlook, Chromium, Openwave). 9 Nov: four entries (GPUStack, FreeSWITCH, OpenSSH, IBM Aspera Faspex), due 12 Nov per a third-party report. Check the KEV catalog for due dates. <a href="https://content.govdelivery.com/accounts/USDHSCISA/bulletins/4325e4d">CISA</a></li>
+<li><span class="tag warn">Reported</span> Supply chain: Corgea counted eight malicious package clusters across crates.io, PyPI, npm and RubyGems for 5–9 Nov (for example PyPI <code>dynamic-mcp</code>). Vendor data. <a href="https://corgea.com/research/dynamic-mcp-labelearthengine-api-reqnest-mcp-teamviewer-pypi-november-2026">Corgea</a></li>
+<li><span class="tag warn">Reported</span> India: CERT-In rated the eMudhra emBridge flaw low (note about 13 Nov; eMudhra says it removed the endpoints on 11 Nov). <a href="https://inc42.com/?p=580531">Inc42</a></li>
+<li><span class="tag bad">Claimed</span> Maersk (WhiteArmor, $5M) and Vanderbilt (BYOD group): no new confirmation found.</li>
+</ul>
+
+<h4>5. AI and AI-in-DevOps</h4>
+<ul><li><span class="tag bad">Unverified</span> "GPT-6.2" and "Gemini 4 Neon/Argon" remain aggregator-only; no vendor page found. <span class="tag warn">Reported</span> Ignite agent news (ARM MCP server, Azure SRE Agent) unchanged. <span class="tag info">Direction</span> start agents read-only.</li></ul>
+
+<h4>6. Global IT industry</h4>
+<ul><li><span class="tag warn">Reported</span> US 17 Nov: S&amp;P 500 7,340.53 (-1.03%), Nasdaq 24,328.38 (-0.74%) as Nvidia earnings were awaited; the 18 Nov close is in yesterday's entry. 19 Nov US close: not found. <a href="https://biz.heraldcorp.com/article/10935718">Herald Corp</a></li><li>Layoffs, data centers: no new verified item.</li></ul>
+
+<h4>7. India IT</h4>
+<ul><li><span class="tag warn">Reported</span> Nifty IT stayed weak (-1.24% on 18 Nov, about -1.5% early 19 Nov); no company-specific reason found. TCS, Infosys, Wipro, HCLTech: no dated announcement for 19–20 Nov found.</li></ul>
+
+<h4>8. What changed since yesterday</h4>
+<ul><li>New: Chrome zero-day detail (CISA/CERT-In), Nvidia CEO exit context, eMudhra note date.</li><li>Not found: ANT first-day result, India close for 19 Nov, any new tool releases.</li></ul>
+
+<h4>9. Top 5 things to watch tomorrow</h4>
+<ol><li>ANT first-day close and deal closing.</li><li>CISA KEV additions and due dates.</li><li>Does the Nifty IT slide stop?</li><li>Fed and rate-hike talk (US 10-year yield about 5.1% on 12 Nov).</li><li>Kubernetes 1.38 (reported for 16 Dec) and re:Invent previews.</li></ol>
+
+<h4>10. Sources</h4>
+<ul><li><a href="https://content.govdelivery.com/accounts/USDHSCISA/bulletins/4325e4d">CISA KEV bulletin</a></li><li><a href="https://nodejs.org/en/blog/vulnerability/november-2026-security-releases">Node.js advisory</a></li><li><a href="https://kubernetes.io/blog/2026/08/26/Kubernetes-v1-37-release/">Kubernetes 1.37</a></li><li><a href="https://www.anthropic.com/news/anthropic-prices-initial-public-offering">Anthropic IPO release</a></li><li><a href="https://inc42.com/?p=580531">Inc42 on CERT-In</a></li></ul>
+</div></details>
+<details class="day" id="d-2026-11-19"><summary class="big">Thu 19 Nov 2026 <span class="hint">(click to open / close the full report)</span></summary><div class="entry">
 
 <p class="meta"><strong>Date:</strong> Thursday, 19 Nov 2026 (IST) · <strong>Period:</strong> ~9–19 Nov (event dates shown per item) · <strong>Research:</strong> earlier runs plus about 20 more searches and 5 page reads in this later re-run (updated about 14:30 IST) ·
 Labels: <span class="tag ok">Confirmed</span><span class="tag warn">Reported</span><span class="tag bad">Unverified</span><span class="tag info">Direction</span></p>
@@ -533,6 +590,46 @@ print(r.json())</code></pre>
 <section id="market">
 <h2 class="s-mkt">Market learning (information, not investment advice)</h2>
 <!-- NEW-MARKET-ENTRY-HERE -->
+<article class="entry"><h3>Market News: 20 Nov 2026 (IST)</h3>
+<p>Information only. Not investment advice. <strong>Honest limit:</strong> my searches found no closing report for 19 Nov 2026 and no 20 Nov data, so the latest close below is 18 Nov. Words: <em>Index</em> = a scoreboard basket of shares (Nifty 50 = 50 large NSE companies; Sensex = 30 large BSE companies). <em>FII</em> = foreign institutional investors; <em>DII</em> = domestic institutions.</p>
+
+<h4>a) Plain-words summary</h4>
+<ul>
+<li>India rose on 16 and 17 Nov (nine-month high on 17 Nov, Nifty 25,387.40), then fell about 0.6% on 18 Nov on profit booking and weak metals.</li>
+<li>Software (IT) shares stayed weak; I found no company-specific reason.</li>
+<li>19 and 20 Nov closes: not found. Do not treat any number here as today's.</li>
+</ul>
+
+<h4>b2) Start-to-end table (18 Nov session: previous close to close)</h4>
+<div class="tw"><table><thead><tr><th>Name</th><th>Start (17 Nov close)</th><th>End (18 Nov close)</th><th>Change</th><th>Why</th></tr></thead><tbody>
+<tr><td>Nifty 50</td><td>25,387.40</td><td>25,227.95</td><td>-159.45 (-0.63%)</td><td>Profit booking, metals fell (Kotak prints 25,277.95; I use the figure that matches its own point fall)</td></tr>
+<tr><td>Sensex</td><td>82,532.19</td><td>82,031.81</td><td>-500.38 (-0.61%)</td><td>Same reasons</td></tr>
+<tr><td>Wipro</td><td>not found</td><td>185.14</td><td>-2.50%</td><td>IT weakness; no company reason found</td></tr>
+<tr><td>HCLTech</td><td>not found</td><td>1,344.70</td><td>-0.81%</td><td>IT weakness</td></tr>
+<tr><td>Infosys, TCS, SBI, ITC, Reliance, HDFC Bank</td><td colspan="4">prices not found (SBI and ITC were among Nifty gainers on 18 Nov)</td></tr>
+</tbody></table></div>
+<p>Example: Rs 10,000 in the Nifty at the start of 18 Nov would be about Rs 9,937 at the end (my arithmetic, -0.63%). Sources: <a href="https://www.kotakneo.com/news/market-news/market-wrap-18-november-2026-profit-booking-and-a-drag-in-metal-stocks-pull-benchmarks-down/" target="_blank" rel="noopener">Kotak Neo 18 Nov</a>, <a href="https://www.kotakneo.com/news/market-news/sensex-nifty-end-higher-as-crude-prices-fall-and-fii-buying-rises" target="_blank" rel="noopener">Kotak Neo 17 Nov</a>. Wipro and HCLTech prices come from search snippets (<span class="tag warn">Reported</span>); check <a href="https://www.nseindia.com" target="_blank" rel="noopener">NSE</a>.</p>
+
+<h4>b4) Small-cap study list</h4>
+<p>Small-cap = a smaller company (market value roughly under Rs 20,000 crore). <strong>I could not verify sales, profit, debt, promoter holding or volume for any specific small cap from dated November 2026 sources, so I name none today.</strong> A list built on guesses would be worse than none. Small caps can give higher possible gain and higher possible loss (falls of 30 to 50% happen), can be hard to sell, and can be manipulated. Keep any amount small (money you can afford to lose), buy in parts, and ask a SEBI-registered adviser.</p>
+<p>Checklist to run yourself on screener.in: (1) growth: sales and profit rising for 3+ years; (2) debt: debt/equity below about 1; (3) promoter: high holding, little pledged; (4) liquidity: daily volume large enough to exit; (5) valuation: P/E not far above peers. Skip penny stocks, circuit-limit stocks and tips from social media.</p>
+
+<h4>b3) What may happen next (1 to 4 weeks)</h4>
+<p>Nobody can predict the market; these are possibilities to learn from, not advice. No source gave support/resistance or targets, so no price zones are shown.</p>
+<ul>
+<li><strong>Nifty:</strong> Up case (more likely if foreign buying and falling crude continue, as on 16–17 Nov); Sideways (likely if IT weakness offsets banks); Down case (less likely, but possible if US tech and rate worries spread).</li>
+<li><strong>Infosys:</strong> Up if IT selling stops and deal wins are confirmed in filings; Sideways; Down if the sector slide continues (more likely while the sector is weak).</li>
+<li><strong>SBI:</strong> Up if PSU-bank buying holds; Sideways; Down if money rotates away from banks.</li>
+<li><strong>Tata Motors PV:</strong> Up if JLR stabilises (Nomura's Neutral target of Rs 287 is one analyst's view); Sideways; Down if JLR demand weakens further (loss-making quarter, so the highest risk of the four).</li>
+</ul>
+
+<h4>Other data found</h4>
+<ul><li>FII/DII: on 16 Nov FIIs net bought Rs 4,864 cr and DIIs net sold Rs 3,519 cr (provisional, via a 17 Nov report); 18 Nov: not found. India VIX (fear meter) was 15.67 on 17 Nov per <a href="https://hdfcsky.com/news/india-vix-falls-3percent-to-15-67-as-domestic-support-offsets-global-market-weakness-november-17-2026" target="_blank" rel="noopener">HDFC SKY</a>.</li><li>US 17 Nov: S&amp;P 500 7,340.53, Nasdaq 24,328.38 (Herald Corp). ANT debut result: not found.</li></ul>
+
+<h4>h) Beginner lesson: position sizing (how much to put in one stock)</h4>
+<p><strong>Position sizing</strong> means deciding how much money goes into one idea before you buy. It protects you when you are wrong, and everyone is wrong sometimes. A common rule of thumb is that no single stock should be more than about 5 to 10% of your investing money, and a risky small cap much less. Example: you have Rs 1,00,000 to invest. A 5% position is Rs 5,000. If that stock falls 40%, you lose Rs 2,000, which is 2% of your total: painful but survivable. Had you put in Rs 50,000, the same fall costs Rs 20,000. Buying in parts (say three purchases over weeks) also stops one bad day from setting your whole price. Pair this with diversification: spread across sectors and keep most money in a broad index fund or SIP. Before buying, write down the reason that would make you sell. Try it: pick a stock you follow, size a 5% position for a Rs 1,00,000 portfolio, and compute the loss if it falls 30%. Education only; no guarantees; consult a SEBI-registered adviser.</p>
+</article>
+
 <article class="entry"><h3>Market News: 19 Nov 2026 (IST)</h3>
 <p>Information only. Not investment advice. Numbers come from news reports and can differ by a point or two between outlets; check NSE/BSE or your broker for live prices. This entry was written at about 14:30 IST on 19 Nov, <strong>before the 19 Nov close</strong>, so "latest close" below means <strong>18 Nov</strong>. Words used: <em>Index</em> = a basket of shares used as a scoreboard (Nifty 50 = 50 large NSE companies; Sensex = 30 large BSE companies). <em>Bank Nifty</em> = the bank shares basket. <em>Nifty IT</em> = the software company basket. <em>India VIX</em> = a "fear meter": higher means traders expect bigger swings. <em>FII</em> = foreign institutional investors; <em>DII</em> = domestic institutions such as mutual funds and insurers.</p>
 
@@ -1487,19 +1584,19 @@ On-premises network</code></pre>
 </section>
 
 <section id="today">
-<h2 class="s-today">Today: Thursday 19 Nov 2026 (IST)</h2>
+<h2 class="s-today">Today: Friday 20 Nov 2026 (IST)</h2>
 <p class="meta">This single page is updated in place every day. New entries go on top, older ones stay below. No new files are created.</p>
 <div class="grid3">
 <div class="box" style="--c:#7c3aed"><h4>🎓 Today's lesson</h4><p><strong>Seven tools, topic 1 each:</strong> AWS accounts/regions/AZs, Azure tenants/subscriptions, Docker containers vs VMs, Kubernetes cluster architecture, Terraform init/plan/apply, CI vs CD, what an LLM is.</p><p>Plus a deep dive on Kubernetes cluster architecture and an AI Pro note on attention and context windows.</p><p><strong>Career today:</strong> architecture docs, Linux troubleshooting, server-down scenario, AI log analysis. <a href="#career-2026-11-19">Open career entry</a></p><p><a href="#lesson-2026-11-19">Open today's lesson</a> · <a href="#ai-topics">AI in each topic</a></p></div>
 <div class="box" style="--c:#0369a1"><h4>🌍 Tech highlights</h4><ul>
-<li>Anthropic IPO priced at $83 (confirmed); ANT trades from 19 Nov</li>
-<li>Node.js security release 11 Nov: 16 fixes (confirmed)</li>
-<li>Python 3.15.0 final out (9 Oct); Go, Rust releases; Microsoft Outlook zero-day (reported)</li>
-<li>Maersk and Vanderbilt: attacker claims unconfirmed</li></ul><p><a href="#log">Full daily report</a></p></div>
+<li>Anthropic IPO priced at $83; ANT listed from 19 Nov (first-day result not found)</li>
+<li>Chrome zero-day CVE-2026-125350 in CISA KEV; update to 157.0.8103.50+ (reported)</li>
+<li>Node.js security release 11 Nov: 16 fixes (confirmed); Go 1.27.4 / 1.26.11</li>
+<li>Nvidia CEO exit (12 Nov) still weighing on AI stocks (reported)</li></ul><p><a href="#log">Full daily report</a></p></div>
 <div class="box" style="--c:#15803d"><h4>📊 Market snapshot</h4><ul>
-<li>18 Nov: Sensex 82,031.81 (-0.61%), Nifty 25,227.95 (-0.63%)</li>
+<li>Latest close found, 18 Nov: Sensex 82,031.81 (-0.61%), Nifty 25,227.95 (-0.63%)</li>
 <li>Metals and IT weak; PSU banks firm</li>
-<li>Study list: SBI, ITC, Infosys, Tata Motors PV (education only); Tata Motors PV fell 8 to 9% on 16 Nov after JLR cut guidance</li><li>19 Nov close: not found in sources at re-run time</li></ul><p><a href="#market">Market notes + how to analyse stocks</a></p></div>
+<li>Study list: SBI, ITC, Infosys, Tata Motors PV (education only); Tata Motors PV fell 8 to 9% on 16 Nov after JLR cut guidance</li><li>19 and 20 Nov closes: not found</li></ul><p><a href="#market">Market notes + how to analyse stocks</a></p></div>
 </div>
 </section>
 
