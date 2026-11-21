@@ -1028,7 +1028,7 @@ print(msg.content[0].text)</code></pre>
 <h2 style="background:#b45309">Career and industry growth (DevOps to Senior, SRE, Architect)</h2>
 <p class="meta">Daily: industry incidents, corporate documents (HLD, LLD, SOP, RCA, DR), hands-on skills, production scenarios, AIOps, interview practice and career lessons. Weekends: revision and assessment.</p>
 <!-- ROADMAP-START -->
-<div class="box" style="--c:#b45309"><h4>8-week roadmap (you are here: Week 1, Day 2)</h4>
+<div class="box" style="--c:#b45309"><h4>8-week roadmap (you are here: Week 1, Day 3)</h4>
 <div class="tw"><table><thead><tr><th>Week</th><th>Two themes</th><th>Outcome you can show</th></tr></thead><tbody>
 <tr style="background:#fef3c7"><td><strong>W1 (19-25 Nov) ◀ you are here</strong></td><td>Linux production troubleshooting, networking, shell scripting | Git/GitHub workflows</td><td>A triage runbook and a safe production shell script; a protected-branch repo with PR rules</td></tr>
 <tr><td>W2</td><td>Jenkins + CI/CD design (GitHub Actions/GitLab CI) | Docker in production and image security</td><td>A pipeline with test, scan, build and deploy stages; a hardened multi-stage image</td></tr>
@@ -1041,6 +1041,423 @@ print(msg.content[0].text)</code></pre>
 </tbody></table></div></div>
 <!-- ROADMAP-END -->
 <!-- NEW-CAREER-ENTRY-HERE -->
+<article class="entry" id="career-2026-11-21"><h3>Study plan: 21 Nov 2026 (Week 1, Day 3)</h3>
+<p class="meta">Saturday, weekend assessment included. Classes: Jenkins pipelines, agents, shared libraries; CI/CD design in production (GitHub Actions, GitLab CI). Scenarios: high CPU on a server; high memory and OOM kills. Interview: Linux and networking. Career: technical skills expected per level. AIOps: automated incident detection. Recap tools today (deep): Terraform, AWS, Azure. AI pro: structured outputs and JSON schema validation.</p>
+
+<h4>1. You are here (roadmap)</h4>
+<p><strong>Week 1, Day 3 of 56 (first weekend).</strong> Week 1 themes: (1) Linux production troubleshooting, networking and shell scripting; (2) Git/GitHub workflows. Covered: Day 1 Linux processes and networking triage; Day 2 production shell scripting and Git protected branches. Today: the weekend revision and assessment (at the end of this entry), plus a preview of Week 2, because the weekend classes follow the study queue: Jenkins and CI/CD design. Treat them as a head start; we go deeper on Monday-style days in Week 2 with Docker. Next: Day 4 (Sunday), second weekend day, then Day 5 starts the Week 1 close-out. Progress: 3/56 days, 0 full weekends done (this is the first). The 8-week table with the "you are here" marker is at the top of this section.</p>
+<p>Teacher's word: on weekends we slow down. Do the labs, then take the assessment honestly with the notes closed. A score you earned is worth more than a score you read.</p>
+
+<h4>2. Two classes of the day</h4>
+
+<div class="box" style="--c:#b45309"><h5>Class 1: Jenkins in production (pipelines, agents, shared libraries)</h5>
+<p><strong>Objective:</strong> run Jenkins so that the controller stays healthy, builds run on disposable agents, pipelines are code in Git, and common logic lives in a versioned shared library.</p>
+<p><strong>Theory.</strong> Jenkins has a <em>controller</em> (UI, scheduling, job config, credentials, plugin runtime) and <em>agents</em> (where steps actually run). Rule one: set controller executors to 0, because anything running on the controller can read its secrets and its disk. Rule two: agents should be ephemeral (a Kubernetes pod or cloud VM per build), so builds do not share dirty workspaces. A <em>Pipeline</em> is a <code>Jenkinsfile</code> stored in the repository; <em>Declarative</em> syntax (<code>pipeline { stages { ... } }</code>) is the default choice for its structure and validation, <em>Scripted</em> (Groovy) is the escape hatch. A <em>Multibranch Pipeline</em> discovers branches and PRs and builds each with the Jenkinsfile on that branch.</p>
+<p>Important details that bite: Jenkins runs pipeline Groovy through the CPS interpreter, so heavy logic in Groovy is slow and its state must be serializable (the famous <code>NotSerializableException</code>); push real logic into scripts or <code>sh</code> steps. Use <code>post { always { ... } }</code> for cleanup and notifications, <code>options { timeout(...); disableConcurrentBuilds(); buildDiscarder(...) }</code> to bound resources, and <code>lock</code> or <code>milestone</code> to stop out-of-order deploys. Credentials come from the credentials store through <code>withCredentials</code> (values are masked in logs, but a script can still print them encoded, so restrict who edits Jenkinsfiles on protected branches). Plugins are your largest risk: each is code running in the controller with its own CVEs. Keep a short list, update on a schedule, and read the Jenkins security advisories.</p>
+<p><strong>Shared libraries</strong> let many repos reuse a pipeline: a Git repo with <code>vars/deployService.groovy</code> (global step) and <code>src/</code> (classes), loaded with <code>@Library('platform-lib@v1.4.0') _</code>. Pin a tag, not <code>main</code>, so a library change cannot break every pipeline at once, and test the library on a canary job first.</p>
+<pre>
+Git push -> webhook -> Controller (executors=0, config-as-code, plugins pinned)
+                            |  schedules
+                            v
+        Kubernetes: one pod agent per build (jnlp + build containers)
+                            |  stages: checkout -> test -> scan -> build image -> push -> deploy
+                            v
+              registry (image digest)   +   artifacts / test reports
+</pre>
+<p><strong>In real companies:</strong> the controller is rebuilt from code (JCasC, the Configuration as Code plugin, plus a Helm chart or container image with a plugin list), backups cover <code>JENKINS_HOME</code>, agents scale from Kubernetes, and a platform team owns the shared library with semantic versions and a changelog. Many teams are migrating simple pipelines to GitHub Actions or GitLab CI, and keep Jenkins for complex or legacy flows.</p>
+<pre>
+@Library('platform-lib@v1.4.0') _
+pipeline {
+  agent { kubernetes { yamlFile 'ci/pod.yaml' } }
+  options { timeout(time: 30, unit: 'MINUTES'); disableConcurrentBuilds(); buildDiscarder(logRotator(numToKeepStr: '20')) }
+  stages {
+    stage('Test')  { steps { sh 'make test' } }
+    stage('Build') { steps { sh 'make image TAG=$GIT_COMMIT' } }
+    stage('Deploy'){ when { branch 'main' }
+                     steps { deployService(env: 'staging', image: "app:${env.GIT_COMMIT}") } }
+  }
+  post { always { junit 'reports/*.xml'; cleanWs() } }
+}
+</pre>
+<p><strong>LAB (45 min):</strong> run Jenkins in Docker (<code>docker run -p 8080:8080 jenkins/jenkins:lts-jdk17</code>), set built-in node executors to 0, add one agent container, create a Multibranch job on a test repo with the Jenkinsfile above (swap the deploy step for an <code>echo</code>), then break a test and confirm the junit report and the timeout work. Success: the build runs on the agent, the failed stage is visible, the workspace is cleaned. <strong>ASSIGNMENT:</strong> create a tiny shared library with one step <code>notifyBuild()</code>, tag it v1.0.0, load it pinned, then change it in v1.1.0 and prove the old pipeline still uses v1.0.0.</p>
+<p>Sources: <a href="https://www.jenkins.io/doc/book/pipeline/" target="_blank" rel="noopener">Jenkins Pipeline book</a> · <a href="https://www.jenkins.io/doc/book/pipeline/shared-libraries/" target="_blank" rel="noopener">Shared Libraries</a> · <a href="https://www.jenkins.io/doc/book/managing/security/" target="_blank" rel="noopener">Securing Jenkins</a> <span class="tag ok">Confirmed</span></p>
+</div>
+
+<div class="box" style="--c:#b45309"><h5>Class 2: CI/CD design in production (GitHub Actions and GitLab CI)</h5>
+<p><strong>Objective:</strong> design a pipeline that builds one artifact, proves it, and promotes the same artifact to production without long-lived cloud keys.</p>
+<p><strong>Theory.</strong> Good pipeline design has five rules. (1) <em>Build once, promote the digest</em>: tag by git SHA, deploy the image digest (<code>app@sha256:...</code>); environments differ only in configuration. (2) <em>Fast feedback first</em>: lint and unit tests in parallel in the first few minutes; slow integration and security deep-scans later or on merge, with a required gate under about ten minutes. (3) <em>Least privilege</em>: the workflow token gets <code>permissions: contents: read</code> by default and only widens per job. (4) <em>No static cloud keys</em>: use OIDC federation, where the CI job presents a short-lived signed identity token and the cloud (AWS IAM role, Azure federated credential, GCP workload identity) exchanges it for temporary credentials, restricted by repo, branch or environment claims. (5) <em>Supply-chain hygiene</em>: pin third-party actions to a full commit SHA (tags can be moved; the March 2025 compromise of the tj-actions/changed-files action showed this), and never run untrusted PR code with secrets (<code>pull_request_target</code> plus a checkout of the PR head is the classic mistake).</p>
+<p>GitHub Actions vocabulary: workflow, job, step, runner (GitHub-hosted or self-hosted), <code>environment</code> (with required reviewers and environment secrets), reusable workflows (<code>workflow_call</code>) and <code>concurrency</code>. GitLab CI equivalents: <code>.gitlab-ci.yml</code>, stages and jobs, runners (shared, group, project), <code>environment:</code> with protected environments, <code>include:</code> and CI/CD components for reuse, <code>rules:</code> for conditional jobs, and <code>id_tokens</code> for OIDC. Self-hosted runners are cheaper at scale but are your security boundary: use ephemeral runners, never attach them to public repos, and isolate per trust level.</p>
+<pre>
+PR -> [lint | unit | sast] parallel -> build image (tag=sha, SBOM, scan)
+  merge to main -> push to registry -> deploy staging (OIDC role A) -> smoke tests
+                -> prod job: environment "production" (required reviewer, OIDC role B)
+                -> canary 10% -> verify SLO -> 100%      rollback = redeploy previous digest
+</pre>
+<pre>
+name: ci
+on: { pull_request: {}, push: { branches: [main] } }
+permissions: { contents: read }
+concurrency: { group: ci-${{ github.ref }}, cancel-in-progress: true }
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@&lt;full-commit-sha&gt;   # pin by SHA
+      - run: make test
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    environment: production           # required reviewers live here
+    permissions: { id-token: write, contents: read }   # OIDC only for this job
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@&lt;full-commit-sha&gt;
+        with: { role-to-assume: arn:aws:iam::111122223333:role/ci-deploy, aws-region: ap-south-1 }
+      - run: ./deploy.sh "$IMAGE_DIGEST"
+</pre>
+<p><strong>In real companies:</strong> a platform team publishes reusable workflows or CI components ("golden pipelines") so product teams add four lines instead of copying 300; the IAM role trust policy checks the <code>sub</code> claim (for example only <code>repo:org/app:environment:production</code>), so a fork or another branch cannot assume it. Pipeline time, queue time and failure rate are tracked as metrics, because they decide whether developers trust the gate.</p>
+<p><strong>LAB (40 min):</strong> in a test repo, write the workflow above (replace the deploy with an <code>echo</code> and a fake digest), add a required check via branch protection, and add a <code>production</code> environment with yourself as reviewer. If you have a free cloud account, set up OIDC to a role that can only list one bucket and verify it with <code>aws sts get-caller-identity</code> in the job. Success: PR runs tests, main waits for approval, a second push cancels the earlier run. <strong>ASSIGNMENT:</strong> pin every action in one existing workflow to a SHA and set default <code>permissions</code> to read-only; list what broke and why.</p>
+<p>Sources: <a href="https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions" target="_blank" rel="noopener">GitHub: security hardening for Actions</a> · <a href="https://docs.github.com/en/actions/security-for-github-actions/security-guides/about-security-hardening-with-openid-connect" target="_blank" rel="noopener">GitHub: OIDC hardening</a> · <a href="https://docs.gitlab.com/ci/" target="_blank" rel="noopener">GitLab CI/CD docs</a> <span class="tag ok">Confirmed</span>. The tj-actions incident (March 2025) is documented in <a href="https://www.cisa.gov/news-events/alerts/2025/03/18/supply-chain-compromise-third-party-github-action-cve-2025-30066" target="_blank" rel="noopener">CISA's alert</a> <span class="tag ok">Confirmed</span>.</p>
+</div>
+
+<h4>3. Scenario practice</h4>
+
+<div class="box" style="--c:#b45309"><h5>Scenario A (today's tools): the Jenkins agents pegged at 100% CPU and builds crawl</h5>
+<p><strong>Situation.</strong> Saturday 14:10 IST. Release builds that took 8 minutes now take 35. The Jenkins queue shows 40 jobs waiting. Alert: "agent pool CPU above 95% for 20 minutes". Nothing was deployed to Jenkins itself; a developer merged a change to the shared library on Friday evening.</p>
+<pre>
+$ uptime
+ 14:12:03 up 21 days, load average: 38.2, 35.9, 30.1      (nproc = 8)
+$ top -b -n1 | head -12
+  PID USER  %CPU %MEM COMMAND
+ 8841 jenkins 790  2.1 java -jar agent.jar
+ 9120 jenkins 395  0.4 node /home/jenkins/ws/web/node_modules/.bin/jest
+$ ps -eo pid,etimes,cmd --sort=-%cpu | grep -c jest
+ 23
+$ mpstat -P ALL 1 1     # %usr 91  %sys 7  %iowait 0.3  %steal 0.0
+</pre>
+<p><strong>Constraints:</strong> you cannot restart the whole pool (a production release is in the queue); you may kill individual builds; the library change is already on main.</p>
+<p><strong>Guiding questions:</strong> 1) Is this CPU-bound, I/O-bound or steal? Which numbers prove it? 2) Why would 23 jest processes exist on 8 vCPUs, and what could the library change have done? 3) What is the safe immediate fix and the permanent one?</p>
+<details><summary>Show solution</summary>
+<p><strong>Investigation.</strong> 1) Classify: load 38 on 8 CPUs, %usr 91, %iowait 0.3, %steal 0.0 means real user-space CPU demand, not disk and not a noisy neighbour. 2) Find who: <code>ps -eo pid,ppid,etimes,pcpu,cmd --sort=-pcpu | head -30</code> and <code>pstree -p 8841</code> show 23 jest worker trees. <code>cat /proc/8841/cgroup</code> or the agent pod spec shows no CPU limit. 3) Why many: jest defaults to roughly one worker per core per run; with executors set to 4 per agent, 4 runs x 8 workers each = 32 workers on 8 vCPUs. <code>git log -p -- vars/</code> on the shared library shows Friday's change replaced <code>jest --runInBand</code> with <code>jest --maxWorkers=100%</code> and raised executors in the agent template from 2 to 4. 4) Check it is not malware or a loop: processes are children of the Jenkins agent, working directories match job names, and no unknown binaries (<code>ls -l /proc/PID/exe</code>).</p>
+<p><strong>Root cause.</strong> An unreviewed library change multiplied parallelism beyond the agent size; with no CPU limits, context switching and thrashing made each build slower than serial execution, and the queue grew.</p>
+<p><strong>Fix.</strong> Immediate: stop the lowest-priority queued and running jobs from the Jenkins UI (not <code>kill -9</code> on the agent), then pin pipelines to the previous library tag with <code>@Library('platform-lib@v1.3.2')</code> via the default version setting in Jenkins, which needs no restart. Permanent: set <code>--maxWorkers</code> to a number derived from the pod CPU request, set CPU requests and limits in the agent pod template (so the scheduler spreads pods), release the library through tags with a canary job, and add an alert on queue time (not only CPU). <strong>Prevention:</strong> required review from the platform team on <code>vars/</code>, a smoke pipeline that runs on library PRs and records duration, CPU saturation visible per pod on a dashboard (<code>container_cpu_cfs_throttled_periods_total</code> if limits are set).</p>
+<p><strong>Sample incident report (blameless RCA)</strong></p>
+<pre>
+INCIDENT REPORT: CI agent CPU saturation and build slowdown   Severity: SEV-3   Status: Resolved
+Author: DevOps on-call   Reviewed by: Platform lead   Date: 21 Nov 2026
+
+SUMMARY
+Between Fri 20 Nov 18:40 IST and Sat 21 Nov 15:05 IST CI builds ran 4x slower (35 min vs 8 min)
+and the queue peaked at 40 jobs. No production customer impact; one release was delayed 3 hours.
+
+IMPACT
+All 62 builds in the window slowed; 1 release (orders v5.8) delayed 3 h; about 30 developer-hours lost.
+
+TIMELINE (IST)
+Fri 18:40  Shared library v1.4.0 merged (parallel test change) and picked up by all pipelines
+Sat 13:50  Alert: agent pool CPU > 95% for 20 min
+Sat 14:10  On-call acknowledges, confirms load 38 on 8 vCPUs, %usr 91, %iowait 0.3
+Sat 14:30  Identifies 23 jest workers; finds library diff (maxWorkers=100%, executors 2 -> 4)
+Sat 14:40  Default library version pinned to v1.3.2; low-priority jobs aborted
+Sat 15:05  Load back to 7; queue cleared by 15:40
+
+ROOT CAUSE
+Library change raised test parallelism and agent executors without CPU requests/limits or a canary,
+so concurrent builds oversubscribed the vCPUs and slowed all builds.
+
+RESOLUTION
+Pinned library to last good tag; aborted low-priority jobs; no restarts needed.
+
+ACTION ITEMS
+1. Add CPU requests/limits to agent pod template and derive maxWorkers from them. Owner: Platform engineer A. Due 28 Nov
+2. Require platform-team review and a canary pipeline for changes in vars/. Owner: Platform lead. Due 1 Dec
+3. Alert on queue wait time > 10 min. Owner: DevOps on-call. Due 26 Nov
+4. Record median build duration per release of the library. Owner: DevOps engineer B. Due 5 Dec
+What went well: pinning needed no restart.  What went poorly: no signal tied the slowdown to the library release.
+</pre>
+</details>
+</div>
+
+<div class="box" style="--c:#b45309"><h5>Scenario B (senior level): a Java service in Kubernetes is OOM-killed every few hours</h5>
+<p><strong>Situation.</strong> The payments-api (Java 21, 6 replicas) restarts about every 3 to 5 hours; error rate spikes to 2% each time. Dashboard memory looks flat at about 70% of the 2 GiB limit, then drops. The team's first proposal is "double the limit to 4 GiB".</p>
+<pre>
+$ kubectl get pods -l app=payments-api
+payments-api-7c9d...  1/1  Running  7 (38m ago)
+$ kubectl describe pod payments-api-7c9d... | grep -A6 'Last State'
+    Last State: Terminated   Reason: OOMKilled   Exit Code: 137
+$ kubectl top pod payments-api-7c9d...   ->  1890Mi
+$ kubectl exec payments-api-7c9d... -- jcmd 1 VM.native_memory summary | grep -E 'Java Heap|Thread|Class|Code|Internal'
+ Java Heap (reserved=1536MB, committed=1536MB)   Thread (committed=310MB, 1190 threads)
+ Class (committed=95MB)   Code (committed=60MB)
+# JVM flags: -Xmx1536m  (set by a developer), container limit 2Gi
+</pre>
+<p><strong>Constraints:</strong> no code change can ship before Tuesday; cost matters; customers see errors at each kill.</p>
+<p><strong>Guiding questions:</strong> 1) Why is the container killed when the heap never exceeds -Xmx? 2) What distinguishes a heap leak from an off-heap or thread leak using the data? 3) What do you change now, what long term, and who needs to hear about it?</p>
+<details><summary>Show solution</summary>
+<p><strong>Investigation.</strong> 1) OOMKilled with exit 137 means the kernel's cgroup OOM killer fired because the whole container exceeded its memory limit, not because Java threw OutOfMemoryError. The cgroup counts heap plus thread stacks, metaspace, code cache, direct buffers and the page cache charged to it. Here heap committed 1536 MB + threads 310 MB + class 95 MB + code 60 MB is already about 2 GB, so almost no room remains. 2) <code>-Xmx</code> was set to 75% of the limit, and the remaining 25% (512 MB) is smaller than the non-heap needs. 3) 1190 threads is abnormal for this service (the usual figure is about 200): <code>jcmd 1 Thread.print | grep -c 'pool-'</code> and a thread dump show a growing set of threads from an HTTP client created per request and never closed. Each thread reserves a stack (about 1 MB by default) that becomes resident as used. 4) Confirm with a time series: <code>container_memory_working_set_bytes</code> rising with <code>jvm_threads_live_threads</code>, and check the node's kernel log <code>dmesg -T | grep -i 'killed process'</code> to see the cgroup kill and the memory breakdown. 5) Note the dashboard issue: averaging across 6 pods and a 5-minute scrape hid the saw-tooth; look at per-pod max.</p>
+<p><strong>Root cause.</strong> A thread leak (new executor per outbound call) pushed non-heap memory up until the total exceeded the 2 GiB cgroup limit; the heap setting left too little non-heap headroom. Doubling the limit would only delay the kill.</p>
+<p><strong>Fix.</strong> Now: use percentage-based sizing (<code>-XX:MaxRAMPercentage=60</code> instead of a fixed -Xmx) and raise the limit modestly to 2.5 GiB as a bridge; add a <code>preStop</code> sleep and a PodDisruptionBudget so restarts do not drop in-flight requests; set a liveness restart tolerance and reduce the blast radius with a maxUnavailable of 1. Long term: fix the client lifecycle (one shared client, bounded pool), add Native Memory Tracking (<code>-XX:NativeMemoryTracking=summary</code>) in staging, alert on <code>rate(kube_pod_container_status_restarts_total[1h])</code> and on thread count, and add a load test that runs 6 hours. Tell the product owner the error rate cause and ETA, tell the finance owner there is a small temporary cost.</p>
+<p><strong>Sample incident report (blameless RCA)</strong></p>
+<pre>
+INCIDENT REPORT: payments-api repeated OOMKilled restarts   Severity: SEV-2   Status: Mitigated, fix scheduled
+Author: SRE on-call   Reviewed by: Engineering manager, payments   Date: 21 Nov 2026
+
+SUMMARY
+payments-api pods restarted every 3-5 hours from Wed 18 Nov to Sat 21 Nov, each restart causing
+about 90 s of elevated errors (peak 2%). Cause: a thread leak plus too little non-heap headroom.
+
+IMPACT
+About 40 restarts across 6 pods; roughly 0.3% of payment attempts failed or were retried in the window;
+no data loss (requests are idempotent). SLO 99.9% availability: 38% of monthly error budget consumed.
+
+TIMELINE (IST)
+Wed 18 Nov 09:10  First OOMKilled restart (not alerted: restart alert threshold was 5/hour)
+Fri 20 Nov 17:30  Product reports intermittent payment errors
+Sat 21 Nov 10:05  Page: error rate > 1% for 5 min; on-call sees Exit 137, memory 1890Mi / 2Gi
+Sat 10:45  jcmd shows 1190 threads, heap 1536MB, non-heap ~470MB; hypothesis: thread leak
+Sat 11:30  Mitigation: MaxRAMPercentage=60, limit 2.5Gi, PDB and preStop added; restarts paused
+Sat 12:15  Verified: 3 hours without restart, thread count rising slowly (leak still present)
+
+ROOT CAUSE
+Outbound HTTP client created per request (commit 4f2e1) leaked threads. A fixed -Xmx at 75% of the limit
+left less memory than the non-heap total, so the cgroup OOM killer fired before the JVM raised an error.
+
+RESOLUTION
+Config mitigation applied Sat 11:30. Code fix (shared client, bounded pool) reviewed, deploys Tue 24 Nov.
+
+ACTION ITEMS
+1. Fix client lifecycle and add a unit test on thread count. Owner: Payments developer C. Due 24 Nov
+2. Alert on restarts > 2 in 1 h and on thread count > 500. Owner: SRE on-call. Due 25 Nov
+3. Replace fixed -Xmx with percentage sizing in the base chart. Owner: Platform engineer A. Due 1 Dec
+4. Add NMT and a 6-hour soak test in staging. Owner: QA lead. Due 8 Dec
+5. Dashboard: per-pod max memory and threads. Owner: SRE on-call. Due 27 Nov
+</pre>
+</details>
+</div>
+
+<h4>4. Interview practice (Linux and networking)</h4>
+<div class="box" style="--c:#b45309">
+<p><strong>Q1.</strong> Users say a website on your Linux server is slow, and SSH is also laggy. What would you do?</p>
+<details><summary>Show answer</summary>
+<p>1) Stay calm and get a quick picture: <code>uptime</code> (load vs <code>nproc</code>), <code>top</code> or <code>htop</code>, <code>free -m</code>, <code>df -h</code> and <code>df -i</code>. 2) Classify the bottleneck with <code>vmstat 1 5</code> and <code>mpstat -P ALL 1</code>: high <code>us/sy</code> is CPU, high <code>wa</code> is disk, high <code>si/so</code> or low free memory is swapping, high <code>st</code> is a noisy host (VM). Check <code>iostat -x 1</code> for disk await and <code>/proc/pressure/*</code> (PSI) for stalls. 3) Find the culprit: <code>ps aux --sort=-%cpu | head</code>, <code>pidstat 1</code>, <code>ss -s</code> for connection counts. 4) Check <code>dmesg -T | tail</code> and <code>journalctl -p err -b</code> for OOM kills or disk errors. 5) Mitigate with the least risky action (renice, stop a runaway batch job, scale out, fail over), then record the evidence and root cause. <em>What the interviewer is checking:</em> a method (classify, then drill down), the right tools, and caution before killing processes.</p></details>
+<p><strong>Q2.</strong> An application cannot reach <code>db.internal:5432</code> from a server, but a colleague can from another server. How do you troubleshoot?</p>
+<details><summary>Show answer</summary>
+<p>Walk the path layer by layer. 1) DNS: <code>dig db.internal</code> and <code>getent hosts db.internal</code> (the second uses the same resolver path as the app, including <code>/etc/hosts</code> and nsswitch); compare answers with the colleague. 2) Routing: <code>ip route get &lt;db-ip&gt;</code>, then <code>ping</code> (may be blocked, do not rely on it). 3) Port: <code>nc -vz &lt;db-ip&gt; 5432</code> or <code>curl -v telnet://...</code>: "refused" means the host answered and nothing listens or a reject rule exists; a timeout means packets are dropped (firewall, security group, NACL, route). 4) Capture: <code>tcpdump -ni any host &lt;db-ip&gt; and port 5432</code>: SYN with no SYN-ACK points to a drop upstream; SYN-ACK returned but app fails points to local rules or TLS. 5) Check local rules (<code>iptables -S</code> or <code>nft list ruleset</code>) and, in the cloud, security groups, NACLs and the DB's own allow-list (<code>pg_hba.conf</code>). The difference between the two servers (subnet, SG, source IP) usually explains it. <em>Checking:</em> layered thinking, distinguishing refused from timeout, and using packet capture to prove where it dies.</p></details>
+<p><strong>Q3.</strong> <code>df -h</code> shows the root disk 100% full, but <code>du</code> shows only 40% used. What happened?</p>
+<details><summary>Show answer</summary>
+<p>Usual causes: (1) deleted files still held open by a running process (a log was removed but the process keeps writing): find with <code>lsof +L1</code> or <code>lsof | grep deleted</code>; free the space by restarting the process or truncating through <code>/proc/PID/fd/N</code> (<code>: &gt; /proc/PID/fd/N</code>). (2) Space hidden under a mount point: files written to a directory before a volume was mounted over it; unmount or bind-mount the root to inspect. (3) Inode exhaustion: <code>df -i</code> at 100% while blocks are free. (4) Reserved blocks or snapshots on LVM or btrfs. Fix the cause (log rotation with <code>copytruncate</code> or proper reopen signals, limits on journald, alert at 80%), not only the symptom. <em>Checking:</em> understanding that a file lives until the last descriptor closes, plus knowing the second tools (lsof, df -i).</p></details>
+</div>
+
+<h4>5. Industry pulse</h4>
+<p>Researched 21 Nov 2026. I picked two well-documented incidents with a primary post-mortem that we have not covered yet, and read their summaries through search results, not the full pages, so details below follow the vendors' own wording as far as the excerpts showed. Event dates and publication dates are shown where they differ.</p>
+<ul>
+<li><strong>Cloudflare global outage, 18 Nov 2025</strong> <span class="tag ok">Confirmed (Cloudflare's own post-mortem; I saw it through search excerpts and secondary summaries, not the full page)</span>. <em>What happened:</em> starting about 11:20 UTC, core traffic through Cloudflare's network returned errors; full recovery took about six hours. Cloudflare first suspected a DDoS attack. <em>Root cause:</em> a change to database permissions made a query that builds the Bot Management "feature file" return duplicate rows, so the file doubled in size; the proxy software had a hard-coded limit on the number of features, and when the oversized file was loaded the proxy crashed. The file was regenerated and pushed across the network every few minutes, so the system flapped between good and bad states, which made diagnosis harder. <em>Impact:</em> large parts of the internet that sit behind Cloudflare. <em>Prevention (stated):</em> treat internally generated configuration like untrusted input, add global kill switches, and review failure modes of core proxy modules. <em>Lesson:</em> an internal config file is an input that needs size and sanity validation, and a staged rollout; "it must be an attack" is a hypothesis to test, not a conclusion. Source: <a href="https://blog.cloudflare.com/18-november-2025-outage/" target="_blank" rel="noopener">Cloudflare, 18 November 2025 outage</a>. Cloudflare later published a "fail small" resilience plan (<a href="https://blog.cloudflare.com/fail-small-resilience-plan/" target="_blank" rel="noopener">blog</a>) <span class="tag warn">Reported (title seen in search, not read)</span>.</li>
+<li><strong>Google Cloud Service Control outage, 12 Jun 2025</strong> <span class="tag ok">Confirmed (Google status page incident, via search excerpt)</span> with durations <span class="tag warn">Reported</span> (secondary sources differ). <em>What happened:</em> from about 10:51 PDT many Google Cloud APIs returned errors; the status page lists the incident running until 18:18 PDT, with the longest recovery in us-central1. <em>Root cause:</em> a new feature in Service Control (the component that handles API authorization and quota checks) was released without a feature flag; a policy change with blank fields was written to the regional Spanner tables, and a null-pointer error crashed Service Control in every region as the data replicated. <em>Impact:</em> many Google Cloud services and third-party apps built on them; Google's own status page was affected early. <em>Recovery:</em> the "red button" kill-switch for the faulty path was used; a retry surge (herd effect) slowed us-central1 recovery. <em>Lesson:</em> new code paths need feature flags and defensive handling of bad data ("fail open" or degrade), global replication of config is a blast-radius multiplier, and clients need exponential backoff with jitter. Source: <a href="https://status.cloud.google.com/incidents/ow5i3PPK96RduMcb1SsW" target="_blank" rel="noopener">Google Cloud incident report</a>. The feature-flag detail I could not re-read on the primary page today and take from the excerpt and secondary coverage <span class="tag warn">Reported</span>.</li>
+</ul>
+<p><strong>Changed since the earlier entry:</strong> the Microsoft 365 outage (12 to 13 Nov 2026): reporting on 16 Nov (<a href="https://www.theregister.com/2026/11/16/microsoft-blames-monster-email-outage-on-software-defect-introduced-in-july-fix/5310026" target="_blank" rel="noopener">The Register</a>) says a software defect introduced in July triggered it; the final report was due 20 Nov and I did not find it today <span class="tag warn">Reported</span>.</p>
+<p><strong>What companies expect from DevOps engineers now</strong> <span class="tag info">Direction</span> (my reading of the incidents above, not hard data):</p>
+<ul><li>Treat configuration and data as deployable code: validation, size limits, staged rollout and a kill switch.</li><li>Design clients for failure: timeouts, backoff with jitter, graceful degradation, and tests that simulate the dependency being bad, not only down.</li><li>Think about diagnosis speed: a tidy signal path (dashboards by symptom, change log next to the graph) beats guessing "attack or bug" for an hour.</li></ul>
+
+<h4>6. AIOps: automated incident detection</h4>
+<p><strong>How it helps.</strong> Static thresholds miss slow drifts and fire on normal spikes. Anomaly detection learns a baseline (seasonality by hour and weekday) and flags deviations in error rate, latency or log patterns; a good setup combines it with SLO burn-rate alerts so the page means "users are hurt". Tools: Prometheus with recording rules and burn-rate alerts (start here), Grafana adaptive features, Datadog Watchdog, Elastic and OpenSearch anomaly detection. <strong>Example prompt:</strong> "Here are 24 hours of p95 latency and error rate for the checkout service at 1-minute resolution (CSV), with deploy times. Mark windows that deviate from the same hour in prior days, explain why each looks anomalous using only the numbers, and say which deploy it correlates with. Flag if you are unsure; do not propose fixes." <strong>Risks and guardrails:</strong> anomaly detectors flag harmless events (a marketing campaign) and learn bad baselines if an incident is in the training window; keep a human-readable rule beside any model signal, measure precision (how many pages were real) per month, never let the model silence an SLO alert, and keep customer data out of external prompts.</p>
+
+<h4>7. Lab checklist</h4>
+<pre>
+[ ] Class 1 lab: Jenkins in Docker, executors 0, agent container, Multibranch job, timeout and junit working
+[ ] Class 1 assignment: shared library with notifyBuild(), pinned v1.0.0 vs v1.1.0 proven
+[ ] Class 2 lab: Actions workflow with required check, production environment, concurrency cancel
+[ ] Class 2 lab (optional): OIDC role limited to one bucket, sts get-caller-identity in the job
+[ ] Class 2 assignment: pin actions by SHA, default read-only permissions, list what broke
+[ ] Scenario A and B: answer the 3 questions before opening the solutions
+[ ] Interview Q1 to Q3: say each aloud in 2 minutes
+[ ] Recap: answer the 3 recap questions
+[ ] Weekend: revision summary read, 8 to 10 interview answers, 2 weekend scenarios, mini-project, self-assessment scored
+[ ] Career action: level-by-skill grid (section 8)
+</pre>
+
+<h4>8. Career: technical skills expected per level</h4>
+<p>Teacher's lesson. Yesterday we looked at scope and ambiguity. Today the question is simpler and more uncomfortable: what must your hands and head be able to do at each level? Companies differ, but the pattern repeats, so here is the version I used when I hired.</p>
+<p><strong>Engineer (you now, 2 to 3 years).</strong> You operate what exists: write and fix pipelines, containerise an app, write Terraform for a known pattern, read dashboards, follow runbooks, and debug a Linux box. You are expected to know why, not only how, for the basics (what a process, a socket, a layer, a state file is). <strong>Senior.</strong> You design and own: pipeline architecture across teams, Terraform module design with state boundaries, Kubernetes capacity and upgrade strategy, IAM least-privilege patterns, observability with SLOs, and incident command. The new skill is <em>failure thinking</em>: for every component you can say how it fails, how you would see it, and how you would roll it back. You also review other people's designs and catch what they missed. <strong>Lead, SRE or platform.</strong> You pick what to standardise: golden paths, paved roads, policy as code, cost and reliability targets, capacity planning, and you measure adoption. <strong>Architect.</strong> You decide boundaries: multi-region and multi-account strategy, DR targets with cost, build versus buy, and how teams will operate it in three years.</p>
+<p>War story: in my third year I could write Kubernetes manifests quickly and thought I was senior. A real senior asked me one question in an interview review: "what happens to your service during a node drain?" I knew <code>kubectl drain</code> but not PodDisruptionBudgets, readiness gating and the 30-second termination grace. We had an outage from exactly that gap a month later. Knowing the command is level one; knowing the failure behaviour is level two.</p>
+<p>Practical grid: write the 18 tools of your daily recap in rows and three columns: "I can use it", "I can design it", "I can teach and review it". Be honest. Most 2-3 year engineers have "use" ticks and a few "design" ticks; the senior jump is filling the "design" column for four or five core tools (CI/CD, Kubernetes, Terraform, one cloud, observability) and adding SLO thinking. That is exactly what this 8-week plan builds.</p>
+<p><strong>Say it like this</strong> (to a manager or CTO): "I can run our pipelines and clusters confidently; over the next quarter I want to design the next improvement end to end, for example our deployment pipeline, including the failure modes and rollback, and have you or a senior review the design before I build it."</p>
+<p><strong>Skill-gap action for today (10 min):</strong> build the grid above for just six tools (Linux, Git, CI/CD, Docker, Kubernetes, Terraform) and mark one "design" cell you will turn into a written one-page design this month.</p>
+
+<h4>9. Daily recap of all your tools</h4>
+<div class="tw"><table><thead><tr><th>Tool</th><th>Remember today</th><th>Command or config</th><th>Official doc</th></tr></thead><tbody>
+<tr><td>Linux and shell</td><td>A shell's ulimit does not apply to systemd services; set limits in the unit file.</td><td><code>systemctl show nginx -p LimitNOFILE</code></td><td><a href="https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html" target="_blank" rel="noopener">systemd.exec</a></td></tr>
+<tr><td>Git/GitHub</td><td>A worktree checks out another branch in a second directory without stashing your work.</td><td><code>git worktree add ../hotfix main</code></td><td><a href="https://git-scm.com/docs/git-worktree" target="_blank" rel="noopener">git-worktree</a></td></tr>
+<tr><td>Jenkins</td><td>Credential masking hides values in logs but is not a security boundary; restrict who edits Jenkinsfiles.</td><td><code>withCredentials([string(credentialsId:'tok', variable:'T')]) { sh 'use "$T"' }</code></td><td><a href="https://www.jenkins.io/doc/book/using/using-credentials/" target="_blank" rel="noopener">Using credentials</a></td></tr>
+<tr><td>CI/CD (Actions/GitLab CI)</td><td>Key dependency caches on the lockfile hash so they refresh only when dependencies change.</td><td><code>key: ${{ hashFiles('**/package-lock.json') }}</code></td><td><a href="https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching" target="_blank" rel="noopener">Dependency caching</a></td></tr>
+<tr><td>Docker</td><td>Images, stopped containers, volumes and build cache all use disk; check before pruning.</td><td><code>docker system df</code></td><td><a href="https://docs.docker.com/reference/cli/docker/system/df/" target="_blank" rel="noopener">docker system df</a></td></tr>
+<tr><td>Kubernetes</td><td>Requests drive scheduling; CPU limits cause throttling and memory limits cause OOM kills.</td><td><code>kubectl describe node n1 | grep -A8 "Allocated resources"</code></td><td><a href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/" target="_blank" rel="noopener">Resource management</a></td></tr>
+<tr><td>Terraform</td><td>Commit .terraform.lock.hcl so every machine and CI run uses the same provider builds.</td><td><code>terraform providers lock -platform=linux_amd64</code></td><td><a href="https://developer.hashicorp.com/terraform/language/files/dependency-lock" target="_blank" rel="noopener">Dependency lock file</a></td></tr>
+<tr><td>AWS</td><td>Security groups are stateful and allow-only; network ACLs are stateless and can deny.</td><td><code>aws ec2 describe-security-groups --group-ids sg-0abc</code></td><td><a href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html" target="_blank" rel="noopener">Security groups</a></td></tr>
+<tr><td>Azure</td><td>NSGs filter at subnet and NIC level; traffic must pass both, and the lowest priority number wins.</td><td><code>az network nsg rule list -g rg1 --nsg-name nsg1 -o table</code></td><td><a href="https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview" target="_blank" rel="noopener">NSG overview</a></td></tr>
+<tr><td>GCP</td><td>VPC firewall rules are stateful, apply to the whole VPC, and target tags or service accounts.</td><td><code>gcloud compute firewall-rules list</code></td><td><a href="https://cloud.google.com/firewall/docs/firewalls" target="_blank" rel="noopener">Firewall rules</a></td></tr>
+<tr><td>Ansible</td><td>Handlers run once at the end of the play, and only if a task reported "changed".</td><td><code>notify: restart nginx</code></td><td><a href="https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_handlers.html" target="_blank" rel="noopener">Handlers</a></td></tr>
+<tr><td>Prometheus and Grafana</td><td>The <code>for:</code> clause makes an alert wait before firing, which stops flapping on brief spikes.</td><td><code>alert: High5xx  expr: ...  for: 10m</code></td><td><a href="https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/" target="_blank" rel="noopener">Alerting rules</a></td></tr>
+<tr><td>ELK/OpenSearch</td><td>Aggregate and filter on keyword fields; text fields are analysed for full-text search.</td><td><code>GET myindex/_mapping</code></td><td><a href="https://opensearch.org/docs/latest/field-types/" target="_blank" rel="noopener">Field types</a></td></tr>
+<tr><td>Python for DevOps</td><td>requests has no default timeout, so a hung server can hang your script forever.</td><td><code>requests.get(url, timeout=5)</code></td><td><a href="https://requests.readthedocs.io/en/latest/user/advanced/#timeouts" target="_blank" rel="noopener">Timeouts</a></td></tr>
+<tr><td>GitOps (Argo CD/Helm)</td><td>Automated sync does not delete removed resources or revert manual edits unless prune and self-heal are on.</td><td><code>argocd app set myapp --sync-policy automated --self-heal</code></td><td><a href="https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/" target="_blank" rel="noopener">Automated sync</a></td></tr>
+<tr><td>DevSecOps</td><td>An SBOM lists what is inside an image, so you can answer "are we affected?" within minutes.</td><td><code>syft myapp:1.0 -o spdx-json &gt; sbom.json</code></td><td><a href="https://github.com/anchore/syft" target="_blank" rel="noopener">Syft</a></td></tr>
+<tr><td>SRE (SLI/SLO)</td><td>An error budget policy says what happens when the budget runs out, for example freeze risky releases.</td><td><code>budget_used = (bad/total) / (1 - SLO)</code></td><td><a href="https://sre.google/workbook/error-budget-policy/" target="_blank" rel="noopener">Error budget policy</a></td></tr>
+<tr><td>FinOps/Platform</td><td>Unattached volumes keep billing; list them monthly and snapshot before deleting.</td><td><code>aws ec2 describe-volumes --filters Name=status,Values=available</code></td><td><a href="https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-volumes.html" target="_blank" rel="noopener">describe-volumes</a></td></tr>
+<tr><td>AI in DevOps</td><td>Ask for evidence and an "unsure" option; a model that must cite a log line guesses less.</td><td><code>prompt: "Quote the line behind each claim; say UNSURE if none."</code></td><td><a href="https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview" target="_blank" rel="noopener">Prompt engineering</a></td></tr>
+</tbody></table></div>
+
+<h5>Terraform: remote state and locking</h5>
+<p><strong>What it is:</strong> state is Terraform's record of what it manages; a remote backend stores it centrally with a lock. <strong>Why it matters:</strong> two applies at once, or state on a laptop, corrupt or lose infrastructure records. <strong>How it works:</strong></p>
+<pre>terraform apply -> acquire lock (S3 lockfile / DynamoDB / Blob lease)
+                -> read state -> plan -> change cloud -> write state -> release lock</pre>
+<p>Split state by blast radius (network, data, apps), enable versioning on the bucket, encrypt it (state holds secrets in plain text), and restrict who can read it. <code>terraform force-unlock</code> is for a crashed run only, after you confirm nobody is applying. <strong>AI prompt:</strong> "Given this plan output, list resources to be destroyed or replaced and why; flag any that hold data." Ref: <a href="https://developer.hashicorp.com/terraform/language/backend/s3" target="_blank" rel="noopener">S3 backend</a>.</p>
+
+<h5>AWS: a VPC route table decides public versus private</h5>
+<p><strong>What it is:</strong> a VPC is your private network; subnets sit in one AZ each; route tables say where traffic goes. <strong>Why it matters:</strong> "public subnet" is only a route to an internet gateway, and misreading that exposes databases. <strong>How it works:</strong></p>
+<pre>public subnet : 0.0.0.0/0 -> igw-...      (+ public IP needed)
+private subnet: 0.0.0.0/0 -> nat-... (in a public subnet, one per AZ for HA)
+data subnet   : no default route; reach only via SG from the app tier</pre>
+<p>Use one NAT gateway per AZ in production (cross-AZ NAT costs data fees and is a single point of failure) and gateway endpoints for S3 and DynamoDB to avoid NAT charges. <strong>AI prompt:</strong> "Here is my VPC route table export; which subnets can reach the internet inbound, and which have no egress?" Ref: <a href="https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html" target="_blank" rel="noopener">VPC route tables</a>.</p>
+
+<h5>Azure: VNets, subnets and peering</h5>
+<p><strong>What it is:</strong> a virtual network (VNet) is a regional private address space split into subnets; NSGs filter traffic; peering links VNets. <strong>Why it matters:</strong> overlapping address ranges cannot be peered, and peering is not transitive, so hub-and-spoke needs planning. <strong>How it works:</strong></p>
+<pre>spoke-A VNet 10.1.0.0/16 &lt;-peering-&gt; hub VNet 10.0.0.0/16 &lt;-peering-&gt; spoke-B 10.2.0.0/16
+A cannot reach B unless the hub routes it (firewall/NVA + user-defined routes)</pre>
+<p>Plan non-overlapping CIDR blocks for every network, cloud and on-premises, before the first deployment; renumbering later is painful. Use private endpoints for PaaS services. <strong>AI prompt:</strong> "Check these VNet CIDRs for overlap and propose a non-overlapping plan for 5 spokes." Ref: <a href="https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview" target="_blank" rel="noopener">VNet peering</a>.</p>
+
+<p><strong>Recap questions</strong></p>
+<p>1. A private-subnet instance in AWS cannot reach the internet. What do you check?</p>
+<details><summary>Show answer</summary><p>The subnet's route table has a default route to a NAT gateway; the NAT gateway sits in a public subnet whose route goes to an internet gateway and has an Elastic IP; the security group allows outbound; the NACL allows outbound and return traffic (ephemeral ports).</p></details>
+<p>2. Why can two people applying Terraform to the same state corrupt it, and what prevents that?</p>
+<details><summary>Show answer</summary><p>Both read the same state, change infrastructure and write conflicting states. A remote backend with locking lets only one run proceed; CI should serialise applies per state, with plan reviewed before apply.</p></details>
+<p>3. Spoke A and spoke B are both peered to a hub in Azure but cannot talk. Why?</p>
+<details><summary>Show answer</summary><p>VNet peering is not transitive. Route through a firewall or network virtual appliance in the hub with user-defined routes (or use a virtual WAN), and allow forwarded traffic on the peerings and in NSGs.</p></details>
+
+<h4>10. AI pro: structured outputs and JSON schema validation</h4>
+<p><strong>Concepts.</strong> Free-text model output is unsafe to parse in automation. Structured outputs make the model return data that follows a JSON Schema: either through a response-format option that constrains generation to the schema, or through tool definitions with <code>strict</code> enabled so tool names and arguments are schema-valid. Both use grammar-constrained decoding, so the output is syntactically valid, but constrained decoding guarantees <em>shape</em>, not <em>truth</em>: a valid JSON can still name the wrong service.</p>
+<p><strong>Design pattern.</strong> Treat the model as an untrusted parser in front of your system: (1) define a small, closed schema (enums instead of free strings, required fields, bounded lengths, <code>additionalProperties: false</code>); (2) generate with the schema option; (3) <em>validate again in your code</em> with a schema library (for example Pydantic or jsonschema), because supported schema features are limited by the provider and a refusal or truncation can still occur; (4) apply business checks (does this service exist? is this action in the allow-list?); (5) route failures to a retry with the error message once, then to a human.</p>
+<pre>
+ALERT_SCHEMA = {"type": "object", "additionalProperties": False,
+  "required": ["severity", "suspected_service", "evidence", "confidence"],
+  "properties": {
+    "severity": {"enum": ["SEV1", "SEV2", "SEV3", "NOISE"]},
+    "suspected_service": {"type": "string", "maxLength": 64},
+    "evidence": {"type": "array", "items": {"type": "string", "maxLength": 200}, "maxItems": 5},
+    "confidence": {"enum": ["low", "medium", "high"]}}}
+
+result = call_model(prompt, schema=ALERT_SCHEMA)       # constrained generation
+data = validate(result, ALERT_SCHEMA)                  # re-validate yourself
+if data["suspected_service"] not in KNOWN_SERVICES: escalate_to_human(data)
+</pre>
+<p><strong>Trade-offs.</strong> Strict schemas reduce parsing bugs and retries and make evaluation easy (compare fields), but a very tight schema can force the model to pick a wrong enum when none fits, so always include an "unknown" or "other" value. Large or deeply nested schemas add latency on the first request (the grammar is compiled and cached by the provider) and some keywords (for example numeric ranges or complex regexes) may be unsupported, so check the current limits. <strong>Failure modes:</strong> valid but wrong content; silent truncation at max tokens producing incomplete JSON when constrained mode is off; schema drift between the prompt, the code and the downstream consumer; free-text fields that carry prompt injection into the next system (for example an "evidence" string pasted into a shell command). <strong>Evaluation, security, cost.</strong> Keep a golden set of inputs with expected fields and measure per-field accuracy, not only "valid JSON" rate; version the schema like an API; never execute model-supplied strings, map enums to fixed actions instead; schema tokens count as input, so keep descriptions short, and caching the stable prefix (yesterday's topic) reduces their cost. Sources: <a href="https://platform.claude.com/docs/en/build-with-claude/structured-outputs" target="_blank" rel="noopener">Anthropic: structured outputs</a> · <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use" target="_blank" rel="noopener">Anthropic: strict tool use</a> · <a href="https://json-schema.org/" target="_blank" rel="noopener">JSON Schema</a> <span class="tag ok">Confirmed</span> (pages found in search today; field names change, check the docs).</p>
+
+<h4>11. Weekend learning and assessment</h4>
+<p>This is the first weekend of the plan; it covers Day 1 to Day 3 (Linux processes and networking, shell scripting, Git protected branches, Jenkins, CI/CD design). Sunday's entry will not repeat these questions.</p>
+
+<div class="box" style="--c:#b45309"><h5>Weekly revision summary</h5>
+<ul>
+<li><strong>Linux triage:</strong> classify first (CPU, memory, disk, network, steal) with <code>uptime, vmstat, mpstat, iostat, free, df</code>; load average includes D-state tasks; a deleted-but-open file still uses space; OOM kills show in <code>dmesg</code>, and container OOM is a cgroup decision.</li>
+<li><strong>Networking:</strong> walk the layers (DNS, route, port, firewall); "refused" means the host answered, "timeout" means drops; prove it with <code>tcpdump</code>.</li>
+<li><strong>Shell:</strong> <code>set -Eeuo pipefail</code>, quote variables, <code>${VAR:?}</code> guards, <code>trap cleanup EXIT</code>, idempotent steps, <code>flock</code>, <code>--dry-run</code>, ShellCheck in CI.</li>
+<li><strong>Git:</strong> protected branches, required checks, CODEOWNERS, revert instead of rewrite on shared branches, reflog for recovery, bisect for regressions.</li>
+<li><strong>Jenkins:</strong> controller executors 0, ephemeral agents, Jenkinsfile in Git, pinned shared library versions, pinned and minimal plugins, timeouts.</li>
+<li><strong>CI/CD design:</strong> build once and promote the digest, fast gate first, least-privilege tokens, OIDC instead of static keys, pin actions by SHA, environments with approvals.</li>
+<li><strong>Incidents to remember:</strong> AWS DynamoDB DNS (empty record), Azure Front Door config push, Cloudflare oversized config file, Google Service Control bad data: all four are "unvalidated config or data reaching a global path".</li>
+</ul></div>
+
+<h5>Important interview questions (8) with detailed answers</h5>
+<div class="box" style="--c:#b45309">
+<p><strong>1. Explain load average of 12 on a 4-core machine. Is it bad?</strong></p>
+<details><summary>Show answer</summary><p>Load average is the average number of tasks runnable or in uninterruptible sleep (usually disk or NFS waits) over 1, 5 and 15 minutes. 12 on 4 cores means 3 tasks per core waiting, so it is queued, but whether it is "bad" depends on cause: check <code>vmstat</code> (<code>r</code> column, <code>wa</code>), PSI (<code>/proc/pressure/cpu</code>) and latency. A 15-minute value lower than the 1-minute value means it is recovering. High load with idle CPU points to I/O wait.</p></details>
+<p><strong>2. What is the difference between <code>kill -15</code> and <code>kill -9</code>, and why does it matter in containers?</strong></p>
+<details><summary>Show answer</summary><p>SIGTERM (15) can be handled so the app finishes requests and closes connections; SIGKILL (9) cannot be caught and the kernel ends the process immediately. Kubernetes and <code>docker stop</code> send SIGTERM, wait the grace period (30 seconds by default in Kubernetes), then SIGKILL. If the app is not PID 1 (shell-form ENTRYPOINT) it never gets SIGTERM, so shutdown is abrupt; use exec form or an init such as tini.</p></details>
+<p><strong>3. How do you make a deploy script safe to run twice?</strong></p>
+<details><summary>Show answer</summary><p>Check state before acting (is this release already deployed?), use idempotent operations (<code>mkdir -p</code>, declarative tools), take a lock (<code>flock</code>) so two runs cannot overlap, write to a temp location and switch atomically (symlink or rename), run with strict mode and a <code>--dry-run</code>, log with timestamps and exit with meaningful codes, and make rollback a first-class path.</p></details>
+<p><strong>4. A developer force-pushed over main. How do you recover and prevent a repeat?</strong></p>
+<details><summary>Show answer</summary><p>Find the previous tip: from the GitHub UI (events and branch activity), from any clone with <code>git reflog</code> or from CI logs listing the SHA, then restore with <code>git push origin &lt;old-sha&gt;:main</code> (temporarily allowed by an admin). Prevent with branch protection or rulesets: no force pushes, no deletion, required reviews and checks, restrict who can push, and use <code>--force-with-lease</code> on personal branches only.</p></details>
+<p><strong>5. Why must Jenkins controller executors be 0?</strong></p>
+<details><summary>Show answer</summary><p>Builds on the controller run with its file-system access and can read credentials, job configuration and secrets in <code>JENKINS_HOME</code>, and a runaway build can take the controller down for everyone. Agents isolate builds, can be ephemeral and scale independently.</p></details>
+<p><strong>6. How do you give a pipeline access to AWS without storing keys?</strong></p>
+<details><summary>Show answer</summary><p>OIDC federation: register the CI provider as an identity provider in IAM, create a role whose trust policy checks the token's audience and subject (repository and branch or environment), and let the job call <code>AssumeRoleWithWebIdentity</code> for temporary credentials. Grant the role only the permissions the job needs, and use different roles for staging and production.</p></details>
+<p><strong>7. What does <code>pipefail</code> do and why does a pipeline hide failures without it?</strong></p>
+<details><summary>Show answer</summary><p>A pipeline's exit status is that of the last command by default, so <code>failing_cmd | tee log</code> returns 0. With <code>pipefail</code> the status is that of the rightmost command that failed. Use it with <code>-e</code> and <code>-u</code>, and remember <code>-e</code> is ignored in conditions and after <code>&amp;&amp;</code>.</p></details>
+<p><strong>8. Build once, deploy many: why and how?</strong></p>
+<details><summary>Show answer</summary><p>Rebuilding per environment can produce different binaries from different dependencies, so tests prove nothing about what runs in production. Build one image tagged with the commit SHA, store the digest, scan and sign it, and promote that digest through environments with configuration injected separately (env vars, config maps, secrets). Rollback is redeploying the previous digest.</p></details>
+</div>
+
+<h5>Two troubleshooting exercises</h5>
+<div class="box" style="--c:#b45309">
+<p><strong>Exercise 1: a nightly backup script is "successful" but the backup is empty.</strong> The cron job runs <code>pg_dump db | gzip &gt; /backup/db.sql.gz; echo done</code>. Monitoring shows exit 0 every night; yesterday's restore test failed because the file is 20 bytes. Find the causes and fix.</p>
+<details><summary>Show solution</summary><p>The pipeline has no <code>pipefail</code>, so a <code>pg_dump</code> failure (for example authentication expired after a password rotation) is hidden by <code>gzip</code> returning 0; <code>echo done</code> runs regardless. A 20-byte gzip is an empty archive. Investigate: run the command manually as the cron user (<code>sudo -u postgres env -i bash -c '...'</code>, because cron has a minimal environment), read <code>pg_dump</code> stderr (cron mails or discards it), check <code>~/.pgpass</code>. Fix: write to a temp file with strict mode, check size and a trailer, then move atomically.</p>
+<pre>
+#!/usr/bin/env bash
+set -Eeuo pipefail
+tmp=$(mktemp /backup/.db.XXXXXX); trap 'rm -f "$tmp"' EXIT
+exec 9&gt;/var/lock/db-backup.lock; flock -n 9 || { echo "already running" &gt;&amp;2; exit 1; }
+pg_dump --no-password db | gzip -9 &gt; "$tmp"
+[ "$(stat -c %s "$tmp")" -gt 1048576 ] || { echo "backup suspiciously small" &gt;&amp;2; exit 2; }
+gzip -t "$tmp" &amp;&amp; mv "$tmp" "/backup/db-$(date +%F).sql.gz"
+</pre>
+<p>Prevention: alert when no new backup file appears or the size drops by more than 50%, and run an automated weekly restore test (a backup is not real until restored).</p></details>
+<p><strong>Exercise 2: GitHub Actions deploy job fails with "Not authorized to perform sts:AssumeRoleWithWebIdentity" after the repo was renamed.</strong> It worked last week. Find the cause.</p>
+<details><summary>Show solution</summary><p>The IAM role's trust policy condition on the token <code>sub</code> claim still matches the old name, for example <code>repo:org/old-name:ref:refs/heads/main</code>; the new token says <code>repo:org/new-name:...</code>. Check by printing the claims (decode the token in a debug job or read the CloudTrail <code>AssumeRoleWithWebIdentity</code> failure) and compare with the trust policy (<code>aws iam get-role --role-name ci-deploy</code>). Also verify: the job has <code>permissions: id-token: write</code>, the audience is <code>sts.amazonaws.com</code>, and an environment-scoped subject (<code>environment:production</code>) matches. Fix the trust policy to the new repository name (keep it as narrow as before; do not widen to <code>repo:org/*</code> to make it work), and add a note to the repo-rename checklist.</p></details>
+</div>
+
+<h5>Practical assignment (mini-project): a protected repo with a safe deploy script and a pipeline</h5>
+<div class="box" style="--c:#b45309">
+<p><strong>Goal:</strong> combine the week into one small repository you can show in an interview.</p>
+<ol>
+<li>Create a repo <code>safe-deploy-demo</code> with <code>deploy.sh</code> (strict mode, <code>flock</code>, <code>--dry-run</code>, trap cleanup, idempotent "release already live" check, rollback function) that deploys a static page into a versioned directory and switches a <code>current</code> symlink.</li>
+<li>Add a test script with three cases (dry run changes nothing, second run is a no-op, failed step restores the previous release).</li>
+<li>Add a GitHub Actions workflow: ShellCheck, the tests, default read-only permissions, actions pinned by SHA, concurrency cancel.</li>
+<li>Protect <code>main</code>: required PR, one approval, required checks, no force push, CODEOWNERS for <code>deploy.sh</code>.</li>
+<li>Write a half-page README: how to run, how to roll back, what each guard prevents.</li>
+</ol>
+<p><strong>Acceptance checks:</strong> [ ] direct push to main is rejected; [ ] a PR with a ShellCheck error cannot merge; [ ] running the script twice in parallel makes the second exit non-zero with a clear message; [ ] killing the script mid-run leaves <code>current</code> pointing to the old release; [ ] <code>--dry-run</code> prints actions and changes nothing; [ ] README lets a stranger deploy and roll back in 5 minutes.</p>
+</div>
+
+<h5>Three advanced questions</h5>
+<div class="box" style="--c:#b45309">
+<p><strong>A1. Design a CI system for 200 developers and 80 services. What decisions matter most?</strong></p>
+<details><summary>Show answer</summary><p>Platform: central reusable pipelines (golden paths) with team-level overrides, versioned and canaried. Runners: ephemeral autoscaling pools split by trust level (public-PR code never shares runners with deploy jobs), with queue-time SLOs. Security: OIDC to clouds, signed artifacts and provenance, pinned dependencies and actions, secret scanning, branch rulesets managed as code. Speed: caching, test sharding, affected-only builds (monorepo tooling), a required gate under ten minutes. Reliability: treat CI as a production service (SLO, on-call, status page, backups of config). Cost: per-team runner-minute reporting. Trade-off: standardisation speeds most teams but needs an escape hatch, or teams fork the platform.</p></details>
+<p><strong>A2. A shared Jenkins library change broke 60 pipelines. How would you have prevented it, and what do you do now?</strong></p>
+<details><summary>Show answer</summary><p>Now: pin the default library version to the last good tag (global config, no restart), notify channels, then fix forward in a branch. Prevention: semantic version tags (consumers pin <code>@v1</code> minor-compatible or exact), required review for the library, a test pipeline for the library (Jenkins Pipeline Unit or a smoke job per supported pattern), canary adoption (5 repos on the new tag for a day), and a changelog with a deprecation policy. Lesson: a shared library is a published API.</p></details>
+<p><strong>A3. You see an unexplained 6x jump in Kubernetes pod restarts at 02:00 each night. Walk through your investigation and what you would not do.</strong></p>
+<details><summary>Show answer</summary><p>Correlate the time: CronJobs, backup windows, node auto-upgrades or scale-down, log rotation, certificate renewals, memory spikes from batch work. Commands: <code>kubectl get events --sort-by=.lastTimestamp</code>, <code>kubectl describe pod</code> (last state, exit codes: 137 OOM, 143 SIGTERM, 1 app error), node conditions, cluster-autoscaler logs, and the metric <code>kube_pod_container_status_last_terminated_reason</code>. If drains are the cause, check PDBs and readiness gating. Do not raise limits blindly, do not disable liveness probes to hide restarts, and do not delete pods in a loop; write down the hypothesis, test it on one workload and document the outcome.</p></details>
+</div>
+
+<h5>Self-assessment (10 questions, close your notes)</h5>
+<div class="box" style="--c:#b45309">
+<ol>
+<li>What three numbers would you read first to decide if a slow Linux host is CPU, disk or memory bound?</li>
+<li>Why does <code>df</code> sometimes show a full disk when <code>du</code> does not?</li>
+<li>Which three options form strict mode in Bash, and name one place <code>-e</code> does not apply.</li>
+<li>Name two branch-protection settings that stop an accidental bad merge to main.</li>
+<li>Why set Jenkins controller executors to 0?</li>
+<li>What is the safest way to pin a shared library, and why not <code>main</code>?</li>
+<li>What does OIDC replace in a CI pipeline, and what claim does the trust policy check?</li>
+<li>Why pin a third-party action to a full commit SHA?</li>
+<li>A container shows exit code 137. What does it mean, and what is the first check?</li>
+<li>Give one common thread across the Cloudflare and Google Cloud incidents.</li>
+</ol>
+<details><summary>Show answer key</summary>
+<ol>
+<li>Load average vs CPU count, <code>wa</code> (iowait) in vmstat/iostat await, and free memory/swap activity (<code>si/so</code>), plus PSI if available.</li>
+<li>A deleted file is still open by a process (<code>lsof +L1</code>), data hidden under a mount point, or inode exhaustion (<code>df -i</code>).</li>
+<li><code>set -e</code>, <code>-u</code>, <code>-o pipefail</code> (plus <code>-E</code>); <code>-e</code> is ignored in <code>if</code> conditions, left of <code>&amp;&amp;</code>/<code>||</code>, and in <code>local x=$(cmd)</code>.</li>
+<li>Required reviews, required status checks, no force pushes, CODEOWNERS review, linear history (any two).</li>
+<li>Builds on the controller can read its secrets and disk and can destabilise it; agents isolate that risk.</li>
+<li>Pin a version tag (or commit SHA) because <code>main</code> changes under every consumer at once.</li>
+<li>Long-lived stored cloud keys; the <code>sub</code> (repository, branch or environment) and <code>aud</code> claims.</li>
+<li>Tags can be moved to malicious code; a SHA is immutable (CISA alert on tj-actions).</li>
+<li>SIGKILL, usually by the kernel OOM killer: check <code>kubectl describe pod</code> last state "OOMKilled", then memory limit vs actual usage including non-heap.</li>
+<li>Unvalidated configuration or data propagated globally and crashed a core component; kill switches, staged rollout and defensive input handling are the fixes.</li>
+</ol>
+<p><strong>Scoring (1 point each):</strong> 9 to 10: strong, move on to Sunday's mini-project polish and Docker preview. 7 to 8: good; redo the two questions you missed using the Day 1 and Day 2 entries. 5 to 6: re-read the Linux triage and shell scripting classes and repeat their labs on Sunday. Below 5: restart with the Linux triage lab (Day 1) before anything new; this is normal in week one, and the point of the test is to find the gap now.</p>
+</details>
+</div>
+</article>
+
 <article class="entry" id="career-2026-11-20"><h3>Study plan: 20 Nov 2026 (Week 1, Day 2)</h3>
 <p class="meta">Friday, no weekend assessment (the weekend assessment comes tomorrow). Classes: shell scripting for production; Git and GitHub branching, PR reviews, protected branches. Scenarios: failed deployment and rollback; cloud region unavailable. Interview: intermediate DevOps. Career: what changes at each level. AIOps: alert correlation. Recap tools today (deep): CI/CD, Docker, Kubernetes. AI pro: prompt caching, batching and cost control.</p>
 
