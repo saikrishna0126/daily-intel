@@ -1116,7 +1116,7 @@ print(msg.content[0].text)</code></pre>
 <h2 style="background:#b45309">Career and industry growth (DevOps to Senior, SRE, Architect)</h2>
 <p class="meta">Daily: industry incidents, corporate documents (HLD, LLD, SOP, RCA, DR), hands-on skills, production scenarios, AIOps, interview practice and career lessons. Weekends: revision and assessment.</p>
 <!-- ROADMAP-START -->
-<div class="box" style="--c:#b45309"><h4>8-week roadmap (you are here: Week 1, Day 3)</h4>
+<div class="box" style="--c:#b45309"><h4>8-week roadmap (you are here: Week 1, Day 4)</h4>
 <div class="tw"><table><thead><tr><th>Week</th><th>Two themes</th><th>Outcome you can show</th></tr></thead><tbody>
 <tr style="background:#fef3c7"><td><strong>W1 (19-25 Nov) ◀ you are here</strong></td><td>Linux production troubleshooting, networking, shell scripting | Git/GitHub workflows</td><td>A triage runbook and a safe production shell script; a protected-branch repo with PR rules</td></tr>
 <tr><td>W2</td><td>Jenkins + CI/CD design (GitHub Actions/GitLab CI) | Docker in production and image security</td><td>A pipeline with test, scan, build and deploy stages; a hardened multi-stage image</td></tr>
@@ -1129,6 +1129,403 @@ print(msg.content[0].text)</code></pre>
 </tbody></table></div></div>
 <!-- ROADMAP-END -->
 <!-- NEW-CAREER-ENTRY-HERE -->
+<article class="entry" id="career-2026-11-22"><h3>Study plan: 22 Nov 2026 (Week 1, Day 4)</h3>
+<p class="meta">Sunday, weekend assessment included. Classes: Docker in production (images, security, multi-stage); Kubernetes in production (requests/limits, HPA, PDB, upgrades). Scenarios: disk full on a Docker host; network saturation and packet loss. Interview: Docker. Career: leadership skills expected per level. AIOps: predictive infrastructure monitoring. Recap tools today (deep): GCP, Ansible, Prometheus and Grafana. AI pro: tool use design (schemas, errors, idempotency).</p>
+
+<h4>1. You are here (roadmap)</h4>
+<p><strong>Week 1, Day 4 of 56.</strong> Week 1 themes in the table: (1) Linux production troubleshooting, networking and shell scripting; (2) Git/GitHub workflows. Covered so far: Day 1 Linux processes and networking triage; Day 2 production shell scripting and Git branching; Day 3 Jenkins and CI/CD design. <em>Honest note from your teacher:</em> the daily classes have run slightly ahead of the written table (Jenkins, CI/CD, and today Docker and Kubernetes were pulled forward from Weeks 2 and 3). Nothing is lost: you will revisit each in depth in its own week, and today's weekend assessment lets you check what has actually stuck. Next: Monday you move to Terraform and AWS-style production topics in the daily order, and the roadmap table is kept as your outcome list (see the box above the entries).</p>
+<p><strong>Progress:</strong> 4 of 56 days done, 8 classes taught, 7 scenarios solved. Teacher's word: Sunday is for consolidation. Do the two labs, then close your notes and take the self-assessment. A score you earned is worth more than a score you read.</p>
+
+<h4>2. Two classes of the day</h4>
+
+<div class="box" style="--c:#0369a1"><h5>Class 1: Docker in production (images, security, multi-stage)</h5>
+<p><strong>Objective:</strong> build small, reproducible, non-root images, run them with limits, and keep a Docker host from dying of disk, memory or log growth.</p>
+<p><strong>Theory.</strong> An image is a stack of read-only layers plus metadata; a container adds a thin writable layer and runs one process inside namespaces (what it can see) and cgroups (what it can use). Three production rules follow. (1) <em>Small and reproducible:</em> use a multi-stage build so compilers and caches stay in the build stage; copy only the artifact into a minimal runtime image (distroless, alpine or a slim base). Pin the base by version, ideally by digest, and order the Dockerfile from least to most frequently changing (dependency manifests before source) so the build cache works. (2) <em>Least privilege:</em> <code>USER</code> a non-root uid, drop all capabilities and add back only what is needed, <code>--read-only</code> root filesystem with a tmpfs for scratch, <code>no-new-privileges</code>, never mount <code>/var/run/docker.sock</code> into app containers (it is root on the host). (3) <em>Bounded resources:</em> without <code>-m</code> a container may consume all host memory; without a log rotation setting the default <code>json-file</code> driver keeps logs forever, which is the most common cause of a full disk on a Docker host.</p>
+<p>Things that bite: a shell-form <code>ENTRYPOINT</code> makes <code>/bin/sh</code> PID 1 so SIGTERM never reaches your app and every deploy waits 10 seconds then kills it; <code>latest</code> tags make rollbacks impossible; secrets passed with <code>ARG</code> or <code>ENV</code> are visible in <code>docker history</code> (use BuildKit <code>--mount=type=secret</code>); <code>COPY . .</code> without a <code>.dockerignore</code> ships your <code>.git</code> and <code>.env</code> into the image.</p>
+<pre>
+Dockerfile (multi-stage)              Registry                 Runtime host
+ stage build: JDK + Maven  --\
+   COPY pom.xml ; mvn dep       \  artifact only
+   COPY src ; mvn package        +--&gt; stage run: distroless JRE   --push--&gt; app:1.4.2 + digest
+ stage run : USER 10001, jar         non-root, no shell, ~150 MB           |
+                                                                          v
+                         scan (Trivy) + SBOM in CI  --&gt;  docker run --read-only --cap-drop ALL -m 512m
+</pre>
+<p><strong>In real companies:</strong> a platform team owns approved base images that are rebuilt weekly and scanned; CI builds with BuildKit and layer cache from the registry, tags with the git SHA, scans and fails on critical CVEs with a fix available, signs the image, and deploys by digest. Hosts (or nodes) run <code>docker system prune</code>-style cleanup only through a scheduled, reviewed job, and logs go to a collector with rotation as a safety net.</p>
+<pre>
+# syntax=docker/dockerfile:1
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /src
+COPY pom.xml .
+RUN --mount=type=cache,target=/root/.m2 mvn -q dependency:go-offline
+COPY src ./src
+RUN --mount=type=cache,target=/root/.m2 mvn -q package -DskipTests
+
+FROM gcr.io/distroless/java21-debian12:nonroot
+COPY --from=build /src/target/app.jar /app/app.jar
+USER nonroot
+ENTRYPOINT ["java","-XX:MaxRAMPercentage=75","-jar","/app/app.jar"]
+
+# run it hardened, with bounded resources and log rotation
+docker run -d --name app --read-only --tmpfs /tmp --cap-drop ALL \
+  --security-opt no-new-privileges -m 512m --cpus 1 \
+  --log-opt max-size=10m --log-opt max-file=3 myorg/app:1.4.2
+</pre>
+<p><strong>LAB (40 min):</strong> write a small app (any language) with a naive single-stage Dockerfile, note the size with <code>docker images</code>, then convert to multi-stage with a non-root user. Compare sizes, run <code>docker history</code> to see layers, run <code>trivy image</code> on both and compare findings, and start the hardened container above. <strong>Success looks like:</strong> the final image is at least 3x smaller, <code>docker exec app id</code> shows a non-zero uid, writing to the root filesystem fails, and <code>docker stop app</code> returns in under 2 seconds. <strong>ASSIGNMENT:</strong> add a <code>.dockerignore</code>, a <code>HEALTHCHECK</code>, and write 5 lines on how you would roll back (hint: redeploy the previous digest).</p>
+<p>Sources: <a href="https://docs.docker.com/build/building/best-practices/" target="_blank" rel="noopener">Docker build best practices</a> · <a href="https://docs.docker.com/build/building/multi-stage/" target="_blank" rel="noopener">Multi-stage builds</a> · <a href="https://docs.docker.com/engine/containers/resource_constraints/" target="_blank" rel="noopener">Resource constraints</a> · <a href="https://docs.docker.com/engine/logging/drivers/json-file/" target="_blank" rel="noopener">json-file logging driver</a> · <a href="https://docs.docker.com/engine/security/" target="_blank" rel="noopener">Docker security</a> <span class="tag ok">Confirmed</span> (official docs; page paths can move)</p>
+</div>
+
+<div class="box" style="--c:#0369a1"><h5>Class 2: Kubernetes in production (requests/limits, HPA, PDB, upgrades)</h5>
+<p><strong>Objective:</strong> size workloads correctly, scale them automatically, keep them available during node drains and upgrades, and upgrade a cluster without surprises.</p>
+<p><strong>Theory.</strong> <em>Requests</em> are what the scheduler reserves; <em>limits</em> are what the kubelet enforces. A memory limit hit means OOM kill; a CPU limit hit means throttling (latency, not death). Requests and limits also set the <em>QoS class</em>: Guaranteed (requests equal limits for all containers), Burstable, BestEffort; under node pressure BestEffort pods are evicted first. A common senior practice: set memory request equal to memory limit (no surprise eviction), set a CPU request that matches steady usage, and be careful with CPU limits on latency-sensitive services (many teams drop them and rely on requests and node sizing). Use the Vertical Pod Autoscaler in recommendation mode to find real numbers.</p>
+<p><strong>HPA</strong> computes <code>desired = ceil(current * currentMetric / targetMetric)</code> against metrics-server (CPU, memory) or custom metrics. It uses CPU as a percentage <em>of the request</em>, so wrong requests mean wrong scaling. It needs readiness probes to be honest (new pods take traffic only when ready) and <code>behavior.scaleDown.stabilizationWindowSeconds</code> to avoid flapping. <strong>PDB</strong> (PodDisruptionBudget) limits <em>voluntary</em> disruptions such as <code>kubectl drain</code>, node upgrades and autoscaler scale-down: <code>minAvailable: 2</code> or <code>maxUnavailable: 1</code>. A PDB with <code>minAvailable</code> equal to replicas blocks every drain forever, and it does not protect against crashes or node failure. Pair it with topology spread constraints so replicas sit in different zones and nodes.</p>
+<p><strong>Upgrades.</strong> Kubernetes ships minor releases a few times a year and supports each for a limited window, so upgrading is a routine job, not a project. Rules: upgrade one minor version at a time; control plane first, then nodes (kubelet may lag the API server within the documented skew); read the release notes and deprecation guide; scan manifests for removed APIs before upgrading (tools such as <code>kubent</code> or <code>pluto</code>, or the API server's <code>apiserver_requested_deprecated_apis</code> metric); upgrade a staging cluster first; on managed services (EKS, AKS, GKE) the provider upgrades the control plane and you roll node groups. Rolling nodes means cordon, drain (respecting PDBs), replace, and verify, one node pool at a time with surge capacity.</p>
+<pre>
+ requests/limits --&gt; QoS class --&gt; who is evicted first (BestEffort &gt; Burstable &gt; Guaranteed)
+ metrics-server --&gt; HPA (ceil(cur*metric/target)) --&gt; Deployment replicas --&gt; scheduler (needs free requests)
+ node upgrade: cordon --&gt; drain (PDB gate) --&gt; new node joins --&gt; pods reschedule --&gt; verify --&gt; next node
+</pre>
+<pre>
+resources:
+  requests: { cpu: "250m", memory: "512Mi" }
+  limits:   { memory: "512Mi" }          # memory request == limit; CPU limit deliberately omitted
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: web }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: web }
+  minReplicas: 3
+  maxReplicas: 12
+  metrics: [{ type: Resource, resource: { name: cpu, target: { type: Utilization, averageUtilization: 65 } } }]
+  behavior: { scaleDown: { stabilizationWindowSeconds: 300 } }
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: { name: web }
+spec: { maxUnavailable: 1, selector: { matchLabels: { app: web } } }
+</pre>
+<p><strong>In real companies:</strong> a platform team publishes a Helm chart or Kustomize base that already contains probes, requests, HPA, PDB and topology spread, so product teams only set numbers. Quarterly upgrade windows, a staging cluster that always runs one version ahead, and a pre-upgrade API deprecation check in CI are normal.</p>
+<p><strong>LAB (45 min):</strong> on a local cluster (kind or minikube with metrics-server) deploy an nginx Deployment with the manifest above (3 replicas). Generate load (<code>kubectl run -it load --image=busybox -- sh -c "while true; do wget -q -O- http://web; done"</code>) and watch <code>kubectl get hpa -w</code> scale up. Then <code>kubectl drain &lt;node&gt; --ignore-daemonsets</code> and watch the PDB hold one pod back. <strong>Success looks like:</strong> replicas rise above 3 under load and fall after about 5 minutes; the drain never leaves fewer than 2 pods running. <strong>ASSIGNMENT:</strong> set a PDB with <code>minAvailable: 3</code> on 3 replicas, try a drain, explain in 3 lines why it hangs and what you would change.</p>
+<p>Sources: <a href="https://kubernetes.io/docs/concepts/workloads/pods/pod-qos/" target="_blank" rel="noopener">Pod QoS classes</a> · <a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/" target="_blank" rel="noopener">Horizontal Pod Autoscaling</a> · <a href="https://kubernetes.io/docs/tasks/run-application/configure-pdb/" target="_blank" rel="noopener">PodDisruptionBudget</a> · <a href="https://kubernetes.io/releases/version-skew-policy/" target="_blank" rel="noopener">Version skew policy</a> · <a href="https://kubernetes.io/docs/reference/using-api/deprecation-guide/" target="_blank" rel="noopener">Deprecated API migration guide</a> <span class="tag ok">Confirmed</span> (official docs)</p>
+</div>
+
+<h4>3. Scenario practice</h4>
+
+<div class="box" style="--c:#0369a1"><h5>Scenario A (today's tools): the Docker build host is at 100% disk and every build fails</h5>
+<p><strong>Situation.</strong> Sunday 03:20 IST. Nightly builds fail with "no space left on device". The host (a single VM running Docker for CI builds and a few internal services) paged at 98% on <code>/var/lib/docker</code>. A release build is scheduled at 07:00. You cannot reboot the host (an internal registry mirror runs on it) and must not delete anything you cannot recreate.</p>
+<pre>
+$ df -h /var/lib/docker
+/dev/nvme1n1  200G  196G  4.0G  98% /var/lib/docker
+$ docker system df
+TYPE            TOTAL  ACTIVE  SIZE     RECLAIMABLE
+Images          212    9       88.4GB   71.2GB (80%)
+Containers      14     8       61.9GB   0B
+Local Volumes   37     6       14.3GB   9.8GB (68%)
+Build Cache     640    0       18.7GB   18.7GB
+$ du -sh /var/lib/docker/containers/*/*-json.log | sort -h | tail -2
+ 3.1G  .../3f9a...-json.log
+ 55G   .../b27c...-json.log
+$ docker ps --format '{{.ID}} {{.Names}} {{.Image}}' | grep b27c
+b27c1d5e9a41 report-gen internal/report-gen:2.3
+</pre>
+<p><strong>Guiding questions:</strong> 1) Where is the space really going, and what is the single biggest item? 2) What is safe to delete now, in what order, and what is not? 3) How do you stop it coming back?</p>
+<details><summary>Show solution</summary>
+<p><strong>Investigation.</strong> 1) <code>docker system df</code> shows images 88 GB (71 GB reclaimable), build cache 18.7 GB, volumes 14 GB, and containers 61.9 GB, which is unusually large for 14 containers. Containers' size includes writable layers <em>and</em> the logs sit in <code>/var/lib/docker/containers/&lt;id&gt;/&lt;id&gt;-json.log</code>. The 55 GB log belongs to <code>report-gen</code>, which prints a line per record at DEBUG level; the default <code>json-file</code> driver has no rotation. 2) Safest first: free log space <em>without restarting</em> by truncating the file in place: <code>truncate -s 0 /var/lib/docker/containers/b27c.../b27c...-json.log</code> (deleting the file would not free space while the process holds it open). That instantly gives 55 GB. Then reclaim cache and dangling data: <code>docker builder prune --filter until=72h</code>, <code>docker image prune -a --filter "until=168h"</code> (only unused images; the 9 active ones are untouched). Do <em>not</em> run <code>docker volume prune</code> blindly: named volumes may hold registry mirror data; list with <code>docker volume ls -f dangling=true</code> and check each. 3) Prevent: set <code>/etc/docker/daemon.json</code> with <code>"log-driver":"json-file","log-opts":{"max-size":"10m","max-file":"3"}</code> (applies to newly created containers, so recreate <code>report-gen</code> in a quiet window), fix the debug logging, add a disk alert on predicted fill time (<code>predict_linux</code> style, see AIOps below), and schedule a reviewed weekly <code>builder prune</code>.</p>
+<p><strong>Root cause.</strong> No log rotation on the Docker host plus DEBUG logging left on in production; a secondary factor was 80% unused images and 18 GB of stale build cache with no cleanup job.</p>
+<p><strong>Fix.</strong> Immediate: truncate the one huge log, prune build cache and old unused images (about 90 GB freed), restart the 07:00 build. Permanent: daemon-level log rotation, recreated container, cleanup job, and a disk-fill-in-24h alert.</p>
+<p><strong>Sample incident report (blameless RCA)</strong></p>
+<pre>
+INCIDENT REPORT: CI build host disk exhaustion   Severity: SEV-3   Status: Resolved
+Author: DevOps on-call   Reviewed by: Platform lead   Date: 22 Nov 2026
+
+SUMMARY
+On Sun 22 Nov at 03:05 IST /var/lib/docker on the CI build host reached 98% and nightly builds
+failed with "no space left on device". Service restored at 03:50 IST; the 07:00 release was not affected.
+
+IMPACT
+11 nightly builds failed (all re-run successfully). No customer impact. The internal registry mirror
+stayed up throughout.
+
+TIMELINE (IST)
+Sun 02:10  Disk crosses 90% (no alert configured at 90%)
+Sun 03:05  Builds begin to fail; 03:20 disk alert at 98% pages on-call
+Sun 03:28  On-call runs docker system df and du on container logs; finds a 55 GB json-file log
+Sun 03:34  Log truncated in place (55 GB freed); build cache and unused images pruned (35 GB more)
+Sun 03:50  Disk at 41%; failed builds re-queued and pass
+Sun 05:10  daemon.json updated with log rotation; report-gen scheduled for recreation
+
+ROOT CAUSE
+Docker's default json-file logging has no size limit. The report-gen container ran at DEBUG level
+and wrote 55 GB over 6 weeks. No cleanup job removed stale images or build cache.
+
+RESOLUTION
+Truncated the log in place, pruned build cache and unused images older than 7 days, enabled
+log rotation (10m x 3) in daemon.json.
+
+ACTION ITEMS
+1. Recreate report-gen with rotation and INFO log level. Owner: App team B. Due 24 Nov
+2. Weekly reviewed cleanup job (builder prune, image prune with age filter). Owner: DevOps engineer A. Due 27 Nov
+3. Alert when disk is predicted to fill within 24 h and at 80%. Owner: DevOps on-call. Due 25 Nov
+4. Add log-rotation check to the host build (Ansible role). Owner: Platform lead. Due 2 Dec
+What went well: in-place truncation fixed it without a restart. What went poorly: no alert before 98%.
+</pre>
+</details>
+</div>
+
+<div class="box" style="--c:#0369a1"><h5>Scenario B (senior level): checkout latency spikes and packet loss every night at 02:00</h5>
+<p><strong>Situation.</strong> Every night at about 02:00 IST p99 latency of the checkout API rises from 180 ms to 2.4 s for roughly 25 minutes, with 1 to 3% 5xx. Customers are few at that hour, so the business asks "is it worth fixing?" Your manager wants a root cause by Monday. The cluster has 20 nodes (10 Gbps NICs), the checkout pods share nodes with batch workloads. Nothing is deployed at 02:00.</p>
+<pre>
+$ sar -n DEV 1 3 | grep ens5      # on node ip-10-0-3-41 at 02:07
+ IFACE   rxpck/s   txpck/s   rxkB/s     txkB/s    %ifutil
+ ens5    92400     88100     1062000    59000     85.0
+$ ethtool -S ens5 | grep -E 'exceeded|drop'
+ bw_in_allowance_exceeded: 4812031       pps_allowance_exceeded: 0   conntrack_allowance_exceeded: 0
+$ ss -ti dst 10.0.7.12 | grep -o 'retrans:[0-9/]*' | head -3
+ retrans:0/11  retrans:0/27  retrans:1/44
+$ kubectl top pod -A --sort-by=cpu | head -3   # 02:07
+ batch   reindex-7d9c  4200m
+$ kubectl get cronjob -A | grep reindex
+ batch  reindex  0 2 * * *  False  1  Sun 02:00
+</pre>
+<p><strong>Constraints:</strong> batch team says the reindex job is business critical and must finish before 03:00; you cannot move checkout to another cluster this week.</p>
+<p><strong>Guiding questions:</strong> 1) What do the counters prove about cause (loss, saturation, or something else)? 2) Why does a job on a 10 Gbps node hurt unrelated pods, and why is "just add nodes" not the answer? 3) What is the fix that satisfies both teams, and how do you prove it worked?</p>
+<details><summary>Show solution</summary>
+<p><strong>Investigation.</strong> The timing is the clue: a CronJob <code>reindex</code> starts at 02:00 exactly when latency rises. The node shows 1.06 GB/s inbound (85% of the link) and <code>bw_in_allowance_exceeded</code> climbing (on AWS ENA, the instance's bandwidth allowance is being exceeded and packets are queued or dropped; this is a cloud-network counter, check your provider's equivalent). Conntrack and pps allowances are not exceeded, so it is bandwidth, not connection tracking. TCP retransmits on checkout's connections confirm loss in flight. Prove correlation: <code>kubectl get pods -A -o wide | grep ip-10-0-3-41</code> shows checkout pods on the same node as the reindex pod; graph <code>node_network_receive_bytes_total</code> against the p99 panel and against the job's start and end. Packet captures (<code>tcpdump -i ens5 -c 2000 -w /tmp/x.pcap</code>, then Wireshark's retransmission filter) are the last step, not the first.</p>
+<p><strong>Root cause.</strong> A nightly batch job downloads a large dataset at line rate on nodes shared with latency-sensitive pods. Kubernetes schedules by CPU and memory requests only; network bandwidth is not a scheduled resource, so one pod can saturate the shared NIC and the checkout flows suffer loss and retransmits.</p>
+<p><strong>Fix.</strong> Short term: limit the batch pod's bandwidth (the CNI bandwidth plugin annotations <code>kubernetes.io/ingress-bandwidth: 2G</code> if your CNI supports them, or rate limit in the app/downloader), and add pod anti-affinity or a node selector so reindex never lands on nodes running checkout. Long term: a dedicated batch node pool with taints and tolerations, so noisy work cannot share a NIC with the revenue path; add a network-saturation alert (<code>rate(node_network_receive_bytes_total[2m]) &gt; 0.8 * link speed</code>) and a runbook; measure reindex duration to confirm it still finishes before 03:00. Acceptance: next night p99 stays below 250 ms, <code>bw_in_allowance_exceeded</code> does not grow on checkout nodes, reindex finishes by 02:50.</p>
+<p><strong>Sample incident report (blameless RCA)</strong></p>
+<pre>
+INCIDENT REPORT: nightly checkout latency from batch network saturation   Severity: SEV-3 (recurring)
+Author: SRE on-call   Reviewed by: Platform lead   Date: 22 Nov 2026
+
+SUMMARY
+For 9 consecutive nights (13-21 Nov) between about 02:00 and 02:25 IST checkout p99 latency rose from
+180 ms to 2.4 s with 1-3% HTTP 5xx. Cause identified on 22 Nov as network saturation from a batch job.
+
+IMPACT
+About 340 failed checkout requests in total (low-traffic hours); SLO error budget used 6% of the monthly budget.
+
+TIMELINE (IST)
+13 Nov 02:00  First occurrence; attributed to "network blip"
+20 Nov        Pattern noticed by SRE (identical start time)
+22 Nov 02:07  Live capture: node NIC at 85%, bw_in_allowance_exceeded increasing, retransmits on checkout flows
+22 Nov 09:30  Correlated to CronJob batch/reindex (4.2 cores, full-rate dataset download) on shared nodes
+22 Nov 14:00  Mitigation: bandwidth annotation on reindex pod + anti-affinity away from checkout nodes
+
+ROOT CAUSE
+Network bandwidth is not a scheduling resource. The reindex job saturated the node's bandwidth allowance and
+checkout traffic on the same node suffered packet loss and retransmission.
+
+RESOLUTION
+Bandwidth limit and anti-affinity applied; next-night verification scheduled for 23 Nov 02:00.
+
+ACTION ITEMS
+1. Dedicated tainted batch node pool. Owner: Platform engineer A. Due 4 Dec
+2. Node network saturation alert and runbook. Owner: SRE on-call. Due 26 Nov
+3. Batch team to rate limit downloads and report job duration. Owner: Batch team lead. Due 30 Nov
+4. Add "recurring pattern at fixed time: check CronJobs" to the triage runbook. Owner: SRE lead. Due 27 Nov
+What went well: counters were already exported by node_exporter. What went poorly: 9 nights passed before anyone linked the time to a cron schedule.
+</pre>
+</details>
+</div>
+
+<h4>4. Interview practice (Docker)</h4>
+<p><strong>Q1.</strong> Your team's Docker image is 1.4 GB and takes 12 minutes to build and push. What would you do?</p>
+<details><summary>Show answer</summary>
+<p>1) Measure first: <code>docker history --no-trunc</code> (or <code>dive</code>) to see which layers are big and which rebuild every time. 2) Convert to a multi-stage build so compilers, package caches and test tools do not ship; pick a slim or distroless runtime base. 3) Reorder the Dockerfile: copy dependency manifests and install first, copy source last, so the dependency layer is cached. 4) Add a <code>.dockerignore</code> (<code>.git</code>, <code>node_modules</code>, test data). 5) In CI use BuildKit with a registry cache (<code>--cache-from/--cache-to</code>) because CI runners start with an empty cache. 6) Chain cleanup in the same <code>RUN</code> (<code>apt-get install ... &amp;&amp; rm -rf /var/lib/apt/lists/*</code>), otherwise the deleted files still live in the earlier layer. 7) Report the result: size, build time, pull time on a new node. <em>What the interviewer is checking:</em> that you measure before optimising and understand layers, cache order and CI cache behaviour.</p></details>
+<p><strong>Q2.</strong> A container keeps restarting with exit code 137, but the app works locally. How do you investigate?</p>
+<details><summary>Show answer</summary>
+<p>137 = 128 + 9, SIGKILL. Two common sources: the kernel OOM killer (memory limit too low) or an orchestrator kill after a failed graceful stop. Steps: <code>docker inspect &lt;c&gt; --format '{{.State.OOMKilled}} {{.State.ExitCode}}'</code>; if OOMKilled is true compare <code>docker stats</code> with the <code>-m</code> limit and check <code>dmesg -T | grep -i oom</code> on the host. Locally there is usually no limit, so the problem hid. Fix by finding the real memory need (heap flags such as <code>MaxRAMPercentage</code> for Java, worker counts for Node or Python) and set a limit with headroom, not simply doubling it. If OOMKilled is false, check whether the app ignores SIGTERM (shell-form ENTRYPOINT, PID 1 problem) and gets killed after the stop timeout; use exec form or <code>--init</code>. <em>What the interviewer is checking:</em> exit-code literacy, difference between OOM and failed stop, and that you do not fix by raising limits blindly.</p></details>
+<p><strong>Q3.</strong> Security asks you to prove that production containers are not running as root and have no known critical vulnerabilities. What do you set up?</p>
+<details><summary>Show answer</summary>
+<p>Prevent and detect. Build time: <code>USER</code> non-root in the Dockerfile, minimal base image, Trivy or Grype scan in CI that fails on critical vulnerabilities with a fix available, SBOM generated and stored with the image, image signed (cosign). Registry: only approved registries and tags by digest; continuous re-scan because new CVEs appear after build. Runtime (Kubernetes): enforce with Pod Security Admission or a policy engine (<code>runAsNonRoot: true</code>, <code>allowPrivilegeEscalation: false</code>, drop capabilities, read-only root filesystem), so a root container is rejected at admission. Evidence: the CI scan reports, the admission policy and a weekly report of images by age and finding count. Handle exceptions with an expiry date. <em>What the interviewer is checking:</em> layered thinking (build, registry, admission, runtime) and evidence for auditors, not a single scanner.</p></details>
+
+<h4>5. Industry pulse</h4>
+<div class="box" style="--c:#b91c1c"><h5>Incident 1: Microsoft 365 / Exchange Online global outage (12 to 14 Nov 2026)</h5>
+<p><strong>What happened.</strong> Event dates 12 to 13 Nov 2026 (UTC); the preliminary post-incident report was published 15 Nov and reported by The Register on 16 Nov. Connectivity problems were flagged on 12 Nov at 16:03 UTC; Microsoft identified connection negotiation as the main culprit on 13 Nov at 00:30 UTC, applied a mitigation at 07:20 UTC and confirmed health that afternoon; the final customer update came on 14 Nov. <strong>Root cause (per Microsoft's preliminary report):</strong> a defect introduced in a July 2026 change caused lock contention inside an internal Windows process, exhausting CPU and memory; it passed load testing, which Microsoft said focused on weaker hardware with fewer cores, while the contention worsens on machines with more cores. The trigger was a load surge after a Teams failover combined with about 14% of gateway capacity out of service; traffic rerouting cascaded. At worst, over 80% of the affected servers were unresponsive. Automated recovery was not designed for this state, and restarts overwhelmed servers again. <strong>Impact:</strong> Exchange Online unavailable for a long period; Teams, OneDrive, SharePoint and Office apps could fail out of the faulty gateways. Number of affected customers: not stated. <strong>Prevention and lesson:</strong> load test on production-class hardware, not the cheapest; design recovery for "everything is down at once" (thundering herd on restart, gradual re-admission); a months-old defect cannot be rolled back, so a tested forward-fix path matters. Note: a final report was said to be due 20 Nov; I could not confirm it has been published, so treat details as preliminary.</p>
+<p>Source: <a href="https://www.theregister.com/2026/11/16/microsoft-blames-monster-email-outage-on-software-defect-introduced-in-july-fix/5310026" target="_blank" rel="noopener">The Register, 16 Nov 2026 (reporting Microsoft's preliminary report)</a> <span class="tag warn">Reported</span> (secondary source; Microsoft's own PIR was not read directly)</p></div>
+
+<div class="box" style="--c:#b91c1c"><h5>Incident 2: GitHub write outages of 7 Oct 2026 (published in the October availability report, 12 Nov)</h5>
+<p><strong>What happened.</strong> Event date 7 Oct 2026 (15:14 and 17:17 UTC); published in GitHub's October availability report on 12 Nov. During regular maintenance a replacement machine that manages database write routing started with outdated records that still listed retired database servers. When it was elected leader it published routing settings that sent writes for several core databases to those retired servers, and validation did not catch it. Later an automated maintenance task ignored a maintenance pause and triggered another election, and the same bad machine became leader again. <strong>Impact:</strong> web and API failures peaked at 8.9% and 9.3%, affecting more than 12,000 and more than 11,000 organisations (pushes, sign-in, pull request and issue updates, webhooks, Actions, Codespaces, Copilot); viewing content was largely unaffected and no saved data was lost. (The report's header and body give different durations; the body says about 10 and 9 minutes.) <strong>Fixes promised:</strong> better retirement of database servers, tighter control on adding routing machines, automation that honours pauses, and stronger validation of routing settings. <strong>Lesson for you:</strong> a "pause" flag that automation ignores is a bug waiting to happen; validate generated config before publishing it; and decommissioning is part of the lifecycle, so stale records of retired hosts are a hazard. Also relevant for CI users: GitHub's separate 17 Aug 2026 outage lasted 7 hours 47 minutes and GitHub says it was a scaling failure in a Central US component, not a code change, followed by a retry loop adding load, which is why retry budgets matter.</p>
+<p>Sources: <a href="https://github.blog/news-insights/company-news/github-availability-report-october-2026/" target="_blank" rel="noopener">GitHub availability report: October 2026</a> · <a href="https://github.blog/news-insights/company-news/the-august-17-outage-and-the-work-ahead/" target="_blank" rel="noopener">The August 17 outage, and the work ahead</a> <span class="tag ok">Confirmed</span> (vendor's own reports)</p></div>
+
+<p><strong>What companies expect from DevOps engineers now</strong></p>
+<ul>
+<li>Resilience beyond one provider or component: the GitHub reports show retry budgets, isolation of shared dependencies and capacity planning being discussed in public. <span class="tag ok">Confirmed</span> (GitHub's own post).</li>
+<li>Safe change practice: staged rollouts, validated generated config, tested recovery paths; the Microsoft report shows recovery that was never designed for a fleet-wide failure. <span class="tag warn">Reported</span></li>
+<li>Comfort using AI assistants for triage while keeping a human approval step and an audit trail. <span class="tag info">Direction</span> (my reading of current hiring and vendor material, not a measured statistic).</li>
+</ul>
+
+<h4>6. AIOps: predictive infrastructure monitoring</h4>
+<p><strong>How AI helps.</strong> Classic alerts fire when a threshold is crossed; predictive monitoring forecasts when it <em>will</em> be crossed, so you act during working hours. Examples: disk fill-time, certificate expiry, memory leak slope, queue growth, capacity for the next sale. The simplest tool is not a model at all: Prometheus <code>predict_linear</code> fits a straight line to recent samples. Statistical or ML tools add seasonality (nightly jobs, weekly peaks), which a straight line gets wrong. An LLM is useful on top: reading the forecast, the recent deploy list and the runbook, and writing "disk on build-01 fills in about 9 hours, 80% of growth comes from one container log, suggested action: ...".</p>
+<pre>
+# Prometheus alert: disk predicted to fill within 24 h (based on the last 6 h trend)
+- alert: DiskWillFillIn24h
+  expr: predict_linear(node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"}[6h], 24*3600) &lt; 0
+  for: 30m
+  labels: { severity: ticket }
+  annotations: { summary: "{{ $labels.instance }} {{ $labels.mountpoint }} fills within 24h" }
+
+Prompt for the assistant (read-only context pasted in): "Here is the disk forecast, the last 5 deploys and the
+top 5 directories by growth. Say which one explains the growth, quote the number that proves it,
+propose one reversible action, and say UNSURE if the data does not show it."
+</pre>
+<p><strong>Risks and guardrails.</strong> Linear forecasts mislead around jobs that clean up (a nightly prune resets the slope) and around spikes; use a long enough window and the <code>for:</code> clause. Predictive alerts should create tickets, not pages, until you have measured false-positive rate. The assistant must be read-only: it suggests, a human runs the change. Review forecasts against what actually happened each month, and keep a baseline (the plain <code>predict_linear</code>) so you know if a fancier model really beats it. Source: <a href="https://prometheus.io/docs/prometheus/latest/querying/functions/#predict_linear" target="_blank" rel="noopener">Prometheus: predict_linear</a> <span class="tag ok">Confirmed</span></p>
+
+<h4>7. Lab checklist</h4>
+<pre>
+[ ] Docker: single-stage image built; multi-stage non-root image built; sizes compared
+[ ] Docker: trivy image run on both; findings compared in my notes
+[ ] Docker: hardened container started (read-only, cap-drop, -m, log rotation); docker stop under 2 s
+[ ] Docker assignment: .dockerignore + HEALTHCHECK added; 5-line rollback note written
+[ ] Kubernetes: Deployment + HPA + PDB applied on a local cluster; HPA scaled up under load
+[ ] Kubernetes: drain observed, PDB held a pod back; PDB minAvailable=3 hang explained in 3 lines
+[ ] Scenario A: wrote my own 5-line RCA before opening the solution
+[ ] Scenario B: wrote down which counter proves bandwidth (not conntrack) before opening the solution
+[ ] AIOps: predict_linear alert pasted into a local Prometheus and checked on a real disk graph
+[ ] Weekend: mini-project done, self-assessment scored and recorded
+</pre>
+
+<h4>8. Career: leadership skills expected per level</h4>
+<p><strong>Lesson.</strong> At two years you are measured on <em>your</em> output: tickets closed, pipelines fixed, incidents handled. Leadership at this level is small and concrete: you own a task end to end, you tell people early when you are blocked, and you leave things better documented than you found them. Nobody expects you to manage people; they notice whether you can be trusted with an unsupervised production change.</p>
+<p>At the senior level leadership becomes <em>multiplying others</em>. You review pull requests so that the team learns, not only so that code merges. You write the design note before the big change, lead an incident without drama (one voice on the bridge, a scribe, clear next update time), and say "I do not know yet, here is how we will find out". You mentor juniors and you push back on a bad deadline with data instead of silence. You are expected to look past your own service: who else is affected, what is the rollback, what does the on-call at 3 a.m. need to know.</p>
+<p>At the staff, lead or architect level the scope is the organisation. You set technical direction, write the decisions down (so they survive reorganisations), say no to tools that add cost without value, build the standards that other teams follow, and grow other seniors. The skill that separates levels is rarely deeper command knowledge; it is how far your judgment reaches and how many people you make effective. A manager level adds hiring, performance conversations and budgets, which is a different career track: you can be a very senior engineer without ever managing people, and you should choose deliberately.</p>
+<p>War story: a very strong engineer I worked with was passed over for senior twice. Each time the feedback was the same: brilliant fixes, but the team learned nothing from them, and juniors were afraid to ask. When they began writing a short "what I did and why" note after every incident and pairing juniors on the next one, the promotion came within two quarters. The fix was behaviour, not skill.</p>
+<p><strong>Say it like this</strong> (to a manager or CTO): "I handled the disk incident, and the more important part is that I wrote the runbook and added the alert so any engineer on call can fix it in ten minutes, and I would like to take ownership of the CI host standards next quarter."</p>
+<p><strong>Skill-gap action for today (15 minutes):</strong> pick one recent task and write three lines: what you did, what the next person must know, what you would do differently. Share it with a teammate. That is the smallest unit of senior behaviour.</p>
+
+<h4>9. Daily recap of all your tools</h4>
+<div class="tw"><table><thead><tr><th>Tool</th><th>Remember today</th><th>Command or config</th><th>Official doc</th></tr></thead><tbody>
+<tr><td>Linux and shell</td><td>journald keeps logs only in memory unless /var/log/journal exists; enable persistent storage or lose logs on reboot.</td><td><code>journalctl -p err -b -1</code></td><td><a href="https://www.freedesktop.org/software/systemd/man/latest/journald.conf.html" target="_blank" rel="noopener">journald.conf</a></td></tr>
+<tr><td>Git/GitHub</td><td>git bisect binary-searches history to find the commit that introduced a bug.</td><td><code>git bisect start; git bisect bad; git bisect good v1.2</code></td><td><a href="https://git-scm.com/docs/git-bisect" target="_blank" rel="noopener">git-bisect</a></td></tr>
+<tr><td>Jenkins</td><td>Install plugins from a pinned list so the controller is rebuildable and upgrades are deliberate.</td><td><code>jenkins-plugin-cli --plugins workflow-aggregator:&lt;version&gt;</code></td><td><a href="https://www.jenkins.io/doc/book/managing/plugins/" target="_blank" rel="noopener">Managing plugins</a></td></tr>
+<tr><td>CI/CD (Actions/GitLab CI)</td><td>GitLab <code>needs:</code> builds a DAG so a job starts when its dependencies finish, not when the whole stage does.</td><td><code>test: { needs: [build] }</code></td><td><a href="https://docs.gitlab.com/ci/yaml/#needs" target="_blank" rel="noopener">GitLab needs</a></td></tr>
+<tr><td>Docker</td><td>Without -m a container can use all host memory; set limits and log rotation on every service.</td><td><code>docker run -m 512m --cpus 1 --log-opt max-size=10m app</code></td><td><a href="https://docs.docker.com/engine/containers/resource_constraints/" target="_blank" rel="noopener">Resource constraints</a></td></tr>
+<tr><td>Kubernetes</td><td>kubectl debug attaches an ephemeral container to a running pod, even when its image has no shell.</td><td><code>kubectl debug -it pod/web --image=busybox --target=app</code></td><td><a href="https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/" target="_blank" rel="noopener">Debug running pods</a></td></tr>
+<tr><td>Terraform</td><td>A moved block renames or relocates a resource in code without destroying and recreating it.</td><td><code>moved { from = aws_s3_bucket.a  to = aws_s3_bucket.b }</code></td><td><a href="https://developer.hashicorp.com/terraform/language/modules/develop/refactoring" target="_blank" rel="noopener">Refactoring</a></td></tr>
+<tr><td>AWS</td><td>CloudTrail event history shows recent management API calls; use it to answer "who changed this?".</td><td><code>aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=DeleteBucket</code></td><td><a href="https://docs.aws.amazon.com/awscloudtrail/latest/userguide/view-cloudtrail-events.html" target="_blank" rel="noopener">CloudTrail events</a></td></tr>
+<tr><td>Azure</td><td>The Activity Log records subscription-level control-plane operations: who did what and when.</td><td><code>az monitor activity-log list --offset 1d -o table</code></td><td><a href="https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log" target="_blank" rel="noopener">Activity log</a></td></tr>
+<tr><td>GCP</td><td>Confirm the active project before any command; named gcloud configurations switch project and account together.</td><td><code>gcloud config configurations list</code></td><td><a href="https://cloud.google.com/sdk/docs/configurations" target="_blank" rel="noopener">gcloud configurations</a></td></tr>
+<tr><td>Ansible</td><td>Check mode with diff previews what a play would change without changing anything.</td><td><code>ansible-playbook site.yml --check --diff</code></td><td><a href="https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_checkmode.html" target="_blank" rel="noopener">Check mode</a></td></tr>
+<tr><td>Prometheus and Grafana</td><td>The built-in <code>up</code> metric is 1 when the last scrape worked; alert on <code>up == 0</code> so dead targets are not silent.</td><td><code>up{job="node"} == 0</code></td><td><a href="https://prometheus.io/docs/concepts/jobs_instances/" target="_blank" rel="noopener">Jobs and instances</a></td></tr>
+<tr><td>ELK/OpenSearch</td><td>refresh_interval controls search visibility; raise it during bulk loads for speed.</td><td><code>PUT myindex/_settings {"index":{"refresh_interval":"30s"}}</code></td><td><a href="https://opensearch.org/docs/latest/install-and-configure/configuring-opensearch/index-settings/" target="_blank" rel="noopener">Index settings</a></td></tr>
+<tr><td>Python for DevOps</td><td>Pass subprocess a list, not a shell string, and use check=True so failures raise.</td><td><code>subprocess.run(["kubectl","get","pods"], check=True, capture_output=True, text=True)</code></td><td><a href="https://docs.python.org/3/library/subprocess.html" target="_blank" rel="noopener">subprocess</a></td></tr>
+<tr><td>GitOps (Argo CD/Helm)</td><td>helm template renders a chart locally, so you can review the exact YAML before it reaches a cluster.</td><td><code>helm template web ./chart -f values-prod.yaml</code></td><td><a href="https://helm.sh/docs/helm/helm_template/" target="_blank" rel="noopener">helm template</a></td></tr>
+<tr><td>DevSecOps</td><td>Make the image scan a gate: fail the build on high and critical findings that have a fix.</td><td><code>trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed app:1.0</code></td><td><a href="https://github.com/aquasecurity/trivy" target="_blank" rel="noopener">Trivy</a></td></tr>
+<tr><td>SRE (SLI/SLO)</td><td>A good SLI is a ratio of good events to valid events, which makes it easy to convert into an SLO.</td><td><code>sli = good_requests / valid_requests</code></td><td><a href="https://sre.google/workbook/implementing-slos/" target="_blank" rel="noopener">Implementing SLOs</a></td></tr>
+<tr><td>FinOps/Platform</td><td>Rightsize first, then commit: Savings Plans should cover only the steady baseline you are sure about.</td><td><code>aws ce get-cost-and-usage --time-period Start=2026-11-01,End=2026-11-22 --granularity DAILY --metrics UnblendedCost --group-by Type=DIMENSION,Key=SERVICE</code></td><td><a href="https://docs.aws.amazon.com/cli/latest/reference/ce/get-cost-and-usage.html" target="_blank" rel="noopener">get-cost-and-usage</a></td></tr>
+<tr><td>AI in DevOps</td><td>Redact secrets and personal data from logs before sending them to any model, and give it read-only access.</td><td><code>prompt: "Logs are redacted. Suggest checks only; do not output commands that change state."</code></td><td><a href="https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview" target="_blank" rel="noopener">Prompt engineering</a></td></tr>
+</tbody></table></div>
+
+<h5>GCP: GKE Autopilot versus Standard</h5>
+<p><strong>What it is:</strong> Google Kubernetes Engine runs your clusters; in Standard you manage node pools, in Autopilot Google manages nodes and you pay for the resources your pods request. <strong>Why it matters:</strong> this choice decides who patches nodes, how you size workloads and how the bill is shaped. <strong>How it works:</strong></p>
+<pre>Standard : you pick machine types and node pools; pay per node (used or idle)
+Autopilot: you set pod requests; Google provisions nodes; pay per requested pod resources
+           (so accurate requests directly equal accurate cost; some privileged settings are restricted)</pre>
+<p>Use Autopilot when the team wants less node operations and workloads fit its constraints; use Standard for special hardware, daemonsets or strict node control. Either way put workloads in separate projects per environment and use Workload Identity instead of downloaded keys. <strong>AI prompt:</strong> "Given these Deployments' requests and our monthly usage, estimate whether Autopilot or Standard is cheaper and list workloads Autopilot would reject." Ref: <a href="https://cloud.google.com/kubernetes-engine/docs/concepts/choose-cluster-mode" target="_blank" rel="noopener">GKE: choose a cluster mode</a>.</p>
+
+<h5>Ansible: roles and idempotent tasks</h5>
+<p><strong>What it is:</strong> Ansible configures servers over SSH using YAML playbooks; roles package tasks, handlers, templates and defaults for reuse. <strong>Why it matters:</strong> a role used by 50 hosts means one reviewed change fixes all of them, and idempotent tasks make re-runs safe. <strong>How it works:</strong></p>
+<pre>site.yml -&gt; role: docker_host
+  roles/docker_host/{tasks,handlers,templates,defaults}
+  task: copy daemon.json (template) --notify--&gt; handler: restart docker (only if changed)</pre>
+<p>Prefer modules (<code>ansible.builtin.template</code>, <code>package</code>, <code>systemd_service</code>) over <code>shell</code>; when <code>shell</code> is unavoidable add <code>creates:</code> or <code>changed_when</code>. Keep secrets in Ansible Vault or an external store, test roles with Molecule, and run with <code>--check --diff</code> before production. Today's scenario fix (log rotation in daemon.json) is exactly one templated task plus a handler. <strong>AI prompt:</strong> "Review this role for idempotency: list tasks that would report changed on every run and suggest a fix." Ref: <a href="https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html" target="_blank" rel="noopener">Ansible roles</a>.</p>
+
+<h5>Prometheus and Grafana: histograms, p99 and recording rules</h5>
+<p><strong>What it is:</strong> Prometheus stores time series; a histogram metric exposes request durations as cumulative buckets, from which you compute percentiles. <strong>Why it matters:</strong> averages hide pain; p99 is what slow users feel, and it is the usual latency SLI. <strong>How it works:</strong></p>
+<pre>http_request_duration_seconds_bucket{le="0.1"|"0.5"|"1"|"+Inf"}   (counters)
+p99 = histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))</pre>
+<p>Sum by <code>le</code> across instances before taking the quantile (never average per-pod quantiles). Bucket boundaries decide accuracy, so put buckets around your SLO threshold. Save expensive expressions as recording rules so dashboards and alerts stay fast, and keep label cardinality low (no user IDs). In Grafana use one variable for service and link panels to runbooks. <strong>AI prompt:</strong> "Write a PromQL p99 query and a burn-rate alert for a 99.9% latency SLO under 300 ms using these metric names." Ref: <a href="https://prometheus.io/docs/practices/histograms/" target="_blank" rel="noopener">Histograms and summaries</a>.</p>
+
+<p><strong>Recap questions</strong></p>
+<p>1. You ran <code>gcloud compute instances delete</code> and it said the instance was not found, but you know it exists. What do you check first?</p>
+<details><summary>Show answer</summary><p>The active project and zone: <code>gcloud config list</code>. Instances are scoped to a project and zone; the wrong named configuration or a missing <code>--zone</code> gives "not found". Switch with <code>gcloud config configurations activate</code> or pass <code>--project</code> and <code>--zone</code> explicitly, and never run deletes without confirming the project.</p></details>
+<p>2. A playbook reports "changed" for the same task on every run. Why does it matter and how do you fix it?</p>
+<details><summary>Show answer</summary><p>It is not idempotent, which hides real changes, triggers handlers needlessly (restarts) and breaks check mode. Usually a <code>shell</code> or <code>command</code> task; replace with a module, or add <code>creates:</code>/<code>changed_when:</code>.</p></details>
+<p>3. Why must you <code>sum by (le)</code> before <code>histogram_quantile</code>, and what is wrong with averaging each pod's p99?</p>
+<details><summary>Show answer</summary><p>Percentiles cannot be averaged. Summing the bucket counters across pods gives the combined distribution, from which the quantile is computed correctly. An average of per-pod p99 values can be far from the real overall p99.</p></details>
+
+<h4>10. AI pro: tool use design (schemas, errors, idempotency)</h4>
+<p><strong>Concepts.</strong> In tool use (function calling) the model does not run anything: it emits a structured request naming a tool and arguments; your code executes it and returns a result; the model continues. The tool's name, description and JSON Schema are the <em>only</em> interface the model sees, so they are product design, not plumbing. Good tools are few, narrow and named for outcomes (<code>get_deployment_status</code>, <code>restart_pod</code>), not thin wrappers over a raw shell or an entire API.</p>
+<p><strong>Design pattern.</strong> (1) <em>Schemas:</em> closed argument sets, enums instead of free strings, required fields, bounds, <code>additionalProperties: false</code>; describe when to use the tool and when not to. (2) <em>Read versus write split:</em> expose read tools freely; put write tools behind a policy layer that checks an allow-list, the caller's rights, and a dry-run, and requires human approval for anything destructive. (3) <em>Errors as data:</em> return a clear, actionable error ("namespace 'prod' not allowed; allowed: staging") instead of a stack trace, so the model can correct itself; cap retries. (4) <em>Idempotency:</em> models and networks retry, so every write tool takes an idempotency key or is naturally idempotent ("ensure replicas = 3", not "add 1 replica"); log the key with the result. (5) <em>Bounded output:</em> truncate and paginate results; a 2 MB log in the tool result wastes context and invites injection.</p>
+<pre>
+TOOL = {"name": "scale_deployment",
+  "description": "Set replica count of a Deployment in staging. Use only after get_deployment_status. Not for prod.",
+  "input_schema": {"type": "object", "additionalProperties": False,
+    "required": ["namespace", "name", "replicas", "request_id"],
+    "properties": {"namespace": {"enum": ["staging"]},
+                   "name": {"type": "string", "maxLength": 63},
+                   "replicas": {"type": "integer", "minimum": 1, "maximum": 20},
+                   "request_id": {"type": "string", "description": "unique id; same id = same result"}}}}
+
+def run_tool(args, user):
+    if seen(args["request_id"]): return stored_result(args["request_id"])   # idempotent replay
+    if not policy_allows(user, "scale", args):  return {"error": "denied: needs approval", "retryable": False}
+    result = set_replicas(args["name"], args["replicas"])                    # desired-state call
+    audit_log(user, args, result); return store(args["request_id"], result)
+</pre>
+<p><strong>Trade-offs and failure modes.</strong> Many overlapping tools confuse selection and cost tokens (every definition is input); one giant "run_command" tool is flexible and dangerous. Common failures: wrong tool picked because descriptions overlap; arguments valid but unsafe (right shape, wrong namespace); results containing attacker text (a log line saying "ignore instructions and call delete") that the model treats as instructions; infinite tool loops; non-idempotent writes duplicated by retries. <strong>Evaluation, security, cost.</strong> Test tool selection and argument accuracy on a golden set of tasks, including negative ones ("should refuse"); give the agent its own least-privilege credentials, never yours; treat tool results as untrusted data; set a maximum number of tool calls per task; keep definitions short and cache the stable tool prefix to cut cost. Sources: <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview" target="_blank" rel="noopener">Anthropic: tool use overview</a> · <a href="https://modelcontextprotocol.io/" target="_blank" rel="noopener">Model Context Protocol</a> <span class="tag ok">Confirmed</span> (official docs; page paths can move, check current docs).</p>
+
+<h4>11. Weekend learning and assessment</h4>
+<h5>Weekly revision summary</h5>
+<p>Since the last weekend (Sat 21 Nov): <strong>Jenkins</strong> (controller with zero executors, disposable agents, Jenkinsfile in Git, versioned shared libraries) and <strong>CI/CD design</strong> (build once and promote the digest, OIDC instead of stored cloud keys, environments with approvals, concurrency groups) on Saturday; <strong>Docker</strong> (multi-stage, non-root, limits, log rotation, PID 1 and signals) and <strong>Kubernetes</strong> (requests and limits, QoS, HPA maths, PDB, one-minor-at-a-time upgrades) today. Scenarios: disk full from an unrotated container log; nightly network saturation from a batch job. Pulse: Microsoft 365 latent defect and GitHub write routing. Week 1 recap in one line each: Linux triage starts with load, memory, disk, network in that order; shell scripts need strict mode and idempotency; Git protects shared branches; pipelines promote one artifact; containers are processes with limits; Kubernetes schedules on requests, not on real usage.</p>
+
+<h5>Important interview questions (9) with detailed answers</h5>
+<p><strong>1. Readiness, liveness and startup probes: what is each for and what goes wrong?</strong></p>
+<details><summary>Show answer</summary><p>Readiness decides whether the pod receives traffic (failing removes it from Service endpoints, no restart). Liveness restarts a stuck container. Startup holds off the other two for slow-starting apps. Typical failures: a liveness probe that checks a dependency (database down means every pod restarts and the outage worsens); a liveness timeout shorter than a GC pause; no readiness probe so traffic hits a pod still warming up. Rule: liveness checks only the process itself, readiness may check what the pod needs to serve.</p></details>
+<p><strong>2. Bad commit is already on shared main: revert or reset?</strong></p>
+<details><summary>Show answer</summary><p><code>git revert &lt;sha&gt;</code> (for merge commits <code>-m 1</code>) creates a new commit undoing the change; history stays intact and everyone can pull. <code>reset --hard</code> plus force-push rewrites shared history and breaks others' clones; protected branches should forbid it. Use reset only on your own local or feature branches.</p></details>
+<p><strong>3. Why are disposable agents better than long-lived Jenkins agents?</strong></p>
+<details><summary>Show answer</summary><p>Clean state every build (no leftover files or credentials), parallel scaling, no drift between agents, easy to upgrade tooling by changing an image, and a compromised build dies with its pod. Cost: cold-start time and cache warming, solved with registry or volume caches.</p></details>
+<p><strong>4. What happens when you run <code>docker stop</code>?</strong></p>
+<details><summary>Show answer</summary><p>Docker sends SIGTERM to PID 1 in the container, waits (default 10 seconds), then sends SIGKILL. If the app is not PID 1 (shell-form ENTRYPOINT) it never sees SIGTERM and is killed hard, dropping requests. Use exec form or <code>--init</code>, handle SIGTERM by finishing in-flight work, and in Kubernetes align <code>terminationGracePeriodSeconds</code> with the app's drain time.</p></details>
+<p><strong>5. CPU limit: helpful or harmful?</strong></p>
+<details><summary>Show answer</summary><p>It caps usage via CFS quota and causes throttling when exceeded even if the node is idle, adding latency spikes in bursty services. Benefits: protects neighbours and keeps cost predictable. Many teams set CPU requests accurately and omit limits for latency-sensitive services; they keep limits for batch or untrusted workloads. Check <code>container_cpu_cfs_throttled_periods_total</code> before deciding.</p></details>
+<p><strong>6. A rollout is stuck with new pods not becoming ready. What do you check, and what does Kubernetes do?</strong></p>
+<details><summary>Show answer</summary><p><code>kubectl rollout status</code>, <code>describe</code> on the new pods (events: image pull, probe failures, insufficient resources), logs of the new pods. The Deployment honours <code>maxUnavailable</code> and <code>maxSurge</code>, so old pods keep serving while new ones fail; after <code>progressDeadlineSeconds</code> the rollout is marked failed but not rolled back automatically. Fix forward or <code>kubectl rollout undo</code>; a GitOps tool should revert the Git commit instead.</p></details>
+<p><strong>7. Why OIDC instead of access keys in CI?</strong></p>
+<details><summary>Show answer</summary><p>The CI provider issues a short-lived signed token per job; the cloud trusts it through a role whose trust policy checks the repo, branch or environment claims, and returns temporary credentials. No long-lived secret to leak or rotate, and permissions are tied to which pipeline is running. Keep the permission <code>id-token: write</code> to the job that needs it.</p></details>
+<p><strong>8. Load average is 20 on 4 CPUs but CPU is 90% idle. Explain.</strong></p>
+<details><summary>Show answer</summary><p>Load counts runnable tasks and tasks in uninterruptible I/O wait (D state). High load with idle CPU means tasks are blocked on disk or network storage. Check <code>vmstat 1</code> (<code>wa</code>, <code>b</code> columns), <code>iostat -x</code>, <code>ps -eo stat,cmd | grep '^D'</code>, and NFS or EBS latency.</p></details>
+<p><strong>9. Rebase or merge for feature branches?</strong></p>
+<details><summary>Show answer</summary><p>Rebase your private branch onto main for a linear, clean history before the PR; merge (or squash merge) into main through the PR. Never rebase a branch others have based work on. Pick one policy per repo, enforce it in branch protection (for example squash-only), and document it. Interviewers want a reasoned team policy, not a religion.</p></details>
+
+<h5>Two troubleshooting exercises</h5>
+<p><strong>Exercise 1.</strong> After a successful pipeline, pods show <code>ImagePullBackOff</code> in the new namespace; <code>describe</code> says "pull access denied" for <code>registry.internal/app:1.4.2</code>. The same image runs in the old namespace.</p>
+<details><summary>Show solution</summary><p>Likely the new namespace lacks the image pull secret. Check <code>kubectl get secret -n new</code> and the pod's <code>imagePullSecrets</code>; pull secrets are namespaced. Confirm with <code>kubectl describe pod</code> events (the exact registry message), then verify the tag exists (<code>crane ls</code> or the registry UI) in case of a typo. Fix: create the secret in the namespace (from your secret store, never from chat) and reference it in the pod spec or attach it to the namespace's default ServiceAccount; for cloud registries prefer node or workload identity so no secret is needed. Prevention: namespace bootstrap automation (Helm chart or Kustomize base) that always creates the pull secret, and a CI smoke test that deploys to a fresh namespace. Success: new pods Running within a minute, <code>kubectl get events</code> clean.</p></details>
+<p><strong>Exercise 2.</strong> Black Friday load test: the HPA scaled from 3 to 12 replicas but 6 pods stay <code>Pending</code> with "0/5 nodes are available: 5 Insufficient cpu". Response times are poor.</p>
+<details><summary>Show solution</summary><p><code>kubectl describe pod</code> confirms scheduling failure by <em>requests</em>, not real usage. <code>kubectl describe node | grep -A8 "Allocated resources"</code> shows nodes fully reserved. Steps: immediate, add node capacity (resize the node group or enable cluster autoscaler so Pending pods trigger new nodes), and temporarily reduce over-large requests if monitoring shows pods use far less (check with VPA recommendations). Root cause: HPA can only create pods; the cluster had no headroom and no node autoscaling, and requests were set well above real use. Prevention: cluster autoscaler or Karpenter, PriorityClass for the revenue path so less important pods are preempted, load test capacity before events, alert on Pending pods older than 5 minutes. Success: all 12 pods Running and p99 back under the SLO.</p></details>
+
+<h5>Practical assignment (mini-project): a hardened container delivered to Kubernetes by a pipeline</h5>
+<p>Build, in one repository with <code>main</code> protected: (1) a small HTTP app and a multi-stage Dockerfile with a non-root user and HEALTHCHECK; (2) a GitHub Actions workflow that on pull request runs tests and builds the image, runs Trivy (fail on HIGH/CRITICAL with a fix), and on merge pushes to a registry tagged with the git SHA; (3) Kubernetes manifests with probes, requests, HPA and PDB, applied to a local kind cluster by a manual deploy script that takes the digest; (4) a README with a rollback section and a one-paragraph runbook for "disk full on the build host".</p>
+<p><strong>Acceptance checks:</strong> [ ] direct push to main is rejected; [ ] PR needs the CI check to pass; [ ] <code>docker run --user</code> shows non-root and the root filesystem is read-only; [ ] scan stage fails when you add a vulnerable old base image; [ ] HPA scales under load and the PDB blocks a drain below the minimum; [ ] rollback to the previous digest takes under 2 minutes; [ ] no secret appears in the repo or image history.</p>
+
+<h5>Three advanced questions</h5>
+<p><strong>A1. You must upgrade a production cluster two minor versions behind. Plan it.</strong></p>
+<details><summary>Show answer</summary><p>Two upgrades, one minor at a time, never skipping. For each: read release notes and the deprecation guide; scan all manifests and Helm charts for removed APIs; check add-on compatibility (CNI, ingress, CSI, metrics, operators) and the version skew policy; upgrade a staging cluster that mirrors production and run smoke and load tests; take etcd/Velero backups; announce a window; upgrade the control plane, then node pools with surge, respecting PDBs and zones, one pool at a time; watch SLO dashboards between steps; keep a rollback plan (nodes can be replaced with the old version; control-plane rollback is limited, which is why staging and backups matter). Afterwards, record time taken and issues, and schedule the next upgrade to stay current.</p></details>
+<p><strong>A2. Design CI so a compromised pull request from a fork cannot steal production credentials.</strong></p>
+<details><summary>Show answer</summary><p>Run untrusted PR code on workflows without secrets (<code>pull_request</code>, read-only token), never use <code>pull_request_target</code> to check out and run fork code, require approval for first-time contributors, use OIDC roles whose trust policy only accepts the main branch and a protected environment, pin actions by SHA, set <code>permissions</code> to least, use ephemeral runners, restrict network egress for runners where possible, and separate build (untrusted) from deploy (trusted, reviewed) workflows connected by an immutable artifact digest.</p></details>
+<p><strong>A3. Memory use of a container looks fine but the pod is repeatedly OOMKilled. What else counts toward the limit?</strong></p>
+<details><summary>Show answer</summary><p>The cgroup counts anonymous memory, page cache attributed to the cgroup, kernel memory, tmpfs (<code>emptyDir</code> medium Memory), thread stacks, and, for JVMs, non-heap areas (metaspace, code cache, direct buffers). Compare the <code>container_memory_working_set_bytes</code> metric (what the kubelet uses for eviction) against the limit, check <code>memory.stat</code>, and size heap as a percentage of the limit with headroom (for example <code>MaxRAMPercentage=70</code>). Short spikes between scrapes can hide the peak, so look at <code>max_over_time</code> or lower scrape intervals.</p></details>
+
+<h5>Self-assessment (10 questions, close your notes)</h5>
+<p>1. What does a pod's memory limit breach cause, versus a CPU limit breach?</p>
+<p>2. Write the HPA desired-replica formula.</p>
+<p>3. What does a PDB protect against, and what does it not?</p>
+<p>4. Why is a shell-form ENTRYPOINT a problem for graceful shutdown?</p>
+<p>5. How do you free disk used by a huge container log without restarting the container?</p>
+<p>6. Name two benefits of multi-stage builds.</p>
+<p>7. In a CI pipeline, why deploy the image digest rather than the <code>latest</code> tag?</p>
+<p>8. What is the first thing to check when a Kubernetes rollout is stuck?</p>
+<p>9. Why can Kubernetes pods hurt each other on network bandwidth, and what are two mitigations?</p>
+<p>10. What does <code>predict_linear</code> give you that a static threshold does not?</p>
+<details><summary>Show answer key and scoring guide</summary>
+<p>1) Memory breach: OOM kill (restart). CPU breach: throttling, no kill. 2) <code>desired = ceil(current * currentMetric / targetMetric)</code>. 3) Protects against voluntary disruptions (drain, upgrade, autoscaler scale-down); not node crashes or app failures. 4) <code>/bin/sh</code> becomes PID 1 and does not forward SIGTERM, so the app is killed after the timeout. 5) <code>truncate -s 0</code> on the json log file (deleting it does not free space while it is open). 6) Smaller final image (no build tools), smaller attack surface, faster pulls, better cache use. 7) A digest is immutable and exactly what was tested; <code>latest</code> moves and cannot be rolled back reliably. 8) <code>kubectl rollout status</code> and <code>describe</code> on the new pods' events (image, probes, resources). 9) Bandwidth is not a scheduled resource, so one pod can saturate a shared NIC; mitigate with bandwidth limits and anti-affinity or dedicated tainted node pools. 10) A forecast of when the limit will be crossed, so you act before an incident.</p>
+<p><strong>Scoring.</strong> 9 to 10: strong, move on and spend the spare time on the mini-project. 7 to 8: good, re-read the classes for the questions you missed and redo that lab. 5 to 6: revisit Docker and Kubernetes classes, repeat both labs and retake this quiz tomorrow. Below 5: slow down; spend Monday morning on Docker resource limits and Kubernetes requests/limits before new topics. Record your score and the missed numbers in your notes.</p>
+</details>
+</article>
+
 <article class="entry" id="career-2026-11-21"><h3>Study plan: 21 Nov 2026 (Week 1, Day 3)</h3>
 <p class="meta">Saturday, weekend assessment included. Classes: Jenkins pipelines, agents, shared libraries; CI/CD design in production (GitHub Actions, GitLab CI). Scenarios: high CPU on a server; high memory and OOM kills. Interview: Linux and networking. Career: technical skills expected per level. AIOps: automated incident detection. Recap tools today (deep): Terraform, AWS, Azure. AI pro: structured outputs and JSON schema validation.</p>
 
