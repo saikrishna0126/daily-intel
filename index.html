@@ -120,10 +120,62 @@ footer{margin-top:3em;color:var(--mut);font-size:.85rem;text-align:center}
 
 <section id="log">
 <h2 class="s-log">Daily log: intelligence reports (newest first)</h2>
-<p class="logidx"><strong>Read the whole report:</strong> <a href="#d-2026-11-21" class="rd">Sat 21 Nov 2026 →</a><a href="#d-2026-11-20" class="rd">Fri 20 Nov 2026 →</a><a href="#d-2026-11-19" class="rd">Thu 19 Nov 2026 →</a><a href="#d-2026-11-18" class="rd">Wed 18 Nov 2026 →</a> <a href="#d-2026-11-17" class="rd">Tue 17 Nov 2026 →</a></p>
+<p class="logidx"><strong>Read the whole report:</strong> <a href="#d-2026-11-22" class="rd">Sun 22 Nov 2026 →</a><a href="#d-2026-11-21" class="rd">Sat 21 Nov 2026 →</a><a href="#d-2026-11-20" class="rd">Fri 20 Nov 2026 →</a><a href="#d-2026-11-19" class="rd">Thu 19 Nov 2026 →</a><a href="#d-2026-11-18" class="rd">Wed 18 Nov 2026 →</a> <a href="#d-2026-11-17" class="rd">Tue 17 Nov 2026 →</a></p>
 <!-- NEW-LOG-INDEX-ABOVE -->
 <!-- NEW-LOG-ENTRY-HERE -->
-<details open class="day" id="d-2026-11-21"><summary class="big">Sat 21 Nov 2026 <span class="hint">(click to open / close the full report)</span></summary><div class="entry">
+<details open class="day" id="d-2026-11-22"><summary class="big">Sun 22 Nov 2026 <span class="hint">(click to open / close the full report)</span></summary><div class="entry">
+
+<p class="meta"><strong>Date:</strong> Sunday, 22 Nov 2026 (IST); Indian markets are closed, latest session is Fri 20 Nov · <strong>Research:</strong> about 10 searches and 3 page reads ·
+Labels: <span class="tag ok">Confirmed</span><span class="tag warn">Reported</span><span class="tag bad">Unverified</span><span class="tag info">Direction</span></p>
+<div class="note"><strong>Honest limits:</strong> weekend and a thin search index. No new vendor release pages for 21-22 Nov were found. Most items below are carried over, with the few new facts marked.</div>
+
+<h4>1. Top developments of the day</h4>
+<ol>
+<li><span class="tag ok">Confirmed</span> <strong>New since yesterday: CISA KEV additions on 17 Nov and 18 Nov.</strong> 17 Nov: Perforce Puppet Enterprise deserialization flaw CVE-2026-115731. 18 Nov (news report, not opened on CISA): Synology DSM, BerriAI LiteLLM, Apache Axis, Vanderbilt REDCap; LiteLLM deadline 2 Dec. Why: LiteLLM and Puppet sit in AI-gateway and config-management stacks. <a href="https://content.govdelivery.com/accounts/USDHSCISA/bulletins/4332383">CISA (Puppet)</a></li>
+<li><span class="tag ok">Confirmed</span> <strong>Chrome zero-day CVE-2026-125350</strong> (KEV 10 Nov): CERT-In CIVN-2026-0544 says update to 157.0.8103.50 or later. Why: dev laptops and CI browsers. <a href="https://content.govdelivery.com/accounts/USDHSCISA/bulletins/4325e4d">CISA</a></li>
+<li><span class="tag ok">Confirmed</span> <strong>Node.js security release (11 Nov):</strong> 26.13.1, 24.22.3, 22.23.5. Why: patch base images. <a href="https://nodejs.org/en/blog/vulnerability/november-2026-security-releases">Node.js</a></li>
+<li><span class="tag ok">Confirmed</span> <strong>Anthropic (ANT) debut 19 Nov:</strong> closed $97.17 vs $83 IPO price. The 20 Nov close was not found. Why: AI-vendor sentiment moves Nifty IT. <a href="https://www.anthropic.com/news/anthropic-prices-initial-public-offering">Anthropic</a></li>
+<li><span class="tag ok">Confirmed</span> <strong>Nvidia Q3 FY27 (17 Nov):</strong> revenue $115.8B, Q4 guidance about $130B. Why: AI-capex signal for cloud and GPU platforms. <a href="https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Third-Quarter-Fiscal-2027/default.aspx">Nvidia</a></li>
+<li><span class="tag warn">Reported</span> <strong>Supply-chain worms keep hitting npm/PyPI</strong> ("Mini Shai-Hulud" waves earlier in 2026, dates vary by outlet). No new wave dated 21-22 Nov found. Why: pin versions, use lockfiles, rotate CI tokens. <a href="https://www.securityweek.com/over-320-npm-packages-hit-by-fresh-mini-shai-hulud-supply-chain-attack/">SecurityWeek</a></li>
+</ol>
+
+<h4>2. Programming languages and runtimes</h4>
+<ul><li>No change since yesterday (Node.js security release above; Go 1.27.4/1.26.11, Rust 1.100, Python 3.15.0, JDK 27 as before).</li></ul>
+
+<h4>3. DevOps tools and cloud releases</h4>
+<div class="tw"><table>
+<tr><th>Tool</th><th>Latest version found</th><th>Date</th><th>What is new</th><th>Link</th></tr>
+<tr><td>Kubernetes</td><td>1.37 "Garhwal"</td><td>26 Aug</td><td>No November minor <span class="tag ok">Confirmed</span></td><td><a href="https://kubernetes.io/blog/2026/08/26/Kubernetes-v1-37-release/">k8s blog</a></td></tr>
+<tr><td>Node.js</td><td>26.13.1 / 24.22.3 / 22.23.5</td><td>11 Nov</td><td>16 security fixes <span class="tag ok">Confirmed</span></td><td><a href="https://nodejs.org/en/blog/vulnerability/november-2026-security-releases">advisory</a></td></tr>
+</table></div>
+<ul><li>Other tools: no change found. AWS re:Invent starts 30 Nov.</li></ul>
+
+<h4>4. Cybersecurity</h4>
+<ul>
+<li><span class="tag ok">Confirmed</span> CISA KEV: 17 Nov Puppet Enterprise (CVE-2026-115731); 10 Nov six entries incl. Chromium and Outlook. <a href="https://content.govdelivery.com/accounts/USDHSCISA/bulletins/4332383">CISA</a></li>
+<li><span class="tag warn">Reported</span> India: CERT-In CIAD-2026-0058 "Crafty Falcon" (4 Nov, critical, AI-assisted actor vs fintechs and lenders) and CIAD-2026-0059 Outlook zero-day CVE-2026-124194 (12 Nov, updated 14 Nov). Numbers come from news pages; confirm on cert-in.org.in. <a href="https://yourstory.com/2026/11/cert-in-flags-security-flaws-urges-chrome-users-in-india-to-update-browsers">YourStory</a></li>
+<li>Suspected / Claimed: no new items verified.</li>
+</ul>
+
+<h4>5. AI and AI-in-DevOps</h4>
+<ul><li>No change: no new vendor-confirmed model or MCP release found. <span class="tag info">Direction</span> keep agents read-only.</li></ul>
+
+<h4>6. Global IT industry</h4>
+<ul><li><span class="tag warn">Reported</span> Outlets link Big Tech layoffs (Meta, Oracle, Equinix) to AI data-centre spending; totals and dates differ between trackers, so treat as unverified. <a href="https://www.datacenterdynamics.com/en/tags/layoffs_1/">DCD tag page</a></li></ul>
+
+<h4>7. India IT</h4>
+<ul><li><span class="tag warn">Reported</span> Nifty IT fell 1.10% on 19 Nov and rose 1.30% on 20 Nov (Infosys, TCS, HCLTech, Tech Mahindra were among 19 Nov Nifty losers). No company announcement found. <a href="https://www.kotakneo.com/news/market-news/closing-bell-19-november-2026-sensex-nifty-end-higher-as-bulls-return-to-dalal-street/">Kotak Neo 19 Nov</a></li></ul>
+
+<h4>8. What changed since yesterday</h4>
+<ul><li>New: KEV 17/18 Nov batches, the 19 Nov Nifty/Sensex close (yesterday listed as not found), Nifty IT -1.10% on 19 Nov. Everything else: no change.</li></ul>
+
+<h4>9. Top 5 things to watch tomorrow</h4>
+<ol><li>Monday Indian open after two rising sessions (a monthly derivatives expiry on 23 Nov was reported in an early-Nov article; confirm on NSE).</li><li>US Monday direction and ANT versus the $83 IPO price.</li><li>New CISA KEV additions.</li><li>Nvidia permanent CEO search.</li><li>Kubernetes 1.38 (reported for 16 Dec) and re:Invent previews.</li></ol>
+
+<h4>10. Sources</h4>
+<ul><li><a href="https://content.govdelivery.com/accounts/USDHSCISA/bulletins/4332383">CISA KEV 17 Nov</a></li><li><a href="https://content.govdelivery.com/accounts/USDHSCISA/bulletins/4325e4d">CISA KEV 10 Nov</a></li><li><a href="https://nodejs.org/en/blog/vulnerability/november-2026-security-releases">Node.js advisory</a></li><li><a href="https://www.anthropic.com/news/anthropic-prices-initial-public-offering">Anthropic IPO release</a></li><li><a href="https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Third-Quarter-Fiscal-2027/default.aspx">Nvidia results</a></li></ul>
+</div></details>
+<details class="day" id="d-2026-11-21"><summary class="big">Sat 21 Nov 2026 <span class="hint">(click to open / close the full report)</span></summary><div class="entry">
 
 <p class="meta"><strong>Date:</strong> Saturday, 21 Nov 2026 (IST); Indian markets are closed, latest session is Fri 20 Nov · <strong>Research:</strong> about 20 searches and 3 page reads ·
 Labels: <span class="tag ok">Confirmed</span><span class="tag warn">Reported</span><span class="tag bad">Unverified</span><span class="tag info">Direction</span></p>
@@ -642,6 +694,42 @@ print(r.json())</code></pre>
 <section id="market">
 <h2 class="s-mkt">Market learning (information, not investment advice)</h2>
 <!-- NEW-MARKET-ENTRY-HERE -->
+<article class="entry"><h3>Market News: 22 Nov 2026 (IST)</h3>
+<p>Information only. Not investment advice. Sunday: Indian markets are closed; the latest session is Friday 20 Nov. <em>Index</em> = a scoreboard basket of shares (Nifty 50 = 50 large NSE companies; Sensex = 30 large BSE companies). <em>FII</em> = foreign institutional investors; <em>DII</em> = domestic institutions.</p>
+
+<h4>a) Plain-words summary</h4>
+<ul>
+<li>Indian shares rose two sessions in a row: Nifty +1.14% on 19 Nov and +1.12% on 20 Nov, closing at 25,800.60.</li>
+<li>Banks led on 20 Nov (Nifty Bank +2.49%); IT fell 1.10% on 19 Nov then rebounded 1.30%.</li>
+<li>Correction to yesterday: the 19 Nov close was found today (Kotak Neo), so the table now covers three sessions.</li>
+</ul>
+
+<h4>b2) Start-to-end table (18 Nov close to 20 Nov close)</h4>
+<div class="tw"><table><thead><tr><th>Name</th><th>18 Nov close</th><th>19 Nov close</th><th>20 Nov close</th><th>Change 18 to 20</th><th>Why</th></tr></thead><tbody>
+<tr><td>Nifty 50</td><td>25,227.95</td><td>25,514.30</td><td>25,800.60</td><td>+572.65 (+2.27%)</td><td>Autos and banks rose; FII buying</td></tr>
+<tr><td>Sensex</td><td>82,031.81</td><td>83,021.75</td><td>83,919.71</td><td>+1,887.90 (+2.30%)</td><td>Same reasons</td></tr>
+<tr><td>Nifty IT</td><td colspan="2">19 Nov: -1.10%</td><td>20 Nov: +1.30%</td><td>index levels not found</td><td>Fell with TCS, Infosys, HCLTech on 19 Nov; rebounded 20 Nov</td></tr>
+<tr><td>TCS, Infosys, HCLTech, Wipro, HDFC Bank, SBI</td><td colspan="5">prices not found. 19 Nov Nifty losers: TCS, Tech Mahindra, Infosys, Apollo Hospitals, HCLTech. 20 Nov losers: Titan, Tata Steel, NTPC, HUL, Jio Financial.</td></tr>
+</tbody></table></div>
+<p>Example: Rs 10,000 in the Nifty at the 18 Nov close would be about Rs 10,227 on 20 Nov (my arithmetic). Sources: <a href="https://www.kotakneo.com/news/market-news/closing-bell-19-november-2026-sensex-nifty-end-higher-as-bulls-return-to-dalal-street/" target="_blank" rel="noopener">Kotak Neo 19 Nov</a>, <a href="https://www.kotakneo.com/news/market-news/closing-bell-20-november-2026-sensex-nifty-rally-on-banking-it-stocks-and-fii-buying/" target="_blank" rel="noopener">Kotak Neo 20 Nov</a>, <a href="https://www.kotakneo.com/news/market-news/market-wrap-18-november-2026-profit-booking-and-a-drag-in-metal-stocks-pull-benchmarks-down/" target="_blank" rel="noopener">Kotak Neo 18 Nov</a>; official closes: <a href="https://www.nseindia.com" target="_blank" rel="noopener">NSE</a>, <a href="https://www.bseindia.com" target="_blank" rel="noopener">BSE</a>. Bank Nifty points, India VIX, USD/INR, daily FII/DII: not found.</p>
+
+<h4>b4) Small-cap study list</h4>
+<p><strong>No small cap named today:</strong> I could not verify sales, profit, debt, promoter holding or volume for any specific small cap from dated sources. Small caps can give higher possible gain and higher possible loss (30 to 50% falls happen), can be hard to sell and can be manipulated. Keep amounts small (money you can afford to lose), buy in parts, ask a SEBI-registered adviser. Check yourself on screener.in: growth, debt, promoter holding, volume, P/E versus peers.</p>
+
+<h4>b3) What may happen next (1 to 4 weeks)</h4>
+<p>Nobody can predict the market; these are possibilities to learn from, not advice. Price zones below come from broker outlooks written for the 16-20 Nov week (<a href="https://www.goodreturns.in/news/indian-stock-market-outlook-next-week-16-to-20-november-2026-sensex-nifty-targets-key-levels-crude-1547059.html" target="_blank" rel="noopener">GoodReturns</a>, <a href="https://www.siasat.com/nifty-may-test-25800-bank-nifty-60200-in-coming-week-experts-3571593/amp/" target="_blank" rel="noopener">Siasat</a>), so they may be out of date.</p>
+<ul>
+<li><strong>Nifty:</strong> Up if foreign buying and softer crude continue and 25,800 (a resistance those outlooks named) is crossed; Sideways as people book profit after a 2.3% rise (more likely); Down if US tech weakness spreads, with 25,000 to 24,750 named as support (less likely).</li>
+<li><strong>Infosys / TCS (IT):</strong> Up if the 20 Nov rebound holds; Sideways; Down if AI-related US selling continues. No price levels found.</li>
+<li><strong>HDFC Bank:</strong> Up if bank buying holds; Sideways; Down if foreign inflows slow. No price levels found.</li>
+</ul>
+
+<h4>Other data found</h4>
+<ul><li>Brent $92.64 (19 Nov) and $90.35 (20 Nov); WTI $82.80 and $80.96 (Kotak Neo). US index closes for 19-20 Nov not found.</li></ul>
+
+<h4>h) Beginner lesson: support and resistance</h4>
+<p><strong>Support</strong> is a price zone where a falling stock often stops falling because buyers step in. <strong>Resistance</strong> is a zone where a rising stock often stalls because sellers appear. Example: if the Nifty bounced several times near 25,000, traders call 25,000 support; if it kept turning down near 25,800, that is resistance. If price breaks through, old resistance often becomes new support. These zones are habits of crowds, not laws, and they fail often. Use them as rough maps, never as promises. Try it: open a one-year chart of a large stock and mark two zones where it turned at least twice. Education only; consult a SEBI-registered adviser.</p>
+</article>
 <article class="entry"><h3>Market News: 21 Nov 2026 (IST)</h3>
 <p>Information only. Not investment advice. Saturday: Indian markets are closed; the latest session is Friday 20 Nov. <em>Index</em> = a scoreboard basket of shares (Nifty 50 = 50 large NSE companies; Sensex = 30 large BSE companies). <em>FII</em> = foreign institutional investors; <em>DII</em> = domestic institutions.</p>
 
@@ -2415,19 +2503,19 @@ On-premises network</code></pre>
 </section>
 
 <section id="today">
-<h2 class="s-today">Today: Saturday 21 Nov 2026 (IST)</h2>
+<h2 class="s-today">Today: Sunday 22 Nov 2026 (IST)</h2>
 <p class="meta">This single page is updated in place every day. New entries go on top, older ones stay below. No new files are created.</p>
 <div class="grid3">
 <div class="box" style="--c:#7c3aed"><h4>🎓 Today's lesson</h4><p><strong>Seven tools, topic 1 each:</strong> AWS accounts/regions/AZs, Azure tenants/subscriptions, Docker containers vs VMs, Kubernetes cluster architecture, Terraform init/plan/apply, CI vs CD, what an LLM is.</p><p>Plus a deep dive on Kubernetes cluster architecture and an AI Pro note on attention and context windows.</p><p><strong>Career today:</strong> architecture docs, Linux troubleshooting, server-down scenario, AI log analysis. <a href="#career-2026-11-19">Open career entry</a></p><p><a href="#lesson-2026-11-19">Open today's lesson</a> · <a href="#ai-topics">AI in each topic</a></p></div>
 <div class="box" style="--c:#0369a1"><h4>🌍 Tech highlights</h4><ul>
-<li>Anthropic (ANT) debut: opened $111.50, closed $97.17 on 19 Nov; just under $89 on 20 Nov (reported)</li>
-<li>Nvidia Q3: revenue $115.8B, Q4 guide about $130B; Kress interim CEO (confirmed)</li>
+<li>CISA KEV: Puppet Enterprise CVE-2026-115731 (17 Nov); LiteLLM, Synology, Axis, REDCap (18 Nov, reported)</li>
 <li>Chrome zero-day CVE-2026-125350: update to 157.0.8103.50+ (confirmed)</li>
-<li>Node.js security release 11 Nov: 16 fixes (confirmed)</li></ul><p><a href="#log">Full daily report</a></p></div>
+<li>Node.js security release 11 Nov: 16 fixes (confirmed)</li>
+<li>Anthropic (ANT) closed $97.17 on debut day 19 Nov (confirmed)</li></ul><p><a href="#log">Full daily report</a></p></div>
 <div class="box" style="--c:#15803d"><h4>📊 Market snapshot</h4><ul>
 <li>Fri 20 Nov close: Sensex 83,919.71 (+1.08%), Nifty 25,800.60 (+1.12%)</li>
-<li>Banks (+2.49%) and IT (+1.30%) led; FII buying continues</li>
-<li>Lesson: stop loss (education only); 19 Nov close not found</li></ul><p><a href="#market">Market notes + how to analyse stocks</a></p></div>
+<li>19 Nov: Nifty 25,514.30, Sensex 83,021.75 (now found)</li>
+<li>Lesson: support and resistance (education only)</li></ul><p><a href="#market">Market notes + how to analyse stocks</a></p></div>
 </div>
 </section>
 
