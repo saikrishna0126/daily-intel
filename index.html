@@ -1206,7 +1206,7 @@ print(msg.content[0].text)</code></pre>
 <h2 style="background:#b45309">Career and industry growth (DevOps to Senior, SRE, Architect)</h2>
 <p class="meta">Daily: industry incidents, corporate documents (HLD, LLD, SOP, RCA, DR), hands-on skills, production scenarios, AIOps, interview practice and career lessons. Weekends: revision and assessment.</p>
 <!-- ROADMAP-START -->
-<div class="box" style="--c:#b45309"><h4>8-week roadmap (you are here: Week 1, Day 4)</h4>
+<div class="box" style="--c:#b45309"><h4>8-week roadmap (you are here: Week 1, Day 5)</h4>
 <div class="tw"><table><thead><tr><th>Week</th><th>Two themes</th><th>Outcome you can show</th></tr></thead><tbody>
 <tr style="background:#fef3c7"><td><strong>W1 (19-25 Nov) ◀ you are here</strong></td><td>Linux production troubleshooting, networking, shell scripting | Git/GitHub workflows</td><td>A triage runbook and a safe production shell script; a protected-branch repo with PR rules</td></tr>
 <tr><td>W2</td><td>Jenkins + CI/CD design (GitHub Actions/GitLab CI) | Docker in production and image security</td><td>A pipeline with test, scan, build and deploy stages; a hardened multi-stage image</td></tr>
@@ -1219,6 +1219,314 @@ print(msg.content[0].text)</code></pre>
 </tbody></table></div></div>
 <!-- ROADMAP-END -->
 <!-- NEW-CAREER-ENTRY-HERE -->
+<article class="entry" id="career-2026-11-23"><h3>Study plan: 23 Nov 2026 (Week 1, Day 5)</h3>
+<p class="meta">Monday. Classes: Terraform in production (modules, state, workspaces, review flow); AWS production (VPC design, IAM, multi-account). Scenarios: application latency investigation; designing highly available, fault-tolerant infrastructure. Interview: Kubernetes. Career: how to make infrastructure and deployment decisions. AIOps: AI-assisted root cause analysis. Recap tools today (deep): ELK/OpenSearch, Python for DevOps, GitOps (Argo CD and Helm). AI pro: RAG in depth.</p>
+
+<h4>1. You are here (roadmap)</h4>
+<p><strong>Week 1, Day 5 of 56.</strong> Week 1 themes in the table (box above the entries): (1) Linux production troubleshooting, networking and shell scripting; (2) Git/GitHub workflows. Covered so far: Day 1 Linux triage and networking; Day 2 production shell and Git branching; Day 3 Jenkins and CI/CD; Day 4 Docker and Kubernetes. <em>Teacher's note:</em> as I told you yesterday, the daily classes run ahead of the written table. Today the daily order brings Terraform and AWS forward from Week 4. That is fine: you meet each tool twice, once as a preview now, once in depth in its own week. Treat today as the first pass and keep a list of what confuses you; that list is what Week 4 is for.</p>
+<p><strong>Progress:</strong> 5 of 56 days done (counting today), 10 classes taught, 9 scenarios solved. Next: Tuesday continues with AWS and Azure production topics (landing zones, RBAC, policy).</p>
+
+<h4>2. Two classes of the day</h4>
+
+<div class="box" style="--c:#7c3aed"><h5>Class 1: Terraform in production (modules, state, workspaces, review flow)</h5>
+<p><strong>Objective:</strong> run Terraform the way a team does: remote locked state, small blast radius, reviewed plans, and modules that other people can use safely.</p>
+<p><strong>Theory.</strong> Terraform is declarative: you describe the end state, <code>plan</code> diffs your code against <em>state</em> (its record of what it created) and against real infrastructure, and <code>apply</code> executes the diff. State is the crown jewel: lose it and Terraform forgets resources exist (and will try to create duplicates); two people applying at once corrupt it. So production rules are: (1) <em>remote backend with locking</em> (S3 with its native lock file or DynamoDB, Azure Blob, GCS, or Terraform Cloud), versioning on the bucket, encryption, and access limited to the pipeline role; (2) <em>one state per blast radius</em>: split by environment and by layer (network, data, app) so a bad apply in the app layer cannot touch the VPC; (3) <em>modules</em> for repeated patterns with a small, typed interface (<code>variable</code> with <code>type</code>, <code>validation</code>, <code>description</code>), pinned by version, never by branch; (4) <em>plan in the PR, apply from the pipeline</em> after approval, using exactly the plan file that was reviewed.</p>
+<p><strong>Workspaces versus directories.</strong> Workspaces give several state files for one code base; they are fine for identical short-lived copies (feature environments) but poor for prod versus dev, because the same code, same backend credentials and a one-word switch separate them. Most mature teams use a directory (or repo) per environment calling shared modules, with different backends and different credentials. <strong>Drift</strong> is real infrastructure changed outside Terraform; <code>plan</code> shows it, <code>-refresh-only</code> accepts it into state. Things that bite: <code>count</code> on a list so removing the first item recreates everything after it (use <code>for_each</code> with stable keys); secrets land in state in plain text (so state access is secret access); a rename without a <code>moved</code> block destroys and recreates; <code>terraform destroy</code> run in the wrong directory; provider version drift (commit <code>.terraform.lock.hcl</code>).</p>
+<pre>
+ developer --PR--&gt; CI: fmt + validate + tflint + checkov/trivy config + plan (saved)
+                              |  plan posted as PR comment, human reviews the diff
+                      merge   v
+              pipeline role (OIDC) --&gt; terraform apply plan.tfplan
+                              |
+          S3 bucket (versioned, encrypted)  &lt;-- state + lock   (one state per env/layer)
+ modules: registry or git tag  ref=v1.4.0  (pinned)
+</pre>
+<p><strong>In real companies:</strong> a platform team publishes vetted modules (VPC, EKS, RDS) with security defaults baked in; app teams call them. Policy checks (OPA/Conftest, Sentinel, Checkov) block public buckets or open security groups before apply. Applies run only from CI, and humans have read-only cloud access for investigation. Destructive plans (any <code>destroy</code> or <code>replace</code>) need a second approver.</p>
+<pre>
+terraform {
+  required_version = "~&gt; 1.9"
+  required_providers { aws = { source = "hashicorp/aws", version = "~&gt; 5.0" } }
+  backend "s3" {
+    bucket = "acme-tfstate-prod"  key = "network/vpc.tfstate"  region = "ap-south-1"
+    encrypt = true  use_lockfile = true      # check your Terraform version supports S3 native locking
+  }
+}
+module "vpc" { source = "git::https://example.com/modules/vpc.git?ref=v1.4.0"  cidr = "10.20.0.0/16" }
+
+# CI: review exactly what will be applied
+terraform fmt -check &amp;&amp; terraform validate
+terraform plan -out=plan.tfplan -lock-timeout=5m
+terraform show -no-color plan.tfplan | grep -E 'must be replaced|will be destroyed'
+terraform apply plan.tfplan
+</pre>
+<p><strong>LAB (40 min):</strong> using a local backend first, then an S3 bucket if you have an AWS sandbox: create a small module (for example an S3 bucket with versioning and public-access block) with a validated variable, call it with <code>for_each</code> over two names, run plan and apply. Then rename one resource in code, see the destroy/create plan, add a <code>moved</code> block and see it become a no-op. Finally change a tag in the console and run <code>terraform plan</code> to see drift. <strong>Success looks like:</strong> the <code>moved</code> plan shows "0 to destroy", and you can explain the drift diff line by line. <strong>ASSIGNMENT:</strong> write a 6-line policy for your team: where state lives, who can apply, how destructive plans are approved.</p>
+<p>Sources: <a href="https://developer.hashicorp.com/terraform/language/state" target="_blank" rel="noopener">Terraform state</a> · <a href="https://developer.hashicorp.com/terraform/language/backend/s3" target="_blank" rel="noopener">S3 backend</a> · <a href="https://developer.hashicorp.com/terraform/language/modules/develop" target="_blank" rel="noopener">Module development</a> · <a href="https://developer.hashicorp.com/terraform/language/modules/develop/refactoring" target="_blank" rel="noopener">Refactoring (moved)</a> <span class="tag ok">Confirmed</span> (official docs; check the S3 locking option against your version's docs).</p>
+</div>
+
+<div class="box" style="--c:#ea580c"><h5>Class 2: AWS production (VPC design, IAM, multi-account)</h5>
+<p><strong>Objective:</strong> design a VPC that survives growth and an AZ failure, write IAM that is least privilege, and understand why companies run many AWS accounts.</p>
+<p><strong>Theory: VPC.</strong> A VPC is your private network in one region. Plan CIDRs first and never overlap them with other VPCs, on-prem or partner networks (overlap blocks peering and Transit Gateway, and renumbering is painful). Typical layout per AZ (use at least two, three for critical systems): a <em>public</em> subnet (load balancers, NAT gateway), a <em>private app</em> subnet (default route to a NAT gateway), a <em>data</em> subnet (no internet route). One NAT gateway per AZ avoids cross-AZ dependency and cross-AZ data charges, at a higher fixed cost; one shared NAT is a cheap-versus-resilient trade you should state explicitly. Use VPC endpoints (gateway endpoints for S3 and DynamoDB are free) to keep traffic off the NAT. Security groups are stateful and attach to ENIs: reference other security groups instead of CIDRs; network ACLs are stateless and rarely needed.</p>
+<p><strong>Theory: IAM.</strong> Evaluation: explicit deny wins; otherwise you need an allow; guardrails (SCPs, permission boundaries) cap what identity policies can grant. Humans sign in through IAM Identity Center (SSO) and assume roles, workloads use roles (instance profile, IRSA or Pod Identity on EKS, OIDC for CI), and long-lived access keys are the exception. Write policies from the actions actually used (CloudTrail and IAM Access Analyzer can generate them), scope <code>Resource</code>, and add conditions (<code>aws:RequestedRegion</code>, tags, <code>aws:SourceVpce</code>). Wildcards on <code>iam:*</code> or <code>iam:PassRole</code> are privilege escalation.</p>
+<p><strong>Theory: multi-account.</strong> The account is the strongest isolation boundary (IAM, quotas, billing, blast radius). AWS Organizations groups accounts into OUs with SCPs (for example "deny leaving the approved regions", "deny disabling CloudTrail"). Common structure: management account (billing only), security/log-archive accounts, shared-network account, then workload accounts per environment or team. AWS Control Tower or a landing-zone Terraform setup automates it.</p>
+<pre>
+ Org root (management: billing, SCPs only)
+  |-- Security OU : log-archive, audit        |-- Infra OU : network (Transit Gateway), shared-services
+  |-- Workloads OU: app1-prod, app1-dev ...   (SCP: deny region outside ap-south-1/us-east-1)
+ VPC 10.20.0.0/16   AZ-a 10.20.0.0/20 public   10.20.16.0/20 app   10.20.32.0/20 data
+                    AZ-b 10.20.64.0/20 public  10.20.80.0/20 app   10.20.96.0/20 data
+ app subnet --&gt; NAT-gw (per AZ) --&gt; IGW ;  S3 via gateway endpoint (no NAT)
+</pre>
+<p><strong>In real companies:</strong> engineers get SSO with a read-only role by default and a time-boxed elevated role for changes; CI uses OIDC roles scoped to one repo and branch; every account ships CloudTrail to the log-archive account; new accounts are vended from a template so guardrails exist from minute one.</p>
+<pre>
+# who am I, and what can this role do?
+aws sts get-caller-identity
+aws iam simulate-principal-policy --policy-source-arn arn:aws:iam::123456789012:role/ci-deploy \
+  --action-names s3:PutObject --resource-arns arn:aws:s3:::acme-artifacts/*
+# find unused access (Access Analyzer / last-used)
+aws iam generate-service-last-accessed-details --arn arn:aws:iam::123456789012:role/ci-deploy
+
+# trust policy for GitHub OIDC (only one repo, only main)
+"Condition": { "StringEquals": { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+  "token.actions.githubusercontent.com:sub": "repo:acme/web:ref:refs/heads/main" } }
+</pre>
+<p><strong>LAB (40 min, AWS free/sandbox account):</strong> draw the three-tier VPC above on paper with real CIDR blocks, then build it with Terraform (the class 1 lab) or the console. Create a role with a policy limited to one S3 prefix and test it with <code>simulate-principal-policy</code>. <strong>Success looks like:</strong> an instance in the private subnet reaches the internet via NAT but the data subnet cannot; the simulator denies an action outside the prefix. Delete the NAT gateway afterwards (it bills hourly). <strong>ASSIGNMENT:</strong> write which two SCPs you would apply first in a new organisation and why.</p>
+<p>Sources: <a href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-best-practices.html" target="_blank" rel="noopener">VPC security best practices</a> · <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html" target="_blank" rel="noopener">IAM best practices</a> · <a href="https://docs.aws.amazon.com/whitepapers/latest/organizing-your-aws-environment/organizing-your-aws-environment.html" target="_blank" rel="noopener">Organizing your AWS environment</a> · <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html" target="_blank" rel="noopener">Policy evaluation logic</a> <span class="tag ok">Confirmed</span> (official docs; page paths can move).</p>
+</div>
+
+<h4>3. Scenario practice</h4>
+
+<div class="box" style="--c:#7c3aed"><h5>Scenario A (today's tools): API latency tripled after a "harmless" Terraform apply</h5>
+<p><strong>Situation.</strong> Monday 10:40 IST. After this morning's 09:15 pipeline apply of a "network tidy-up" PR, the orders API p99 went from 220 ms to 700 ms and 1.5% of requests time out. The service reads and writes objects in S3 and sits in private subnets across two AZs. Nothing in the application was deployed. The PR description said "refactor VPC module, no functional change". Constraint: no console hot-fixes that Terraform would later revert; fix must go through code.</p>
+<pre>
+$ aws cloudwatch get-metric-statistics --namespace AWS/NATGateway --metric-name ErrorPortAllocation ...
+ 10:20 0   10:30 1840   10:40 6120
+$ aws cloudwatch ... --metric-name BytesOutToDestination  (nat-0a1b, AZ-a)   09:00 0.4 GB/5min   10:30 38 GB/5min
+$ aws ec2 describe-vpc-endpoints --filters Name=vpc-id,Values=vpc-0abc --query 'VpcEndpoints[].ServiceName'
+ [ "com.amazonaws.ap-south-1.dynamodb" ]            # yesterday there were two entries
+$ git show --stat HEAD~0 | head      # PR merged 09:12
+ modules/vpc/endpoints.tf | 14 +++---
+$ terraform show -no-color plan.tfplan | grep -c 'must be replaced'   # saved CI artefact
+ 1                                  # aws_vpc_endpoint.s3 must be replaced (reviewers scrolled past it)
+</pre>
+<p><strong>Guiding questions:</strong> 1) What do the NAT metrics tell you about where S3 traffic now goes, and why does it cause timeouts? 2) Why did the "no functional change" PR pass review, and what in the process failed? 3) What is the fix, and which guardrail stops a repeat?</p>
+<details><summary>Show solution</summary>
+<p><strong>Investigation.</strong> <code>ErrorPortAllocation</code> on a NAT gateway means it ran out of source ports to a single destination (about 55,000 concurrent connections per destination IP and port). Bytes out jumped 100x: the app's S3 traffic is now leaving through the NAT instead of the free S3 gateway endpoint. <code>describe-vpc-endpoints</code> shows the S3 endpoint is gone (only DynamoDB remains), and the saved plan shows <code>aws_vpc_endpoint.s3 must be replaced</code>. Check route tables: <code>aws ec2 describe-route-tables --filters Name=vpc-id,Values=vpc-0abc</code>. A gateway endpoint works by adding a prefix-list route to the route tables; the refactor changed the resource key and the new endpoint was created with an empty <code>route_table_ids</code>, so S3 now follows the <code>0.0.0.0/0</code> route to NAT. Many short S3 connections through one NAT IP exhaust ports, producing timeouts, and you also pay NAT per-GB processing on the whole flow.</p>
+<p><strong>Root cause.</strong> A refactor changed a module input so the S3 gateway endpoint was replaced and not associated with the private route tables; the "replace" line in the plan was not reviewed because the PR was labelled no-change.</p>
+<p><strong>Fix.</strong> Through code: pass <code>route_table_ids = module.vpc.private_route_table_ids</code> to the endpoint, open a fast-track PR, review the plan for "0 to destroy", apply. Latency returns within minutes of the route appearing (verify <code>aws ec2 describe-route-tables</code> shows a <code>pl-...</code> route to <code>vpce-...</code>). Prevention: (1) CI comments a short plan summary and requires a second approver whenever the plan contains <code>destroy</code> or <code>replace</code>; (2) <code>lifecycle { create_before_destroy = true }</code> and a <code>precondition</code> that route tables are not empty; (3) alarm on NAT <code>ErrorPortAllocation &gt; 0</code> and on NAT bytes out per AZ; (4) a post-apply smoke test (S3 put/get from a private subnet) in the pipeline; (5) "no functional change" refactors must show <code>0 to add, 0 to change, 0 to destroy</code> or use <code>moved</code> blocks.</p>
+<p><strong>Sample incident report (blameless RCA)</strong></p>
+<pre>
+INCIDENT REPORT: orders API latency after Terraform VPC refactor   Severity: SEV-2   Status: Resolved
+Author: DevOps on-call   Reviewed by: Platform lead   Date: 23 Nov 2026
+
+SUMMARY
+After a Terraform apply at 09:15 IST on 23 Nov, S3 traffic from private subnets stopped using the S3
+gateway endpoint and went through NAT gateways. NAT source-port exhaustion caused orders API p99 to rise
+from 220 ms to 700 ms and 1.5% timeouts. Resolved at 11:25 IST by re-associating the endpoint with the route tables.
+
+IMPACT
+About 130 minutes of degraded orders API; roughly 1.5% of requests timed out at peak. No data loss.
+Extra NAT data processing charges estimated at a few hundred dollars (to be confirmed in Cost Explorer).
+
+TIMELINE (IST)
+09:12  PR "VPC module refactor" merged (labelled no functional change)
+09:15  Pipeline apply; plan contained 1 "must be replaced" (aws_vpc_endpoint.s3)
+10:25  Latency alert fires (p99 &gt; 500 ms for 10 min); on-call acknowledges
+10:40  NAT ErrorPortAllocation and bytes-out spike found; S3 endpoint missing from endpoint list
+11:00  Fix PR opened with route_table_ids passed to endpoint; fast-track review
+11:20  Apply completed; S3 route via vpce restored   11:25 p99 back to 230 ms
+
+ROOT CAUSE
+Module refactor changed the endpoint resource and dropped its route table association. Review did not
+inspect the replace line; no automated check for destructive plans or for post-apply connectivity.
+
+RESOLUTION
+Re-associated the S3 gateway endpoint with private route tables via Terraform; verified routes and latency.
+
+ACTION ITEMS
+1. Require second approver when plan has destroy/replace. Owner: Platform engineer A. Due 27 Nov
+2. NAT ErrorPortAllocation and per-AZ bytes alarms. Owner: SRE on-call. Due 25 Nov
+3. Post-apply smoke test (S3 put/get from private subnet). Owner: DevOps engineer B. Due 2 Dec
+4. Add moved blocks and "0 to destroy" rule to the module refactoring guide. Owner: Platform lead. Due 30 Nov
+What went well: saved plan artefact made the cause obvious. What went poorly: 70 minutes passed before the alert fired.
+</pre>
+</details>
+</div>
+
+<div class="box" style="--c:#7c3aed"><h5>Scenario B (senior level): design a highly available, fault-tolerant platform for a payments API</h5>
+<p><strong>Situation.</strong> You join a fintech whose payments API runs on 3 EC2 instances in one AZ with a single RDS PostgreSQL instance. Leadership wants 99.95% monthly availability (about 22 minutes of downtime a month), RPO 5 minutes, RTO 30 minutes for a regional loss, and has a budget increase of 40%. Traffic is regional (India), peaks at 2,000 requests/s during sales. Last quarter a single AZ event took the service down for 70 minutes. Your manager asks for a design and a rollout plan in two weeks.</p>
+<p><strong>Constraints:</strong> no full active-active multi-region (budget and data consistency risk); changes must be gradual with no customer downtime; every claim must be testable.</p>
+<p><strong>Guiding questions:</strong> 1) Which failures does 99.95% require you to survive automatically, and which can be a 30-minute manual recovery? 2) Where is the data single point of failure and what do you do about it? 3) How do you prove the design works, and what do you tell leadership it does not cover?</p>
+<details><summary>Show solution</summary>
+<p><strong>Reasoning.</strong> 22 minutes a month means no human can be in the loop for the common failures: instance, AZ, and deploy failures must self-heal. Regional loss is rarer, so RTO 30 minutes with a warm standby is acceptable. Start from failure modes, not services. <em>Instance/process:</em> ALB health checks plus Auto Scaling group replacing instances; min 3 instances spread across 3 AZs so losing one AZ leaves 2/3 capacity (size so 2/3 handles peak, which is N+1 thinking). <em>AZ failure:</em> ALB in 3 public subnets, app ASG across 3 private subnets, NAT per AZ, no cross-AZ hard dependency. <em>Database (the real single point):</em> RDS Multi-AZ (synchronous standby, automatic failover typically in about one to two minutes, so the app needs retry and a short DNS TTL awareness; use the cluster/instance endpoint, never an IP) plus automated backups with point-in-time restore for RPO of minutes and a tested restore. Consider read replicas for read load, not for HA. <em>Regional loss:</em> cross-region read replica or snapshot copy plus the whole stack in Terraform, so the standby region can be built or scaled within 30 minutes (pilot light / warm standby); Route 53 failover health checks or a documented manual switch. <em>Deploys:</em> rolling or blue/green with automatic rollback, since bad deploys cause more downtime than hardware.</p>
+<pre>
+ Route 53 (health checks) --&gt; ALB (3 AZ) --&gt; ASG min3 (3 AZ, N+1 sized) --&gt; RDS Multi-AZ primary (AZ-a)
+                                                                           \-- standby (AZ-b), sync
+ region 2 (ap-southeast-1): Terraform-built pilot light, cross-region replica / snapshot copy, scale-up runbook
+ Observability: SLO 99.95 on success-rate SLI, burn-rate alerts; chaos test: kill AZ-a instances, force RDS failover
+</pre>
+<p><strong>How to prove it.</strong> Game day in staging then production off-peak: terminate all instances in one AZ (<code>aws autoscaling</code> or AWS FIS), force an RDS failover (<code>aws rds reboot-db-instance --force-failover</code>), restore the database to a point in time into a new instance and time it. Record measured RTO and RPO. <strong>What it does not cover (tell leadership):</strong> a bad schema migration or logical data corruption (Multi-AZ replicates it; only backups/PITR help), a shared dependency outage (payment partner, DNS, IAM), regional failure faster than 30 minutes, and cost: three AZs and a standby are roughly the 40% increase. Present the trade-off with numbers.</p>
+<p><strong>Sample design and change record (ADR style)</strong></p>
+<pre>
+DESIGN RECORD: HA for payments API (ADR-014)   Status: Accepted   Author: Senior DevOps engineer   Date: 23 Nov 2026
+
+SUMMARY
+Move payments API from single-AZ to a three-AZ architecture with RDS Multi-AZ, and add a warm-standby
+region, to meet 99.95% monthly availability, RPO 5 min, RTO 30 min (regional).
+
+IMPACT (of the change)
+No planned downtime. Cost increase about 38% (3 AZ capacity, Multi-AZ DB, cross-region replica, NAT per AZ).
+
+TIMELINE (rollout)
+Week 1  Terraform the existing stack; create ASG across 3 AZs behind ALB; keep old instances in rotation
+Week 2  Convert RDS to Multi-AZ in the maintenance window (brief failover expected); enable PITR checks
+Week 3  Build standby region (pilot light); first game day; fix findings
+Week 4  Burn-rate alerts live; second game day in production off-peak; sign-off
+
+DECISION / ROOT PROBLEM
+Last quarter's 70-minute outage was a single-AZ failure with a single-instance database.
+Alternatives rejected: active-active multi-region (cost, data consistency risk); single-AZ with faster restore (cannot reach 22 min/month).
+
+RESOLUTION / VERIFICATION
+Measured in game days: AZ loss recovered in under 3 minutes with no failed payments above 0.5%; RDS failover 70-110 s;
+PITR restore 24 min; regional rebuild 26 min (record actual numbers in the final version).
+
+ACTION ITEMS
+1. Terraform modules for network, app, data. Owner: DevOps engineer A. Due 4 Dec
+2. App retry with backoff on DB failover. Owner: Payments team lead. Due 4 Dec
+3. SLO dashboard and burn-rate alerts. Owner: SRE on-call. Due 11 Dec
+4. Quarterly DR game day in calendar. Owner: Platform lead. Due 15 Dec
+Risks accepted: logical corruption relies on PITR; partner outages out of scope.
+</pre>
+</details>
+</div>
+
+<h4>4. Interview practice (Kubernetes)</h4>
+<p><strong>Q1.</strong> A new deployment went out and users get 502 errors for about 30 seconds on every release, though pods eventually become healthy. What would you do?</p>
+<details><summary>Show answer</summary>
+<p>1) Reproduce: watch <code>kubectl get endpoints web -w</code> and the ingress logs during a rollout. 2) The usual cause is a mismatch between pod lifecycle and traffic: a missing or too lenient readiness probe (pod gets traffic before it can serve), or no graceful shutdown (the pod is killed while the load balancer still sends it requests, because endpoint removal and SIGTERM happen at the same time). 3) Fix: a readiness probe on a real "can serve" endpoint, a <code>preStop</code> sleep of 5 to 10 seconds so the endpoint removal propagates, app handling of SIGTERM (finish in-flight requests), <code>terminationGracePeriodSeconds</code> longer than the drain time, and rollout settings <code>maxUnavailable: 0</code>, <code>maxSurge: 1</code>. 4) With a cloud load balancer in IP mode, check its deregistration delay too. 5) Verify with a load test during a rollout showing zero 5xx. <em>What the interviewer is checking:</em> that you know the endpoint removal race and do not just say "increase replicas".</p></details>
+<p><strong>Q2.</strong> A pod stays <code>Pending</code>. How do you find out why, and what are the common causes?</p>
+<details><summary>Show answer</summary>
+<p><code>kubectl describe pod</code> and read the Events at the bottom; the scheduler writes the reason. Common messages: "Insufficient cpu/memory" (requests do not fit any node; check <code>kubectl describe nodes</code> allocated resources, scale the node group or lower requests after measuring real usage); "node(s) had untolerated taint" (add a toleration or use the right node pool); "didn't match Pod's node affinity/selector"; "unbound immediate PersistentVolumeClaims" or a volume in another zone (check <code>kubectl get pvc</code> and the storage class binding mode); topology spread or anti-affinity rules that cannot be satisfied; quota exceeded in the namespace (<code>kubectl describe quota</code>). If cluster autoscaler is present, check its status and logs, as it only adds nodes when a pod is unschedulable for a reason a new node can fix. <em>What the interviewer is checking:</em> that you start with events and know the scheduler's decision inputs: requests, taints, affinity, volumes, quota.</p></details>
+<p><strong>Q3.</strong> A teammate needs temporary access to read logs and pods in the production namespace only. How do you grant it safely?</p>
+<details><summary>Show answer</summary>
+<p>Use RBAC with least privilege and an expiry. 1) Identity: they sign in through the cluster's SSO (for example EKS access entries or Entra/Google groups), not a shared kubeconfig. 2) Create a <code>Role</code> in the namespace (not a <code>ClusterRole</code> binding cluster-wide) allowing <code>get, list, watch</code> on pods, pods/log, events, deployments; no secrets, no <code>exec</code>. 3) Bind it to a group with a <code>RoleBinding</code>, tracked in Git. 4) Check with <code>kubectl auth can-i get pods/log -n prod --as=user</code> and <code>kubectl auth can-i get secrets -n prod --as=user</code> (should say no). 5) Remove the binding after the agreed time (a ticket and a calendar reminder, or an automation). 6) Audit logs show what was accessed. <em>What the interviewer is checking:</em> namespace-scoped roles, group-based binding, secrets and exec treated as sensitive, and a removal plan.</p></details>
+
+<h4>5. Industry pulse</h4>
+<div class="box" style="--c:#b91c1c"><h5>Incident 1: Google Cloud europe-west2 (London) zone outage, 20 Oct 2026</h5>
+<p><strong>What happened.</strong> Event date 20 Oct 2026 (UTC); reported by The Register after Google's incident summary. Reported accounts say an external underground cable feeding the data centre's power failed while one of two primary power feeders (feeder B) had been opened for repair work after a generator load test; the backup generators then did not start automatically. Secondary write-ups say the undervoltage sensors were wired upstream of the open breaker, so the controller still saw live voltage on that feed and never triggered a start (I could not verify this detail against Google's own report). <strong>Impact:</strong> multiple services in one zone (reports list Compute Engine, GKE, Cloud SQL, Persistent Disk and others) were disrupted for roughly 5 to 6 hours; trackers disagree on exact start and end times, so treat durations as approximate. <strong>Prevention and lesson:</strong> redundancy that is switched off for maintenance is no redundancy; a safety control that checks one condition (voltage present) rather than the real state (breaker position) can fail silently; and for you as a customer, a single zone is a failure domain. Run across at least two zones, practise zonal failure, and test failover, which is exactly Scenario B today.</p>
+<p>Source: <a href="https://www.theregister.com/a/5307739" target="_blank" rel="noopener">The Register: Google Cloud europe-west2 outage report</a> <span class="tag warn">Reported</span> (secondary source; Google's own incident page was not read directly; the sensor-wiring detail is <span class="tag bad">Unverified</span>)</p></div>
+
+<div class="box" style="--c:#b91c1c"><h5>Incident 2: AWS US-EAST-1 disruption, 15 Nov 2026 (sign-in and connectivity errors)</h5>
+<p><strong>What happened.</strong> Event date 15 Nov 2026. One report describes AWS sign-ins (IAM Identity Center), new account sign-ups and some network connections returning errors in US-EAST-1 for over three hours, authentication recovering first and a narrower network problem lasting longer; an uptime tracker logged a shorter connectivity incident, so durations differ by source. <strong>Root cause: not published.</strong> I found no AWS explanation or post-event summary, so any cause you read elsewhere should be treated as a guess. <strong>Impact:</strong> console sign-in and sign-up problems; the scale of customer impact is not confirmed. <strong>Lesson:</strong> when your break-glass path depends on the failing region's identity service, you may be unable to log in exactly when you need to. Keep break-glass access that works without a single region's SSO (an emergency IAM role with hardware MFA, stored and tested), keep runbooks outside the affected platform, and never put your status page on the same infrastructure as your product. Also notice the discipline: write "cause not yet published" in your own incident notes rather than filling the gap.</p>
+<p>Source: <a href="https://pasqualepillitteri.it/en/news/33873/aws-down-us-east-1-sign-ins-sign-ups-fail-three-hours" target="_blank" rel="noopener">Report on the AWS US-EAST-1 sign-in disruption</a> <span class="tag warn">Reported</span> (secondary; cause <span class="tag bad">Unverified</span>). Check the <a href="https://health.aws.amazon.com/health/status" target="_blank" rel="noopener">AWS Health Dashboard</a> for any later official summary.</p></div>
+
+<p><strong>What companies expect from DevOps engineers now</strong></p>
+<ul>
+<li>A stack of AWS or Azure, Kubernetes, Terraform, CI/CD, Linux and monitoring (Prometheus, Grafana or Datadog) in most 2 to 5 year postings I found. <span class="tag warn">Reported</span> (job listings such as <a href="https://www.foundit.in/job/senior-devops-engineer-deloitte-bengaluru-bangalore-60049275" target="_blank" rel="noopener">this Deloitte Bengaluru role</a>; a sample, not a statistic).</li>
+<li>Platform engineering, SRE and DevSecOps overlap with DevOps in the same job description, so expect questions on reliability targets and secure pipelines, not only tools. <span class="tag warn">Reported</span> (same sample of postings).</li>
+<li>Using AI tools to speed up operations work, with judgment about when not to trust them. <span class="tag info">Direction</span> (some postings name AI-powered engineering tools explicitly; my reading, not a measured trend).</li>
+</ul>
+
+<h4>6. AIOps: AI-assisted root cause analysis</h4>
+<p><strong>How AI helps.</strong> During an incident the slow part is correlating signals: which deploy, which config change, which dependency, which metric moved first. An assistant given the timeline of changes (Terraform applies, deploys, feature flags), the alert, and a few metric and log excerpts can propose ranked hypotheses and the one query that would confirm or kill each. It is a fast junior analyst, not an oracle: it does not know your system unless you show it, and it states guesses confidently. In today's Scenario A the winning clue was "apply at 09:15, latency at 09:20"; an assistant given the change log would put that first, then you verify with NAT metrics.</p>
+<pre>
+Prompt (inputs are redacted exports, read-only):
+"Incident: orders API p99 220ms -> 700ms starting 09:20 IST. Below: (1) change log for 08:00-10:30,
+(2) the alert, (3) 30 lines of CloudWatch metric output. List up to 3 hypotheses ranked by likelihood.
+For each: the evidence from the data above, the evidence missing, and ONE read-only command that would
+confirm or reject it. If the data does not support a hypothesis say UNSURE. Do not suggest changes yet."
+</pre>
+<p><strong>Risks and guardrails.</strong> Anchoring: the assistant (and you) may fix on the first plausible story, so always ask for what would disprove it. Hallucinated commands or metric names: run only read-only commands you understand. Data leakage: redact secrets, tokens and customer data before pasting. Never give it write access during an incident; humans decide and execute, and the final RCA is written and signed off by a person. Keep the prompt and output in the incident ticket for audit. Source: <a href="https://sre.google/sre-book/effective-troubleshooting/" target="_blank" rel="noopener">Google SRE book: effective troubleshooting</a> <span class="tag ok">Confirmed</span> (the method; the prompt is my example).</p>
+
+<h4>7. Lab checklist</h4>
+<pre>
+[ ] Terraform: module with validated variable created; called with for_each for two names; apply done
+[ ] Terraform: rename shown as destroy/create, then fixed with a moved block (0 to destroy)
+[ ] Terraform: drift created in the console and seen in terraform plan
+[ ] Terraform assignment: 6-line state and apply policy written
+[ ] AWS: 3-tier VPC drawn with real CIDRs and built (Terraform or console); NAT deleted afterwards
+[ ] AWS: role limited to one S3 prefix tested with simulate-principal-policy
+[ ] AWS assignment: two first SCPs chosen with reasons
+[ ] Scenario A: wrote my own 5-line RCA before opening the solution
+[ ] Scenario B: wrote my own failure-mode list (instance, AZ, DB, region, deploy) before the solution
+[ ] Interview: answered the 502-on-rollout question aloud in 2 minutes
+[ ] AIOps: ran the RCA prompt on a past incident of mine (redacted) and checked its hypotheses
+[ ] Career: wrote one decision as a 5-line decision record
+[ ] Recap: ran one OpenSearch/Python/Helm command from the table
+</pre>
+
+<h4>8. Career: how to make infrastructure and deployment decisions</h4>
+<p><strong>Lesson.</strong> Juniors choose tools; seniors choose <em>trade-offs</em> and write them down. The most common mistake at two to three years is deciding by what you know or what is fashionable ("let us move to a service mesh") without stating what problem it solves. A reliable method has five steps. (1) <em>Name the problem and the constraint</em>: what hurts now, in numbers (deploy takes 40 minutes, three incidents last quarter), and the limits (budget, team size, deadline, compliance). (2) <em>List two or three real options, including "do nothing" and "buy instead of build".</em> If you have only one option you have not decided, you have started. (3) <em>Compare on a few criteria that matter here</em>: reliability, cost, effort, operational burden after launch, reversibility, and what the team can actually support at 3 a.m. (4) <em>Prefer reversible decisions and move fast on them; slow down on one-way doors</em> like database engines, cloud accounts layout or a region choice. (5) <em>Write the decision record</em>: context, options, decision, consequences, review date. Short is fine; unrecorded decisions get re-argued every six months.</p>
+<p>Deployment decisions follow the same logic with blast radius first: how many users does a mistake touch, how fast can we detect it, how fast can we undo it? That is why canary beats big bang for risky changes and why a one-line rollback matters more than a perfect rollout. War story: a team I led adopted a fashionable orchestrator because the lead engineer loved it. It worked, but only that one person understood it; when they left, every incident waited for outside help and we spent a quarter migrating back. The decision was not wrong technically; it ignored who would operate it. Always ask "who runs this when I am on leave?".</p>
+<p><strong>Say it like this</strong> (to a manager or CTO): "I see two options for the database failover: Multi-AZ at about 15% more cost with automatic recovery in two minutes, or a manual restore at lower cost with a 40-minute recovery. Given our 30-minute target I recommend Multi-AZ, and I will review the decision in six months."</p>
+<p><strong>Skill-gap action for today (15 minutes):</strong> take one decision you made or saw this month and write it as a five-line decision record (context, options, decision, consequence, review date). Keep it in the repo next to the code.</p>
+
+<h4>9. Daily recap of all your tools</h4>
+<div class="tw"><table><thead><tr><th>Tool</th><th>Remember today</th><th>Command or config</th><th>Official doc</th></tr></thead><tbody>
+<tr><td>Linux and shell</td><td>ss shows which process listens on which port; it replaces netstat on modern systems.</td><td><code>ss -tulpn</code></td><td><a href="https://man7.org/linux/man-pages/man8/ss.8.html" target="_blank" rel="noopener">ss(8)</a></td></tr>
+<tr><td>Git/GitHub</td><td>git worktree checks out another branch in a second directory, so you can hotfix without stashing.</td><td><code>git worktree add ../hotfix main</code></td><td><a href="https://git-scm.com/docs/git-worktree" target="_blank" rel="noopener">git-worktree</a></td></tr>
+<tr><td>Jenkins</td><td>Put a timeout on every pipeline so a hung build cannot hold an agent forever.</td><td><code>options { timeout(time: 30, unit: 'MINUTES') }</code></td><td><a href="https://www.jenkins.io/doc/book/pipeline/syntax/" target="_blank" rel="noopener">Pipeline syntax</a></td></tr>
+<tr><td>CI/CD (Actions/GitLab CI)</td><td>GitHub Actions concurrency groups cancel superseded runs, saving runner minutes on busy branches.</td><td><code>concurrency: { group: ci-${{ github.ref }}, cancel-in-progress: true }</code></td><td><a href="https://docs.github.com/en/actions/using-jobs/using-concurrency" target="_blank" rel="noopener">Concurrency</a></td></tr>
+<tr><td>Docker</td><td>HEALTHCHECK lets Docker report a container as unhealthy, not just running.</td><td><code>HEALTHCHECK CMD curl -f http://localhost:8080/health || exit 1</code></td><td><a href="https://docs.docker.com/reference/dockerfile/#healthcheck" target="_blank" rel="noopener">HEALTHCHECK</a></td></tr>
+<tr><td>Kubernetes</td><td>kubectl rollout undo returns a Deployment to its previous ReplicaSet revision.</td><td><code>kubectl rollout undo deployment/web</code></td><td><a href="https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#rolling-back-a-deployment" target="_blank" rel="noopener">Rolling back</a></td></tr>
+<tr><td>Terraform</td><td>Save the plan and apply that exact file, so what was reviewed is what runs.</td><td><code>terraform plan -out=plan.tfplan &amp;&amp; terraform apply plan.tfplan</code></td><td><a href="https://developer.hashicorp.com/terraform/cli/commands/plan" target="_blank" rel="noopener">terraform plan</a></td></tr>
+<tr><td>AWS</td><td>Turn on S3 Block Public Access at account level so no single bucket policy can expose data.</td><td><code>aws s3control put-public-access-block --account-id &lt;id&gt; --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true</code></td><td><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html" target="_blank" rel="noopener">Block Public Access</a></td></tr>
+<tr><td>Azure</td><td>A CanNotDelete resource lock stops accidental deletion even by owners until the lock is removed.</td><td><code>az lock create --name keep --lock-type CanNotDelete --resource-group rg-prod</code></td><td><a href="https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources" target="_blank" rel="noopener">Lock resources</a></td></tr>
+<tr><td>GCP</td><td>Prefer workload identity over downloaded service account keys; list existing user-managed keys to find risk.</td><td><code>gcloud iam service-accounts keys list --iam-account=&lt;sa-email&gt; --managed-by=user</code></td><td><a href="https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys" target="_blank" rel="noopener">Service account keys</a></td></tr>
+<tr><td>Ansible</td><td>ansible-vault can encrypt a single value inline, so a vars file can stay in Git.</td><td><code>ansible-vault encrypt_string 'S3cret' --name 'db_password'</code></td><td><a href="https://docs.ansible.com/ansible/latest/vault_guide/index.html" target="_blank" rel="noopener">Ansible Vault</a></td></tr>
+<tr><td>Prometheus and Grafana</td><td>Counters only go up; always wrap them in rate() or increase(), never graph the raw value.</td><td><code>rate(http_requests_total[5m])</code></td><td><a href="https://prometheus.io/docs/prometheus/latest/querying/functions/#rate" target="_blank" rel="noopener">rate()</a></td></tr>
+<tr><td>ELK/OpenSearch</td><td>Index State Management (ISM) rolls over, shrinks and deletes indices on a schedule so disks do not fill.</td><td><code>PUT _plugins/_ism/policies/logs-30d</code></td><td><a href="https://opensearch.org/docs/latest/im-plugin/ism/index/" target="_blank" rel="noopener">ISM</a></td></tr>
+<tr><td>Python for DevOps</td><td>requests has no default timeout: always set one or a hung API hangs your script.</td><td><code>requests.get(url, timeout=(3, 10))</code></td><td><a href="https://requests.readthedocs.io/en/latest/user/advanced/#timeouts" target="_blank" rel="noopener">Timeouts</a></td></tr>
+<tr><td>GitOps (Argo CD/Helm)</td><td>selfHeal makes Argo CD revert manual cluster edits back to what Git says.</td><td><code>syncPolicy: { automated: { prune: true, selfHeal: true } }</code></td><td><a href="https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/" target="_blank" rel="noopener">Automated sync</a></td></tr>
+<tr><td>DevSecOps</td><td>Scan the repository history for committed secrets, not only the latest commit.</td><td><code>gitleaks detect --source . --redact</code></td><td><a href="https://github.com/gitleaks/gitleaks" target="_blank" rel="noopener">gitleaks</a></td></tr>
+<tr><td>SRE (SLI/SLO)</td><td>Error budget is 1 minus the SLO: a 99.9% monthly SLO allows about 43 minutes of failure.</td><td><code>budget = (1 - 0.999) * 30*24*60  # 43.2 min</code></td><td><a href="https://sre.google/workbook/error-budget-policy/" target="_blank" rel="noopener">Error budget policy</a></td></tr>
+<tr><td>FinOps/Platform</td><td>Cost allocation tags only appear in billing reports after you activate them, so tag early.</td><td><code>aws ce list-cost-allocation-tags --status Inactive</code></td><td><a href="https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/cost-alloc-tags.html" target="_blank" rel="noopener">Cost allocation tags</a></td></tr>
+<tr><td>AI in DevOps</td><td>Ask the model to quote the log line behind each claim, so you can check evidence quickly.</td><td><code>prompt: "For each hypothesis quote the exact log line that supports it, or say none."</code></td><td><a href="https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview" target="_blank" rel="noopener">Prompt engineering</a></td></tr>
+</tbody></table></div>
+
+<h5>ELK/OpenSearch: index lifecycle and shard sizing</h5>
+<p><strong>What it is:</strong> OpenSearch (and Elasticsearch) stores logs as documents in indices split into shards. <strong>Why it matters:</strong> an unmanaged log cluster fails by disk full or by too many tiny shards, and the first symptom is red cluster health during an incident, when you need logs most. <strong>How it works:</strong></p>
+<pre>app logs --&gt; agent (Fluent Bit/Filebeat) --&gt; OpenSearch data stream logs-app
+   ISM policy: hot (write, rollover at 30 GB or 1 day) --&gt; warm (read-only, replicas 1) --&gt; delete after 30 days
+   target shard size about 10 to 50 GB; do not create one index per service per day with 1 GB each</pre>
+<p>Use data streams with rollover, explicit mappings (avoid mapping explosion from dynamic fields), and alert on disk watermarks (<code>_cluster/allocation/explain</code> tells you why a shard is unassigned). Keep PII out of logs. <strong>AI prompt:</strong> "Here is our index list with sizes and shard counts. Suggest rollover and retention settings and flag indices with oversharding." Ref: <a href="https://opensearch.org/docs/latest/im-plugin/ism/index/" target="_blank" rel="noopener">OpenSearch ISM</a>.</p>
+
+<h5>Python for DevOps: boto3 pagination, retries and timeouts</h5>
+<p><strong>What it is:</strong> boto3 is the AWS SDK for Python; most automation (inventory, cleanup, audits) is boto3 plus a loop. <strong>Why it matters:</strong> list calls return one page (often up to 1000 items), so scripts that ignore pagination silently miss resources, and calls without timeouts or retry settings hang or hammer APIs. <strong>How it works:</strong></p>
+<pre>import boto3
+from botocore.config import Config
+ec2 = boto3.client("ec2", config=Config(retries={"max_attempts": 5, "mode": "standard"}, read_timeout=10))
+for page in ec2.get_paginator("describe_instances").paginate(Filters=[{"Name":"tag:Env","Values":["dev"]}]):
+    for r in page["Reservations"]:
+        for i in r["Instances"]: print(i["InstanceId"], i["State"]["Name"])</pre>
+<p>Make cleanup scripts default to dry run (print what they would delete), log every action, and run them with a narrow IAM role. Use <code>argparse</code> and exit codes so CI can use them. <strong>AI prompt:</strong> "Review this boto3 script for missing pagination, missing dry-run, and any call that could delete more than intended." Ref: <a href="https://boto3.amazonaws.com/v1/documentation/api/latest/guide/paginators.html" target="_blank" rel="noopener">boto3 paginators</a>.</p>
+
+<h5>GitOps (Argo CD and Helm): Git as the source of truth</h5>
+<p><strong>What it is:</strong> Argo CD runs in the cluster, watches a Git repo, and makes the cluster match it; Helm packages Kubernetes YAML as charts with values per environment. <strong>Why it matters:</strong> deploys become pull requests, rollback is <code>git revert</code>, and the audit trail is Git history; nobody needs cluster-admin credentials in CI. <strong>How it works:</strong></p>
+<pre>Git repo (chart + values-prod.yaml) &lt;-- Argo CD polls/webhook --&gt; compares desired vs live
+   OutOfSync --&gt; sync (auto or manual) --&gt; cluster ; selfHeal reverts manual kubectl edits ; prune deletes removed objects</pre>
+<p>Keep application code and deployment config in separate repos or paths, promote by changing the image tag or digest in the environment's values file, and keep secrets out of Git (External Secrets, Sealed Secrets or SOPS). Be careful with <code>prune: true</code> on a path you restructured, since it deletes what is no longer in Git. <strong>AI prompt:</strong> "Compare these two Helm values files and list every setting that differs between staging and prod, flagging risky ones." Ref: <a href="https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/" target="_blank" rel="noopener">Argo CD automated sync</a>.</p>
+
+<p><strong>Recap questions</strong></p>
+<p>1. Your OpenSearch cluster turns red after a busy day and new logs are rejected. What do you check and what long-term setting prevents it?</p>
+<details><summary>Show answer</summary><p>Check disk: <code>_cat/allocation?v</code> and watermarks (flood-stage watermark makes indices read-only), then <code>_cluster/allocation/explain</code> for unassigned shards. Free space by deleting or shrinking old indices, then clear the read-only block. Long term: an ISM policy with rollover and retention, right-sized shards, and a disk alert well before the watermark.</p></details>
+<p>2. A cleanup script that lists EC2 instances "found nothing" in an account with 1,500 instances. What is the likely bug?</p>
+<details><summary>Show answer</summary><p>Missing pagination (or a wrong region or profile). A plain <code>describe_instances</code> returns one page; use a paginator, confirm the region and credentials with <code>sts get-caller-identity</code>, and keep the script in dry-run mode until counts match the console.</p></details>
+<p>3. Someone edits a Deployment with kubectl in production and ten minutes later the change disappears. Why, and what is the right way?</p>
+<details><summary>Show answer</summary><p>Argo CD with <code>selfHeal</code> reverted the cluster to the state in Git. The right way is a pull request changing the chart or values in Git; for a genuine emergency, pause auto-sync for that application deliberately, and then commit the same change to Git.</p></details>
+
+<h4>10. AI pro: RAG in depth (chunking, embeddings, hybrid search, reranking)</h4>
+<p><strong>Concepts.</strong> Retrieval-augmented generation gives a model your own documents at question time: you retrieve relevant passages and place them in the prompt. For DevOps this is the runbook and past-incident assistant. Quality is decided far more by retrieval than by the model: if the right passage is not in the context, no model can answer, and if the wrong one is, it will answer confidently from it.</p>
+<p><strong>Pipeline and design.</strong> <em>Ingest:</em> parse documents, split into chunks (typically a few hundred tokens, split on headings and paragraphs, with a small overlap; keep a runbook step list together), store the text, an embedding vector, and metadata (service, environment, owner, date, doc URL). <em>Retrieve:</em> embeddings capture meaning ("pod keeps restarting" matches "CrashLoopBackOff") but miss exact tokens such as error codes, ARNs or flag names; classic keyword search (BM25) catches those. <strong>Hybrid search</strong> runs both and merges the lists (for example reciprocal rank fusion); OpenSearch supports this natively. <em>Rerank:</em> take the top 30 to 50 candidates and have a cross-encoder or model reorder them, then pass the best 5 to 8. <em>Generate:</em> instruct the model to answer only from the passages, cite the document and section, and say "not found" otherwise. A useful trick is contextual retrieval: prepend a one-line description of where the chunk sits ("From the payments-api runbook, section: database failover") before embedding, which reduces lost-context misses.</p>
+<pre>
+question --&gt; (embed + BM25) --&gt; merge top 50 --&gt; reranker --&gt; top 6 chunks + metadata filter (env=prod)
+         --&gt; prompt: "Answer only from SOURCES. Cite [doc#section]. If absent say NOT FOUND."
+         --&gt; answer + citations --&gt; log (query, chunk ids, answer) for evaluation
+</pre>
+<p><strong>Trade-offs and failure modes.</strong> Chunks too small lose context, too large dilute relevance and cost tokens; stale documents give outdated runbooks (store dates, prefer newest, re-index on change); the embedding model change forces a full re-embed; permissions must be enforced at retrieval (a user must not receive chunks from documents they cannot read); retrieved text is untrusted and can contain instructions (prompt injection through a wiki page). Failures are usually silent, so measure.</p>
+<p><strong>Evaluation, security, cost.</strong> Build a golden set of 50 real questions with the expected source passage. Measure retrieval first (is the right chunk in the top 5? recall@k), then answer faithfulness (does the answer follow the cited text). Re-run it whenever you change chunking, the embedding model or the prompt. Cost comes from embeddings at ingest (one-off per change), the reranker per query, and prompt tokens (6 chunks times a few hundred tokens); caching stable instructions and capping context keep it predictable. Sources: <a href="https://www.anthropic.com/news/contextual-retrieval" target="_blank" rel="noopener">Anthropic: contextual retrieval</a> · <a href="https://opensearch.org/docs/latest/search-plugins/hybrid-search/" target="_blank" rel="noopener">OpenSearch: hybrid search</a> <span class="tag ok">Confirmed</span> (primary docs; page paths can move, check current docs).</p>
+</article>
+
 <article class="entry" id="career-2026-11-22"><h3>Study plan: 22 Nov 2026 (Week 1, Day 4)</h3>
 <p class="meta">Sunday, weekend assessment included. Classes: Docker in production (images, security, multi-stage); Kubernetes in production (requests/limits, HPA, PDB, upgrades). Scenarios: disk full on a Docker host; network saturation and packet loss. Interview: Docker. Career: leadership skills expected per level. AIOps: predictive infrastructure monitoring. Recap tools today (deep): GCP, Ansible, Prometheus and Grafana. AI pro: tool use design (schemas, errors, idempotency).</p>
 
