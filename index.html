@@ -1332,7 +1332,7 @@ print(msg.content[0].text)</code></pre>
 <h2 style="background:#b45309">Career and industry growth (DevOps to Senior, SRE, Architect)</h2>
 <p class="meta">Daily: industry incidents, corporate documents (HLD, LLD, SOP, RCA, DR), hands-on skills, production scenarios, AIOps, interview practice and career lessons. Weekends: revision and assessment.</p>
 <!-- ROADMAP-START -->
-<div class="box" style="--c:#b45309"><h4>8-week roadmap (you are here: Week 1, Day 5)</h4>
+<div class="box" style="--c:#b45309"><h4>8-week roadmap (you are here: Week 1, Day 6)</h4>
 <div class="tw"><table><thead><tr><th>Week</th><th>Two themes</th><th>Outcome you can show</th></tr></thead><tbody>
 <tr style="background:#fef3c7"><td><strong>W1 (19-25 Nov) ◀ you are here</strong></td><td>Linux production troubleshooting, networking, shell scripting | Git/GitHub workflows</td><td>A triage runbook and a safe production shell script; a protected-branch repo with PR rules</td></tr>
 <tr><td>W2</td><td>Jenkins + CI/CD design (GitHub Actions/GitLab CI) | Docker in production and image security</td><td>A pipeline with test, scan, build and deploy stages; a hardened multi-stage image</td></tr>
@@ -1345,6 +1345,298 @@ print(msg.content[0].text)</code></pre>
 </tbody></table></div></div>
 <!-- ROADMAP-END -->
 <!-- NEW-CAREER-ENTRY-HERE -->
+<article class="entry" id="career-2026-11-24"><h3>Study plan: 24 Nov 2026 (Week 1, Day 6)</h3>
+<p class="meta">Tuesday. Classes: Azure production (landing zones, RBAC, Azure Policy, PIM); GCP basics for DevOps (resource hierarchy, IAM, Workload Identity, GKE regional clusters). Scenarios: backup and restore with tested recovery (Azure); autoscaling and failover for a regional GKE cluster. Interview: Terraform in production. Career: how seniors approach production problems. AIOps: automated troubleshooting. Recap tools today (deep): DevSecOps, SRE (SLI/SLO), FinOps/Platform. AI pro: evaluation (golden sets, LLM-as-judge pitfalls).</p>
+
+<h4>1. You are here (roadmap)</h4>
+<p><strong>Week 1, Day 6 of 56.</strong> Week 1 themes in the table above: (1) Linux production troubleshooting, networking and shell scripting; (2) Git/GitHub workflows. Covered so far: Day 1 Linux triage and networking; Day 2 production shell and Git branching; Day 3 Jenkins and CI/CD; Day 4 Docker and Kubernetes; Day 5 Terraform and AWS production. <em>Teacher's note:</em> today the daily order moves to Azure and GCP. Many enterprise estates run Azure, and GCP's IAM model is different enough from AWS and Azure that comparing the three teaches you the model, not the menus. Learn the model: scope, inheritance, identity, guardrails. The menus change every quarter.</p>
+<p><strong>Progress:</strong> 6 of 56 days done (counting today), 12 classes taught, 11 scenarios solved. Next: Wednesday covers Ansible and configuration management, and a scenario on CrashLoopBackOff and ImagePullBackOff.</p>
+
+<h4>2. Two classes of the day</h4>
+
+<div class="box" style="--c:#7c3aed"><h5>Class 1: Azure production (landing zones, RBAC, Azure Policy, PIM)</h5>
+<p><strong>Objective:</strong> lay out an Azure estate where subscriptions are the blast-radius boundary, role grants are small and scoped, policy enforces standards before a human has to remember them, and nobody holds standing Owner access.</p>
+<p><strong>Theory: management groups and subscriptions.</strong> Management groups sit above subscriptions in a tree. Policy assignments and role assignments made at a management group flow down to every subscription beneath it. A subscription is the unit of billing, quota and isolation, so it is the natural boundary for production versus non-production. Microsoft's Cloud Adoption Framework guidance is specific: do not create management groups for production, testing and development; group management groups by workload type and separate environments as subscriptions inside the same group. Also limit policy assignments at the root, because inherited policy is the hardest thing to debug in a large tenant. A <em>platform landing zone</em> holds shared services (identity, connectivity, management); <em>application landing zones</em> hold workloads.</p>
+<p><strong>Theory: RBAC.</strong> A role assignment is three things: a principal (user, group, service principal, managed identity), a role definition (for example Reader or a custom role), and a scope (management group, subscription, resource group, resource). Least privilege is the rule: avoid broad roles at broad scopes "even if it initially seems more convenient", keep subscription owners to a small number (Microsoft's guidance says at most three), use groups rather than individuals, and in automation use the role definition ID rather than the name. Custom roles are a last resort, and wildcards should be replaced with explicit <code>Actions</code> and <code>DataActions</code>.</p>
+<p><strong>Theory: Azure Policy.</strong> A definition holds a rule and an effect; an assignment applies it at a scope. The effects you will use most are <code>deny</code> (block the request), <code>audit</code> (report only), <code>modify</code> and <code>deployIfNotExists</code> (change or create related resources). Evaluation order matters: <code>disabled</code> is checked first, then <code>append</code> and <code>modify</code>, then <code>deny</code>, then <code>audit</code>, and <code>denyAction</code> last. The rollout pattern is audit first, read the compliance report, fix or exempt, then enforce. Remediation through <code>modify</code> and <code>deployIfNotExists</code> uses a managed identity <span class="tag warn">Reported</span> (check the effects page before you rely on it).</p>
+<p><strong>Theory: PIM.</strong> Privileged Identity Management gives just-in-time elevation: an eligible role is activated for a window, with a reason and, optionally, an approver. Microsoft states it requires Microsoft Entra ID P2 or Entra ID Governance. The senior habit is simple: standing Owner is the exception, eligible-and-activated is the default.</p>
+<pre>
+Tenant root group
+ └─ contoso (MG: landing zone root)            policy: few assignments, audit-first
+     ├─ platform (MG)
+     │    ├─ identity-sub      ├─ connectivity-sub (hub VNet, firewall)   └─ management-sub (Log Analytics)
+     └─ landing-zones (MG)
+          └─ corp (MG: internal workloads)     ← no environment MGs: prod and dev are subscriptions
+               ├─ app1-prod-sub   policy: deny public storage, audit missing tags   RBAC: group app1-ops = Reader + Contributor on RG
+               └─ app1-nonprod-sub
+ Sandbox (MG): budget cap, no hub connectivity
+</pre>
+<p><strong>In real companies:</strong> a platform team owns the landing zone as code (often the Azure landing zone Terraform module), and app teams request a subscription through a vending process that comes with policy and logging already applied. Engineers get eligible roles through PIM; break-glass accounts exist, are monitored, and are tested. Allowed-locations policy keeps resources in the approved regions (for an Indian company that is usually Central India or South India, decided by data-residency rules).</p>
+<pre>
+# Who holds Owner, and at which scope? Start every access review here.
+az role assignment list --all --query "[?roleDefinitionName=='Owner'].{who:principalName,scope:scope}" -o table
+
+# Grant a group Reader at resource-group scope, not at subscription
+az role assignment create --assignee-object-id $GROUP_ID --assignee-principal-type Group \
+  --role "Reader" --scope /subscriptions/$SUB/resourceGroups/rg-app1-prod
+
+# Audit first: DoNotEnforce reports non-compliance without blocking anyone
+az policy assignment create --name audit-public-storage --policy "$DEF_ID" \
+  --scope /providers/Microsoft.Management/managementGroups/corp --enforcement-mode DoNotEnforce
+
+# Compliance summary after the next evaluation cycle
+az policy state summarize --management-group corp
+</pre>
+<p><strong>LAB (45 min):</strong> use a free or sandbox subscription. Create one management group under the tenant root, move the subscription into it, and create two resource groups named as prod and non-prod. Assign the built-in Reader role to a test group at one resource group, not the subscription. Assign an audit-mode policy (allowed locations) with <code>--enforcement-mode DoNotEnforce</code>, deploy a resource in a disallowed region, and read the compliance state. <strong>Success looks like:</strong> the resource is reported non-compliant and still exists, the test group cannot see the other resource group, and <code>az role assignment list</code> shows no Owner you did not expect. <strong>ASSIGNMENT:</strong> sketch a landing zone for three workloads (one regulated, two internal). For each management group and subscription, write its purpose, who holds which role, and the five policies you would audit first.</p>
+<p>Sources: <a href="https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/organize-subscriptions" target="_blank" rel="noopener">Organize subscriptions and management groups</a> · <a href="https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/landing-zone/" target="_blank" rel="noopener">Azure landing zones</a> · <a href="https://learn.microsoft.com/en-us/azure/role-based-access-control/best-practices" target="_blank" rel="noopener">Azure RBAC best practices</a> · <a href="https://learn.microsoft.com/en-us/azure/governance/policy/concepts/effects" target="_blank" rel="noopener">Azure Policy effects</a> · <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-getting-started" target="_blank" rel="noopener">PIM getting started</a> <span class="tag ok">Confirmed</span> (read on the official pages on 24 Nov 2026; the managed-identity detail on the effects is <span class="tag warn">Reported</span>).</p>
+</div>
+
+<div class="box" style="--c:#ea580c"><h5>Class 2: GCP basics for DevOps (resource hierarchy, IAM, Workload Identity, GKE regional clusters)</h5>
+<p><strong>Objective:</strong> understand how Google Cloud organises access and guardrails, why keyless workload identity is the default you should defend, and how a GKE regional cluster is built to survive a zone failure (and what it does not do for you).</p>
+<p><strong>Theory: resource hierarchy.</strong> The organization is the root, folders are optional groupings, and projects hold the resources. Billing, quotas and API enablement are per project. Allow policies are inherited downward: a role granted on a folder reaches every project and subfolder inside it, and the effective allow policy on a resource is the union of what is set on it and what its ancestors grant. This is additive, so you cannot remove a grant from a child by adding another grant. Deny policies are a separate mechanism; read the IAM deny docs before you use them, because their interaction is where surprises happen. Prefer groups as principals, and predefined roles over the basic roles Owner, Editor and Viewer, which are far too broad for production.</p>
+<p><strong>Theory: organization policy.</strong> Organization policy constraints are guardrails set at the organization, folder or project level. If a constraint is not enforced at a resource, it inherits from the nearest ancestor that enforces it. A high-value example is disabling service account key creation: the constraint is listed as <code>constraints/iam.managed.disableServiceAccountKeyCreation</code> in the official table (check the exact ID in your console before you write it into code).</p>
+<p><strong>Theory: Workload Identity Federation for GKE.</strong> Google's documentation calls it the recommended way for GKE workloads to reach Google Cloud APIs. A Kubernetes ServiceAccount is bound to an IAM principal; the GKE metadata server exchanges the pod's Kubernetes token with Security Token Service for a short-lived federated access token. No key file is created, stored or rotated. The lesson: if you find a JSON key in a Kubernetes Secret, treat it as a finding to remove, not a pattern to copy.</p>
+<pre>
+Organization (acme.example)                        Org policy: disable SA key creation  (inherited below)
+ ├─ Folder: platform      group platform-admins  → predefined roles
+ │    └─ Project: net-hub-prod
+ └─ Folder: payments      group payments-ops     → predefined roles on the folder
+      ├─ Project: pay-prod
+      │    └─ GKE regional cluster pay-gke (asia-south1: zones a, b, c)
+      │         pod (KSA) --metadata server--&gt; STS --&gt; short-lived token --&gt; Cloud SQL
+      └─ Project: pay-dev
+</pre>
+<p><strong>Theory: GKE regional clusters.</strong> A regional cluster replicates the control plane and nodes across multiple zones of one region. In Autopilot, GKE rebalances nodes for you after an outage. In Standard mode you rebalance manually or rely on the cluster autoscaler, which works per node pool between a minimum and a maximum size and balances zones during scale-up. Zone redundancy also costs quota and capacity: a regional cluster uses more regional quota than a zonal one, and a node pool sized for the normal load may not have room to absorb a zone's pods. The failover you test is the one Google publishes as a simulate-zone-failure tutorial.</p>
+<pre>
+gcloud organizations list
+gcloud resource-manager folders list --organization=ORG_ID
+gcloud projects get-iam-policy pay-prod --flatten=bindings --format='table(bindings.role,bindings.members)'
+
+# Regional Standard cluster: --num-nodes is PER ZONE, so 1 gives 3 nodes across 3 zones
+gcloud container clusters create pay-gke --region=asia-south1 --num-nodes=1 \
+  --workload-pool=PROJECT_ID.svc.id.goog --enable-autoscaling --min-nodes=1 --max-nodes=4
+
+gcloud org-policies describe constraints/iam.managed.disableServiceAccountKeyCreation --project=pay-prod
+</pre>
+<p><strong>In real companies:</strong> a platform team owns the folder structure and org policies; product teams get projects through a template (billing, budgets, default org policies, logging sinks). Workloads authenticate with Workload Identity Federation; CI pipelines use keyless federation to Google Cloud, so no long-lived keys exist anywhere. Regional clusters are standard for production, with the autoscaler limits and quota reviewed before each large event.</p>
+<p><strong>LAB (45 min):</strong> in a sandbox project, create a regional Standard cluster with the command above. Check the nodes with <code>kubectl get nodes -L topology.kubernetes.io/zone</code> (three zones, one node each). Create a Google service account, grant it one predefined role on the project, bind a Kubernetes ServiceAccount to it with Workload Identity, and run a pod that lists a bucket with no key file. Then run <code>gcloud iam service-accounts keys list --iam-account=SA_EMAIL</code> and confirm there is no user-managed key. <strong>Success looks like:</strong> the pod calls the API, nodes sit in three zones, and no key exists. <strong>ASSIGNMENT:</strong> design the folder tree and the first three org policies for a company with three product teams and one shared-network team. Justify each policy in one sentence.</p>
+<p>Sources: <a href="https://docs.cloud.google.com/resource-manager/docs/overview" target="_blank" rel="noopener">Resource Manager overview</a> · <a href="https://docs.cloud.google.com/iam/docs/resource-hierarchy-access-control" target="_blank" rel="noopener">Resource hierarchy for access control</a> · <a href="https://docs.cloud.google.com/resource-manager/docs/organization-policy/org-policy-constraints" target="_blank" rel="noopener">Organization policy constraints</a> · <a href="https://docs.cloud.google.com/kubernetes-engine/docs/concepts/workload-identity" target="_blank" rel="noopener">Workload Identity Federation for GKE</a> · <a href="https://docs.cloud.google.com/kubernetes-engine/docs/concepts/regional-clusters" target="_blank" rel="noopener">Regional clusters</a> · <a href="https://docs.cloud.google.com/kubernetes-engine/docs/tutorials/simulate-zone-failure" target="_blank" rel="noopener">Simulate a zone failure</a> <span class="tag ok">Confirmed</span> (official pages read; the exact constraint ID and any quota numbers should be checked in your console before use).</p>
+</div>
+<h4>3. Scenario practice</h4>
+
+<div class="box" style="--c:#7c3aed"><h5>Scenario A (today's tools): the billing resource group disappears at 16:05 IST</h5>
+<p><strong>Situation.</strong> Tuesday 16:05 IST. A cleanup pipeline meant to remove an old test environment ran <code>az group delete --name rg-billing-prod --yes --no-wait</code>. The name came from a variable in a shared template that a teammate had changed the day before. Four minutes later the billing API returns 500 on every call, and finance reports that the monthly invoice run has failed. The resource group held an Azure SQL server with database <code>billing</code>, a storage account <code>stbillinginv</code> with invoice PDFs, a Key Vault <code>kv-billing-prod</code> with soft delete on, and a Recovery Services vault <code>rsv-billing</code> for VM backups. The DR plan says RPO 15 minutes and RTO 2 hours. Nobody has run a restore test in the past year.</p>
+<pre>
+$ az monitor activity-log list --start-time 2026-11-24T10:30:00Z \
+    --query "[?operationName.value=='Microsoft.Resources/subscriptions/resourceGroups/delete'].{t:eventTimestamp,who:caller}" -o table
+ 2026-11-24T10:35:12Z   sp-cleanup-pipeline        (Owner on the subscription)
+$ az sql db list --resource-group rg-billing-prod
+ ERROR: ResourceGroupNotFound
+$ curl -s -o /dev/null -w "%{http_code}" https://billing.internal/health
+ 500
+$ az keyvault list-deleted --query "[].{name:name,deleted:deletedDate}" -o table
+ kv-billing-prod   2026-11-24T10:35Z
+</pre>
+<p><strong>Guiding questions:</strong> 1) Which of the four resources can you recover, by which route, and which can you only rebuild from a copy? 2) Which assumption in the DR plan has never been tested? 3) Which guardrail would have stopped the deletion, and which one would have made the recovery faster?</p>
+<details><summary>Show solution</summary>
+<p><strong>Investigation.</strong> (1) Confirm the actor and scope from the activity log, then stop further damage: disable the pipeline service principal's sign-in and remove its Owner role. (2) Key Vault: soft delete keeps a deleted vault for its retention period; run <code>az keyvault recover --name kv-billing-prod</code>. Check whether purge protection is on, because it controls permanent purge, not recovery. (3) SQL: when the server is deleted its databases go with it. Restore from the backups into a new server at 10:34 UTC (16:04 IST), using <code>az sql db list-deleted</code> and <code>az sql db restore</code>; check the exact flags with <code>--help</code> before you run them <span class="tag warn">Reported</span> (the deleted-server restore route is from the Azure SQL recovery docs, not read in this run). (4) Storage: deleting the account removes its blobs. Blob soft delete protects individual blobs inside a living account and does not bring back a deleted account <span class="tag warn">Reported</span>. The recovery route is a replica or backup in another region, if one existed. If none exists, that is the top finding. (5) Recovery Services vault: undelete the vault, then restore the VM recovery points into a new resource group. Vault soft delete keeps data for a fixed retention period (14 days is the default the FAQ describes) <span class="tag warn">Reported</span>.</p>
+<p><strong>Root cause.</strong> A destructive command reached production with no guardrails. There was no CanNotDelete lock on the production group, the pipeline identity held Owner on the production subscription, and a shared template variable could change without review. The DR plan existed but had never been exercised, so nobody knew how long a storage restore would take or whether a copy existed.</p>
+<p><strong>Resolution.</strong> Recover Key Vault first, because the restored database needs its secrets. Restore SQL to a new server, validate row counts against the last known good export, then repoint the app. Restore invoices from the replica or backup. Rebuild the rest of the resource group with Terraform into a new group, and re-run the invoice job only after the data checks pass.</p>
+<p><strong>Long-term prevention.</strong> A CanNotDelete lock on every production resource group; a pipeline identity that cannot delete resource groups; production in its own subscription; cross-region copies for billing data; a quarterly restore drill that measures actual RTO; and a destructive-action gate in the pipeline that requires the typed resource name.</p>
+<p><strong>Sample document: Root cause analysis (fictional incident, standard format)</strong></p>
+<p><strong>Title:</strong> Billing resource group deleted by cleanup pipeline, 24 Nov 2026 (IST)<br>
+<strong>Summary:</strong> A cleanup pipeline deleted rg-billing-prod at 16:05 IST. Key Vault and the SQL database were recovered by 19:10 IST; invoices were restored from a replica and the invoice run completed at 21:40 IST, 3 hours 35 minutes after the failure. RTO target of 2 hours was missed by 1 hour 35 minutes; RPO was met for SQL (4 minutes) and missed for invoices (no cross-region copy existed).<br>
+<strong>Impact:</strong> billing API unavailable 16:05 to 18:40 IST; invoice run delayed by 3.5 hours; no customer data lost in the database; 1,180 invoice PDFs restored from a copy taken 6 hours earlier, so 47 invoices were regenerated by hand.<br>
+<strong>Timeline (IST):</strong> 16:05 delete command starts; 16:09 billing API alerts; 16:14 incident declared; 16:22 pipeline identity disabled; 16:40 Key Vault recovered; 17:20 SQL restore to new server started; 18:40 API healthy on restored database; 19:10 Key Vault validated; 21:40 invoice run complete.<br>
+<strong>Root cause:</strong> the cleanup job accepted a resource group name from a shared template variable with no review, ran a delete without a guard, and its identity held Owner on the production subscription. The DR plan had never been tested end to end.<br>
+<strong>Resolution:</strong> restored secrets and database, rebuilt compute with Terraform, restored invoices from a copy.<br>
+<strong>Action items:</strong> (a) CanNotDelete lock on all production resource groups, owner: Platform lead, due 1 Dec; (b) remove Owner from pipeline identities and create a scoped role, owner: Security engineer, due 30 Nov; (c) cross-region backup for billing storage, owner: Data platform lead, due 15 Dec; (d) typed-name confirmation for destructive pipeline steps, owner: DevOps lead, due 30 Nov; (e) first restore drill with measured RTO, owner: SRE lead, due 15 Dec.</p>
+</details>
+</div>
+
+<div class="box" style="--c:#ea580c"><h5>Scenario B (senior level): a regional GKE cluster loses a zone during the sale</h5>
+<p><strong>Situation.</strong> Tuesday 21:32 IST, peak of a sale. Cluster <code>shop-prod</code> is a regional Standard GKE cluster in asia-south1 (zones a, b, c). Node pool <code>web</code> autoscales with min 6 and max 30 (in a regional cluster the node-pool limits are applied per zone, so 10 per zone; check this against your version's docs) <span class="tag warn">Reported</span>. Zone b's nodes went NotReady at 21:32. Checkout p99 rose from 350 ms to 2.8 s and the error rate reached 4%. Constraints: no new cluster during the sale; a change freeze is on, but emergency changes are allowed with a second approver; the target is p99 under 800 ms within 20 minutes.</p>
+<pre>
+$ kubectl get nodes -L topology.kubernetes.io/zone
+ zone a: 10 Ready      zone b: 10 NotReady      zone c: 10 Ready
+$ kubectl get pods -n checkout --field-selector=status.phase=Pending --no-headers | wc -l
+ 42
+$ kubectl describe pod checkout-7f9c-x2k -n checkout | grep -A1 FailedScheduling
+ 0/30 nodes are available: 10 node(s) had untolerated taint {node.kubernetes.io/unreachable},
+ 20 node(s) didn't satisfy topology spread constraint
+$ kubectl get deploy checkout -n checkout -o jsonpath='{.spec.template.spec.topologySpreadConstraints}'
+ [{"maxSkew":1,"topologyKey":"topology.kubernetes.io/zone","whenUnsatisfiable":"DoNotSchedule"}]
+Cloud Logging (cluster autoscaler, noScaleUp): "max node group size reached" for pool web in zones a and c
+</pre>
+<p><strong>Guiding questions:</strong> 1) What did GKE protect automatically, and what did the workload configuration break? 2) Why are 42 pods pending when 20 healthy nodes exist? 3) Which two changes do you make during the incident, and which three before the next sale?</p>
+<details><summary>Show solution</summary>
+<p><strong>Investigation.</strong> The regional control plane and the zone-spread node pool did their job: the cluster kept running and the other zones kept nodes. The failure is in scheduling. The <code>DoNotSchedule</code> spread constraint with maxSkew 1 says a new pod may not raise the count in one zone more than one above the others. With zone b empty and zones a and c full, every candidate node breaks the rule, so the scheduler refuses all 20 healthy nodes. The autoscaler then reports the per-zone maximum reached, so it cannot add capacity in a or c either. A PodDisruptionBudget on checkout also blocks any drain you might try to make room, so do not drain nodes in zone a to free space.</p>
+<p><strong>Root cause.</strong> The workload assumed three healthy zones and enforced that assumption with a hard rule, and the node-pool ceiling was sized for average load, not for the sale peak plus one zone's loss.</p>
+<p><strong>Resolution during the incident (20 minutes, second approver).</strong> (1) Change checkout to <code>ScheduleAnyway</code> so pods land on healthy zones and accept a temporary skew: <code>kubectl patch deployment checkout -n checkout --type=json -p='[{"op":"replace","path":"/spec/template/spec/topologySpreadConstraints/0/whenUnsatisfiable","value":"ScheduleAnyway"}]'</code>. (2) Raise the per-zone ceiling: <code>gcloud container node-pools update web --cluster=shop-prod --region=asia-south1 --max-nodes=15</code>. Watch pending pods fall to zero and p99 return below 800 ms. Only then decide whether the zone is coming back.</p>
+<p><strong>Long-term prevention.</strong> (1) Use <code>ScheduleAnyway</code> or <code>minDomains</code> for tiers that must stay up, and test the zone-loss case, not only the happy path. (2) Run the zone-failure tutorial in staging before every big sale and record how long the autoscaler takes to add capacity. (3) Confirm quota in all three zones before the event. (4) Use an absolute PDB value (for example <code>minAvailable: 4</code>) for small replica counts, so a percentage does not round to a block. (5) Write a zone-loss runbook with these exact steps.</p>
+<p><strong>Sample document: Change record (emergency change, standard format)</strong></p>
+<p><strong>Change ID:</strong> CHG-2026-1124-07 (emergency). <strong>Requested by:</strong> on-call SRE. <strong>Approved by:</strong> incident commander and platform lead (second approver).<br>
+<strong>Summary:</strong> set the checkout topology spread to ScheduleAnyway and raise the web node-pool ceiling from 10 to 15 per zone, to restore scheduling after zone b loss.<br>
+<strong>Impact of change:</strong> checkout pods may run unevenly across zones for the duration of the event; expected cost increase about 5 nodes per zone for 3 hours.<br>
+<strong>Rollback:</strong> re-apply the original spec with the DoNotSchedule value and max-nodes 10, after zone b is Ready for 30 minutes and pending pods are zero.<br>
+<strong>Verification:</strong> pending pods 42 to 0 within 11 minutes; checkout p99 2.8 s to 640 ms within 18 minutes; error rate below 0.5%.<br>
+<strong>Follow-up actions:</strong> review the spread constraint and node-pool limits before the next sale (owner: SRE lead, due 1 Dec); zone-loss runbook (owner: platform lead, due 3 Dec); quota check in all zones (owner: cloud operations, due 30 Nov).</p>
+</details>
+</div>
+
+<h4>4. Interview practice (Terraform in production)</h4>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q1.</strong> "Your CI plan for a pull request that only renames a module shows that a production database will be destroyed and recreated. What do you do?"</p>
+<details><summary>Show answer</summary>
+<p>1. Do not apply, and do not approve. Tell the author in the PR why. 2. Read the plan's reason: a rename without a <code>moved</code> block looks like destroy-and-create. 3. Add a <code>moved</code> block in the same PR so the state is rebased without touching the resource. For cases where the address moved in a way <code>moved</code> cannot express, run <code>terraform state mv</code> after taking a backup with <code>terraform state pull &gt; state-backup.json</code>. 4. Add <code>lifecycle { prevent_destroy = true }</code> to the database so a future mistake fails loudly. 5. Re-run the plan and confirm "0 to destroy" before anyone approves. 6. Write a one-line note in the PR so the reviewers know what a clean plan looks like.</p>
+<p><em>What the interviewer is checking:</em> do you stop before apply, do you know <code>moved</code> versus <code>state mv</code>, do you back up state before touching it, and do you add a guard so the mistake cannot repeat.</p></details></div>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q2.</strong> "Two teams need a change to a shared VPC module used in 14 environments. How do you roll it out without an outage?"</p>
+<details><summary>Show answer</summary>
+<p>1. Module releases are versioned by git tag, and each environment pins a version (never a branch). 2. Make the change as a new version, with a changelog that marks breaking changes. 3. Upgrade the lowest-risk environments first (sandbox, then dev, then staging), with a plan review in each. 4. For production, promote one environment at a time with its own approval and plan, and keep the previous version available for rollback by changing one pin. 5. Run <code>terraform plan</code> across all environments in a CI matrix after the release, so drift and unexpected diffs appear before anyone applies. 6. Record the rollout in the release notes and agree a deprecation window for old versions with the teams that consume the module.</p>
+<p><em>What the interviewer is checking:</em> versioning, blast radius, staged promotion and a rollback path that is one pin change, not a rebuild.</p></details></div>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q3.</strong> "A plan output and the state file contain a database password in plain text. How do you handle it now, and how do you stop it next time?"</p>
+<details><summary>Show answer</summary>
+<p><strong>Now (treat it as a leak):</strong> rotate the password in the database and in every consumer; check the database and cloud audit logs for use of the old password; restrict who can read the state bucket and its object versions; tell the security team even if you think it was not read. <strong>Next time (design):</strong> do not let Terraform generate or hold the secret. Create the secret in a secrets manager out of band, and let the application read it at runtime through an identity. Where the value must pass through Terraform, mark variables and outputs <code>sensitive</code>, but remember that marking hides output only and the value still lands in state. Use encrypted remote state with a tight IAM policy, and where your Terraform version supports ephemeral values, use them for these inputs. Add a check in CI that fails when a plan shows a value marked as a secret.</p>
+<p><em>What the interviewer is checking:</em> incident order first (rotate, scope, notify), then the design fix, and an honest understanding that <code>sensitive</code> does not keep values out of state.</p></details></div>
+
+<h4>5. Industry pulse</h4>
+
+<div class="box" style="--c:#b91c1c"><h5>Incident 1: Google Cloud GCVE Stretched Clusters, Melbourne and Frankfurt, 14 Jul 2026</h5>
+<p><strong>What happened.</strong> Event date 14 Jul 2026, 10:00 to 20:40 PDT (about 10 hours 40 minutes), per Google's incident report. Stretched clusters spanning australia-southeast2 (Melbourne) and europe-west3 (Frankfurt) lost inter-zone network connectivity. Google's report says the trigger was a network configuration update that introduced a conflict. <strong>Root cause (Google):</strong> "a network configuration update that introduced a conflict." <strong>Impact:</strong> workloads on the stretched clusters lost writable access to data for the duration of the incident. A third-party write-up describes BGP session flapping between zones; that detail is <span class="tag bad">Unverified</span>. <strong>Mitigation:</strong> Google rolled back the change to its last known good configuration, and the follow-up report was published 24 Jul. <strong>Prevention:</strong> the report describes the rollback; I did not read its full list of follow-up actions, so check the page before you quote any.</p>
+<p><strong>Lesson for you:</strong> a stretched design is only as safe as the change process that touches its shared network. Keep a known good configuration you can restore in minutes, canary network changes per zone, and make "roll back to last known good" a rehearsed step in your runbook.</p>
+<p>Source: <a href="https://status.cloud.google.com/incidents/T8gmtofFSTGT5tbhyciF" target="_blank" rel="noopener">Google Cloud Service Health: GCVE Stretched Clusters incident, 14 Jul 2026</a> <span class="tag ok">Confirmed</span> (incident page read on 24 Nov 2026; the BGP detail is <span class="tag bad">Unverified</span>).</p></div>
+
+<div class="box" style="--c:#b91c1c"><h5>Incident 2: Nebius us-central1 region disruption, 10 Mar 2026 (post-mortem published 20 Mar 2026)</h5>
+<p><strong>What happened.</strong> Event date 10 Mar 2026. Impact began 15:18 UTC and was fully mitigated at 00:50 UTC on 11 Mar, about 9.5 hours. External VM connectivity was lost region-wide from 15:18 to 17:04 UTC; the S3 endpoint was unavailable from 15:24 to 16:46 UTC; managed Kubernetes was degraded broadly, with later aftershocks. <strong>Root cause (provider):</strong> "the work did not remain within the announced maintenance profile." Unplanned power interruptions de-energised racks after several rack transfer switch units failed. <strong>Recovery problem:</strong> some hosts came back before their control services were healthy, so some gateways, control-plane components and storage-backed workloads "did not recover automatically and required additional manual reconciliation." <strong>Prevention (provider's list):</strong> stricter scoping of maintenance notices, a joint review with the power provider, conservative maintenance standards, hard stop-and-review criteria when unexpected interruptions occur, and recovery drills that restore a region in dependency order.</p>
+<p><strong>Lesson for you:</strong> a managed control plane is only as available as its dependencies' restart order. Write the restart order for your own cluster's dependencies (DNS, networking, storage, control plane, workloads), test it, and treat "maintenance is larger than announced" as a stop condition, not a sign to push on.</p>
+<p>Source: <a href="https://nebius.com/blog/posts/incident-post-mortem-analysis-us-central1-service-disruption-on-march-10" target="_blank" rel="noopener">Nebius: post-mortem analysis, us-central1 service disruption on 10 March 2026</a> <span class="tag ok">Confirmed</span> (provider's own post-mortem, read on 24 Nov 2026; Nebius is a smaller provider than the hyperscalers, so weigh the details accordingly).</p></div>
+
+<p><strong>What companies expect from DevOps engineers now</strong></p>
+<ul>
+<li>Reliability ownership: an SLO, an error budget, and a written policy for what happens when the budget runs out, with named people. The SRE Workbook says the error budget is 100% minus the SLO and that you need a policy saying "who will take" the actions. <span class="tag ok">Confirmed</span> (<a href="https://sre.google/workbook/implementing-slos/" target="_blank" rel="noopener">Google SRE Workbook, Implementing SLOs</a>).</li>
+<li>Keyless and least-privilege access: just-in-time elevation for people and federated identity for workloads, with no standing Owner and no long-lived keys. <span class="tag info">Direction</span> (both vendors' current guidance points this way: <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-getting-started" target="_blank" rel="noopener">Azure PIM</a>, <a href="https://docs.cloud.google.com/kubernetes-engine/docs/concepts/workload-identity" target="_blank" rel="noopener">GKE Workload Identity Federation</a>; this is my reading of the docs, not a measured trend).</li>
+<li>Paved roads: the CNCF platform engineering maturity model lists golden paths (paved roads) as a Level 2 interface feature, delivered as documentation and templates. <span class="tag ok">Confirmed</span> (<a href="https://tag-app-delivery.cncf.io/whitepapers/platform-eng-maturity-model/" target="_blank" rel="noopener">CNCF TAG App Delivery, Platform Engineering Maturity Model</a>).</li>
+</ul>
+
+<h4>6. AIOps: automated troubleshooting</h4>
+<p><strong>Lesson.</strong> Automated troubleshooting is the step after log analysis: an assistant reads the alert, forms hypotheses, runs read-only checks, and proposes a fix. The value is speed and consistency at 3 a.m. The risk is a confident, wrong root cause followed by a write action nobody checked. A useful design is <em>read-only by default, evidence first, human approval for any write</em>. Your assistant should be able to say "I cannot confirm this" and should never see unredacted secrets.</p>
+<pre>
+You are an on-call troubleshooting assistant. Tools: read-only only (kubectl get/describe/logs,
+az monitor metrics list, gcloud logging read). Never propose a command that writes unless the
+on-call engineer approves it first.
+
+Alert: checkout p99 > 2s in shop-prod, pending pods 42, zone asia-south1-b NotReady.
+Return:
+1. Three hypotheses, ranked by likelihood, each with the evidence you would expect to see.
+2. For each hypothesis, the single read-only command that confirms or rejects it.
+3. One write action you would propose after confirmation, with its rollback.
+If you cannot confirm a hypothesis from the tools, say so.
+</pre>
+<p><strong>Guardrails.</strong> Use a read-only identity; allow-list the tool commands; redact secrets and personal data before logs enter the prompt; log every tool call; require a named human approval for every write; and measure the assistant against your past incidents as a golden set (see the AI pro section below). <strong>Risks:</strong> plausible but wrong causes, stale runbooks, data leaving your boundary, and over-trust by juniors. Keep a rule: the assistant's hypothesis is a lead, and the evidence is what closes the incident.</p>
+
+<h4>7. Lab checklist</h4>
+<pre>
+[ ] Azure: management group created, subscription moved in, two resource groups (prod and non-prod)
+[ ] Azure: Reader granted to a test group at a resource group, not the subscription
+[ ] Azure: audit policy with DoNotEnforce; non-compliant resource seen in compliance state
+[ ] Azure assignment: three-workload landing zone sketch with five audit-first policies
+[ ] GCP: regional Standard cluster created; three nodes across three zones checked
+[ ] GCP: pod calls a Google API with Workload Identity; no user-managed key exists
+[ ] GCP assignment: folder tree and first three org policies with one-line justifications
+[ ] Scenario A: wrote my own 5-line RCA before opening the solution
+[ ] Scenario A: listed which resources are recoverable and by which route
+[ ] Scenario B: reproduced the spread-constraint problem in a test cluster (or explained it on paper)
+[ ] Interview: answered Q1 (renamed module, database destroy) aloud in 2 minutes
+[ ] Interview: wrote the rotate-first steps for Q3 as a checklist
+[ ] AIOps: ran the troubleshooting prompt on a past incident of mine (redacted) and compared hypotheses
+[ ] Career: wrote the "Say it like this" sentence in my own words for a real decision
+[ ] Recap: ran one DevSecOps, SRE and FinOps command from the table
+[ ] AI pro: built a 20-task golden set from my own team's failures
+</pre>
+<h4>8. Career: how seniors approach production problems</h4>
+<p><strong>Lesson.</strong> Juniors fix the thing in front of them. Seniors run the incident. Three habits separate the two. First, stabilise before you understand. In the first fifteen minutes the goal is to stop the damage (roll back, fail over, shed load, freeze changes), and it is acceptable to be wrong about the cause, because you can reverse a rollback. Second, state a hypothesis and the test that would reject it. "I think the spread rule blocks scheduling; if I am right, pending pods drop when I relax it" is a plan. "Let me try a few things" is a risk to everyone's sleep. Third, one person changes production at a time, and an incident commander keeps the timeline.</p>
+<p>The question seniors ask first is "what changed in the last hour?", because most incidents are self-inflicted changes. I have watched a capable team spend fifty minutes on a database theory while a config push from an hour earlier was the real cause. Seniors also know the limit of their evidence. They say "I cannot confirm this yet" and keep the question open rather than filling silence with a guess.</p>
+<p>After the incident, the senior writes the record while the timeline is fresh and assigns actions to named people, not to "the platform team". When a manager asks what happened, the answer takes one minute: time, impact, cause, fix, prevention, with no person blamed. That answer is the career signal. It tells people you can be trusted with the next incident and the one after it, and that is how the scope you own grows from one service to a platform.</p>
+<p><strong>Say it like this</strong> (to a manager or CTO): "We stabilised checkout in eighteen minutes by relaxing one scheduling rule. The root cause is that our spread constraints assume three healthy zones. I am proposing a runbook for zone loss and a zone-failure test before the next sale; it needs about two engineer-days."</p>
+<p><strong>Skill-gap action for today (15 minutes):</strong> write a one-page "first fifteen minutes" checklist for the service you own most: the stabilising options (rollback, failover, shed load, freeze), who is the incident commander, the question "what changed in the last hour?", and who to page. Put it in the repo beside the service and link it from the alert.</p>
+
+<h4>9. Daily recap of all your tools</h4>
+<p class="meta">Table covers all 19 items you listed (the mod-18 rotation below covers the first 18; AI in DevOps appears here and in sections 6 and 10).</p>
+<div class="tw"><table><thead><tr><th>Tool</th><th>Remember today</th><th>Command or config</th><th>Official doc</th></tr></thead><tbody>
+<tr><td>Linux and shell</td><td>journalctl -p err -b shows only error-level messages since the last boot.</td><td><code>journalctl -p err -b -u nginx --no-pager</code></td><td><a href="https://www.freedesktop.org/software/systemd/man/journalctl.html" target="_blank" rel="noopener">journalctl</a></td></tr>
+<tr><td>Git/GitHub</td><td>git bisect finds the commit that introduced a bug in about log2(n) steps.</td><td><code>git bisect start HEAD v1.4.0 &amp;&amp; git bisect run ./test.sh</code></td><td><a href="https://git-scm.com/docs/git-bisect" target="_blank" rel="noopener">git-bisect</a></td></tr>
+<tr><td>Jenkins</td><td>Put a timeout on approval steps, or a forgotten prod approval holds an executor forever.</td><td><code>timeout(time: 1, unit: 'HOURS') { input message: 'Deploy to prod?' }</code></td><td><a href="https://www.jenkins.io/doc/book/pipeline/syntax/" target="_blank" rel="noopener">Pipeline syntax</a></td></tr>
+<tr><td>CI/CD (Actions/GitLab CI)</td><td>Make the GITHUB_TOKEN read-only at workflow level and grant write per job only where needed.</td><td><code>permissions: { contents: read }</code></td><td><a href="https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication" target="_blank" rel="noopener">Automatic token authentication</a></td></tr>
+<tr><td>Docker</td><td>Ask buildx for SBOM and provenance at build time so scanners and auditors can read them later.</td><td><code>docker buildx build --sbom=true --provenance=true -t app:1.4.2 .</code></td><td><a href="https://docs.docker.com/build/metadata/attestations/" target="_blank" rel="noopener">Attestations</a></td></tr>
+<tr><td>Kubernetes</td><td>kubectl auth can-i tests what a ServiceAccount may do, before you debug a 403 in application code.</td><td><code>kubectl auth can-i list secrets -n checkout --as system:serviceaccount:checkout:web</code></td><td><a href="https://kubernetes.io/docs/reference/access-authn-authz/authorization/" target="_blank" rel="noopener">Authorization overview</a></td></tr>
+<tr><td>Terraform</td><td>terraform state rm only forgets a resource; it does not delete it in the cloud.</td><td><code>terraform state rm aws_s3_bucket.logs</code></td><td><a href="https://developer.hashicorp.com/terraform/cli/commands/state/rm" target="_blank" rel="noopener">state rm</a></td></tr>
+<tr><td>AWS</td><td>Confirm the account and role before any change; applies to the wrong account are a common outage source.</td><td><code>aws sts get-caller-identity --query Account --output text</code></td><td><a href="https://docs.aws.amazon.com/cli/latest/reference/sts/get-caller-identity.html" target="_blank" rel="noopener">get-caller-identity</a></td></tr>
+<tr><td>Azure</td><td>az uses the subscription you last selected, so check it before any change.</td><td><code>az account show --query "{name:name,id:id}" -o table</code></td><td><a href="https://learn.microsoft.com/en-us/cli/azure/account" target="_blank" rel="noopener">az account</a></td></tr>
+<tr><td>GCP</td><td>Keep one gcloud configuration per environment and activate it explicitly.</td><td><code>gcloud config configurations activate prod &amp;&amp; gcloud config list</code></td><td><a href="https://cloud.google.com/sdk/docs/configurations" target="_blank" rel="noopener">gcloud configurations</a></td></tr>
+<tr><td>Ansible</td><td>Run a playbook in check mode with diff before running it for real.</td><td><code>ansible-playbook site.yml --check --diff</code></td><td><a href="https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_checkmode.html" target="_blank" rel="noopener">Check mode</a></td></tr>
+<tr><td>Prometheus and Grafana</td><td>absent() fires when a scrape target disappears, which a value-below-threshold alert never does.</td><td><code>absent(up{job="checkout"}) == 1</code></td><td><a href="https://prometheus.io/docs/prometheus/latest/querying/functions/#absent" target="_blank" rel="noopener">absent()</a></td></tr>
+<tr><td>ELK/OpenSearch</td><td>Cluster status red means at least one primary shard is unassigned, so some data is unavailable.</td><td><code>GET _cluster/health?pretty</code></td><td><a href="https://opensearch.org/docs/latest/api-reference/cluster-api/cluster-health/" target="_blank" rel="noopener">Cluster health</a></td></tr>
+<tr><td>Python for DevOps</td><td>subprocess with shell=True and untrusted input is command injection; pass an argument list.</td><td><code>subprocess.run(["kubectl", "get", "pods"], check=True, timeout=60)</code></td><td><a href="https://docs.python.org/3/library/subprocess.html" target="_blank" rel="noopener">subprocess</a></td></tr>
+<tr><td>GitOps (Argo CD/Helm)</td><td>helm upgrade --atomic rolls the release back automatically if the upgrade fails.</td><td><code>helm upgrade --install web ./chart -f values-prod.yaml --atomic --timeout 5m</code></td><td><a href="https://helm.sh/docs/helm/helm_upgrade/" target="_blank" rel="noopener">helm upgrade</a></td></tr>
+<tr><td>DevSecOps</td><td>Pin third-party GitHub Actions to a full commit SHA, because a tag can be moved.</td><td><code>uses: actions/checkout@&lt;40-char-commit-sha&gt; # v4</code></td><td><a href="https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions" target="_blank" rel="noopener">Security hardening</a></td></tr>
+<tr><td>SRE (SLI/SLO)</td><td>Alert on burn rate, not raw error counts: a 14.4x burn for one hour spends 2% of a 30-day budget.</td><td><code>burn_rate * window_hours / 720 * 100  # 14.4 x 1 h = 2.0%</code></td><td><a href="https://sre.google/workbook/alerting-on-slos/" target="_blank" rel="noopener">Alerting on SLOs</a></td></tr>
+<tr><td>FinOps/Platform</td><td>A budget alert only helps if it exists before the spend starts, so create budgets with the project.</td><td><code>gcloud billing budgets list --billing-account=BILLING_ID</code></td><td><a href="https://cloud.google.com/billing/docs/how-to/budgets" target="_blank" rel="noopener">Budgets</a></td></tr>
+<tr><td>AI in DevOps</td><td>Redact secrets from logs before a model sees them; grep is crude but auditable.</td><td><code>grep -v -i -E 'password|token|secret' app.log | head -n 200 &gt; redacted.log</code></td><td><a href="https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview" target="_blank" rel="noopener">Prompt engineering</a></td></tr>
+</tbody></table></div>
+
+<h5>DevSecOps: SBOM and build provenance (SLSA)</h5>
+<p><strong>What it is.</strong> An SBOM lists every component inside an artifact; provenance records how and from which source the artifact was built. <strong>Why it matters.</strong> When a new CVE lands, you must answer "which of our running images contain this?" in minutes, not days. <strong>How it works.</strong> SLSA's Build track has levels: Build L1 requires provenance that describes how the artifact was built; L2 requires signed provenance from a hosted build platform; L3 adds a hardened platform where runs cannot influence each other and signing secrets are out of reach of user build steps.</p>
+<pre>
+commit SHA --&gt; hosted build (signed provenance) --&gt; image + SBOM --&gt; registry
+                                          deploy gate: verify signature and SBOM before rollout
+</pre>
+<p><strong>AI prompt example:</strong> "Here is our SBOM (CycloneDX JSON) for checkout:1.4.2 and CVE-XXXX-YYYY. List the matching components with their installed versions and the fixed version. If the SBOM does not show a match, say 'not found in SBOM' and do not guess." <span class="tag ok">Confirmed</span> (<a href="https://slsa.dev/spec/v1.0/levels" target="_blank" rel="noopener">SLSA levels</a>; the page is marked retired and v1.2 is current).</p>
+
+<h5>SRE (SLI/SLO): burn-rate alerts</h5>
+<p><strong>What it is.</strong> A burn-rate alert fires when your error budget is being spent faster than the SLO allows. <strong>Why it matters.</strong> Threshold alerts on error counts wake people for small spikes and miss slow burns that empty the budget over days. <strong>How it works.</strong> The error budget is 100% minus the SLO, so a 99.9% SLO over 30 days gives a budget of about 43 minutes. Burn rate is the observed error ratio divided by the budget ratio; a rate of 1 spends the budget exactly over the window.</p>
+<pre>
+error budget (30 d)  = (1 - 0.999) x 720 h = 0.72 h = 43.2 min
+burn 14.4 over 1 h   -&gt; page      (spends 2% of budget)
+burn 1 over 3 days   -&gt; ticket    (spends 10% of budget)
+</pre>
+<p><strong>AI prompt example:</strong> "SLO is 99.9% over 30 days. Below are 7 days of error ratios at 5-minute resolution. Compute the burn rate per hour, flag any 1-hour window at or above 14.4x, and state the budget spent so far. Show the formula you used." <span class="tag ok">Confirmed</span> (<a href="https://sre.google/workbook/implementing-slos/" target="_blank" rel="noopener">SRE Workbook: Implementing SLOs</a>, error budget definition; the 14.4x example is from the alerting chapter, <a href="https://sre.google/workbook/alerting-on-slos/" target="_blank" rel="noopener">Alerting on SLOs</a>).</p>
+
+<h5>FinOps/Platform: cost guardrails as golden-path defaults</h5>
+<p><strong>What it is.</strong> A platform template that gives every new project or subscription its budget, labels, quota and logging on day one. <strong>Why it matters.</strong> Cost surprises are found after the invoice; guardrails stop most of them before the first resource is created. <strong>How it works.</strong> The template is the golden path: teams get the defaults without asking. Budget alerts notify the owner at a threshold, and a review starts at the limit; the reviewer decides, not an automatic shutdown.</p>
+<pre>
+team request -&gt; template (labels, budget, quota, logging, policy) -&gt; project or subscription
+budget 80% -&gt; owner email      budget 100% -&gt; cost review (human decides)
+</pre>
+<p><strong>AI prompt example:</strong> "Here is last month's cost export by project and label. List projects with more than 30% growth, unlabelled spend above 5% of the total, and the three likeliest causes for each. Mark which claims the billing console must confirm." <span class="tag ok">Confirmed</span> (<a href="https://tag-app-delivery.cncf.io/whitepapers/platform-eng-maturity-model/" target="_blank" rel="noopener">CNCF platform maturity model</a> for golden paths; <a href="https://www.finops.org/framework/" target="_blank" rel="noopener">FinOps Framework</a> for the practice).</p>
+
+<h5>Recap questions (answers in the details)</h5>
+<details><summary>Show answers</summary>
+<p><strong>1.</strong> Which command confirms the account before any change, and why? <code>aws sts get-caller-identity</code> returns the account and role your CLI is using. Wrong-account applies are a common cause of outages, and a 5-second check prevents them.</p>
+<p><strong>2.</strong> What does <code>helm upgrade --atomic</code> do on failure? It rolls the release back to the previous revision automatically when the upgrade fails. The catch: it relies on the timeout, so set <code>--timeout</code> realistically, or a slow rollout is rolled back too early.</p>
+<p><strong>3.</strong> Why alert on burn rate instead of error counts? Burn rate measures budget consumption relative to the SLO, so the same alert works at low and high traffic and catches slow burns that count-based thresholds miss.</p>
+</details>
+
+<h4>10. AI pro: evaluation (golden sets, LLM-as-judge pitfalls, regression tests)</h4>
+<p><strong>Concept.</strong> A golden set is a small, versioned set of inputs with expected outcomes, chosen from real failures and real successes. Anthropic's guidance for agent evals is to start with 20 to 50 simple tasks drawn from real failures, define success before optimising, and combine three grader types: code-based checks, model-based graders scoring against a rubric, and human review. <span class="tag ok">Confirmed</span> (<a href="https://anthropic.com/engineering/demystifying-evals-for-ai-agents" target="_blank" rel="noopener">Anthropic: Demystifying evals for AI agents</a>).</p>
+<p><strong>Metrics.</strong> pass@k asks whether at least one of k attempts succeeds; pass^k asks whether all k attempts succeed. A customer-facing automation needs pass^k high; an interactive search can tolerate pass@k. <span class="tag ok">Confirmed</span> for the definitions (same source); the product guidance is my reading.</p>
+<p><strong>LLM-as-judge pitfalls.</strong> Surveys report position bias in pairwise comparisons, a preference for verbose answers, and self-enhancement, where a judge favours outputs from its own model family. Another critique finds judges substitute their own reading of the criteria for the rubric. <span class="tag warn">Reported</span> (<a href="https://arxiv.org/pdf/2411.15594" target="_blank" rel="noopener">A Survey on LLM-as-a-Judge, arXiv 2411.15594</a>; read from search results, not the full paper).</p>
+<p><strong>Architecture.</strong> Golden set (JSONL in Git) → system under test → code graders for hard facts (valid JSON, required fields, forbidden commands) → model judge with a rubric and examples → report by category → CI gate: release fails if a must-pass case regresses.</p>
+<pre>
+{"id":"runbook-014","input":"checkout p99 high, pods pending","must":["suggests read-only commands"],"forbid":["kubectl delete"]}
+{"id":"runbook-015","input":"disk 98% on db-2","must":["finds the largest directory before deleting anything"],"forbid":["rm -rf /var"]}
+
+def grade(case, output):
+    hard = all(bad not in output for bad in case["forbid"])        # deterministic
+    soft = all(judge(rule, output) for rule in case["must"])       # model judge, rubric + examples
+    return hard and soft
+</pre>
+<p><strong>Trade-offs.</strong> Code graders are cheap, stable and auditable but miss nuance. Model judges are flexible but drift, favour long answers, and share blind spots with the model they judge. Use a different model family for judging where you can, randomise the order of pairwise comparisons, and check the judge against human labels on a sample every release. Read transcripts: Anthropic's guidance is that you will not know your graders work until you read the transcripts of many trials.</p>
+<p><strong>Failure modes.</strong> Overfitting (the prompt learns the twenty cases and nothing else); a set of only easy cases; graders that reward confident wording; expected answers that go stale after a platform change. <strong>Security and cost.</strong> Golden sets often contain real incident data: redact it, restrict access, and keep judge prompts free of secrets. Run the small must-pass set on every commit and the full set nightly, so cost stays predictable.</p>
+<p>Sources: <a href="https://anthropic.com/engineering/demystifying-evals-for-ai-agents" target="_blank" rel="noopener">Anthropic: Demystifying evals for AI agents</a> · <a href="https://arxiv.org/pdf/2411.15594" target="_blank" rel="noopener">arXiv 2411.15594, A Survey on LLM-as-a-Judge</a></p>
+</article>
+
 <article class="entry" id="career-2026-11-23"><h3>Study plan: 23 Nov 2026 (Week 1, Day 5)</h3>
 <p class="meta">Monday. Classes: Terraform in production (modules, state, workspaces, review flow); AWS production (VPC design, IAM, multi-account). Scenarios: application latency investigation; designing highly available, fault-tolerant infrastructure. Interview: Kubernetes. Career: how to make infrastructure and deployment decisions. AIOps: AI-assisted root cause analysis. Recap tools today (deep): ELK/OpenSearch, Python for DevOps, GitOps (Argo CD and Helm). AI pro: RAG in depth.</p>
 
