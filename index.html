@@ -1463,7 +1463,7 @@ print(msg.content[0].text)</code></pre>
 <h2 style="background:#b45309">Career and industry growth (DevOps to Senior, SRE, Architect)</h2>
 <p class="meta">Daily: industry incidents, corporate documents (HLD, LLD, SOP, RCA, DR), hands-on skills, production scenarios, AIOps, interview practice and career lessons. Weekends: revision and assessment.</p>
 <!-- ROADMAP-START -->
-<div class="box" style="--c:#b45309"><h4>8-week roadmap (you are here: Week 1, Day 6)</h4>
+<div class="box" style="--c:#b45309"><h4>8-week roadmap (you are here: Week 1, Day 7)</h4>
 <div class="tw"><table><thead><tr><th>Week</th><th>Two themes</th><th>Outcome you can show</th></tr></thead><tbody>
 <tr style="background:#fef3c7"><td><strong>W1 (19-25 Nov) ◀ you are here</strong></td><td>Linux production troubleshooting, networking, shell scripting | Git/GitHub workflows</td><td>A triage runbook and a safe production shell script; a protected-branch repo with PR rules</td></tr>
 <tr><td>W2</td><td>Jenkins + CI/CD design (GitHub Actions/GitLab CI) | Docker in production and image security</td><td>A pipeline with test, scan, build and deploy stages; a hardened multi-stage image</td></tr>
@@ -1476,6 +1476,338 @@ print(msg.content[0].text)</code></pre>
 </tbody></table></div></div>
 <!-- ROADMAP-END -->
 <!-- NEW-CAREER-ENTRY-HERE -->
+<article class="entry" id="career-2026-11-25"><h3>Study plan: 25 Nov 2026 (Week 1, Day 7)</h3>
+<p class="meta">Wednesday. Classes: Ansible and configuration management (idempotent roles, check mode, Vault); Prometheus and Grafana (data model, PromQL histograms, alert design, dashboards). Scenarios: CrashLoopBackOff and ImagePullBackOff after a credentials rollout (today's tools); DNS outage in a cluster (senior level). Interview: CI/CD and Jenkins. Career: communicating with developers. AIOps: self-healing infrastructure. Recap tools today (deep): Linux and shell, Git/GitHub, Jenkins. AI pro: agent architectures (planner/executor, multi-agent, memory).</p>
+
+<h4>1. You are here (roadmap)</h4>
+<p><strong>Week 1, Day 7 of 56.</strong> Week 1 themes in the table above: (1) Linux production troubleshooting, networking and shell scripting; (2) Git/GitHub workflows. Covered so far: Days 1 to 6 took the track through Linux, networking, shell scripting, Git, Jenkins, CI/CD design, Docker, Kubernetes, Terraform, AWS, Azure and GCP. <em>Teacher's note:</em> I run the daily track in its own order, not the week table, so today you meet Ansible (a Week 5 theme on the table) and Prometheus and Grafana (Week 6). The table is the destination and the track is the route. Your Week 1 outcomes (a triage runbook, a safe production script, a protected-branch repo) are not finished yet. Use Saturday 28 November, the first weekend assessment, to close them.</p>
+<p><strong>Progress:</strong> 7 of 56 days done (counting today), 14 classes taught, 14 scenarios solved. Next: Thursday covers ELK/OpenSearch and Python for DevOps, with scenarios on certificate expiry and database failover.</p>
+
+<h4>2. Two classes of the day</h4>
+
+<div class="box" style="--c:#7c3aed"><h5>Class 1: Ansible and configuration management (idempotent configuration at fleet scale)</h5>
+<p><strong>Objective:</strong> write an Ansible role that brings hosts to a declared state, proves it is idempotent (a second run changes nothing), keeps secrets encrypted, and is previewed with check mode and diff before anyone applies it.</p>
+<p><strong>Theory: the model.</strong> Ansible is agentless. The control node connects over SSH (or WinRM for Windows), copies small modules to the target, runs them and removes them, so managed hosts need only SSH and Python. Your inventory names hosts and groups. Variables come from <code>group_vars</code> and <code>host_vars</code>, and their precedence is worth reading once in the docs rather than guessing. A playbook is a list of plays; a play maps hosts to roles; a role packages tasks, handlers, templates and defaults; a collection ships modules such as <code>ansible.builtin</code>. Always use fully qualified module names, so a collection update cannot silently change what your task does.</p>
+<p><strong>Theory: idempotency.</strong> A good module declares desired state (<code>state: present</code>) and reports <code>changed</code> only when it had to act. The test is the second run: <code>changed=0</code>. The module to distrust is <code>command</code> or <code>shell</code>, which do not know what state they change. Make them safe with <code>creates:</code>, <code>removes:</code> or <code>changed_when:</code>. Handlers run once, at the end of the play, and only if a task notified them, so a service restart does not fire five times.</p>
+<p><strong>Theory: check mode and diff.</strong> <code>--check --diff</code> simulates the run and shows before-and-after content. The official page sets the limits: a module without check-mode support "report[s] nothing and do[es] nothing"; a task with <code>check_mode: false</code> still changes the system; and conditions that depend on registered results may be evaluated differently. A clean check run is a preview, not a proof. The second real run is the proof.</p>
+<p><strong>Theory: secrets and versions.</strong> Ansible Vault encrypts variables or whole files. Never type a secret on the command line, because it ends up in shell history, as the vault guide warns. Pin <code>ansible-core</code> in your requirements. The support policy maintains the latest release plus two older ones. The support page lists ansible-core 2.22 as GA in November 2026 and 2.19 as end of life in November 2026. Upgrading on a schedule is far cheaper than upgrading during an incident.</p>
+<pre>
+ control node (bastion or CI runner)                 managed hosts (inventory groups)
+ ansible-playbook -i inventory/prod site.yml         web-01 ─┐
+   plays → roles → tasks → modules ── SSH ─────────▶ web-02 ─┼─ needs sshd and python;
+   vault-encrypted vars (never in git)                 db-01 ─┘  modules are copied, run, removed
+
+   run 1: changed=3          run 2: changed=0   ← the idempotency test
+</pre>
+<pre>
+ansible-galaxy collection install -r requirements.yml
+ansible-playbook -i inventory/lab.ini site.yml --check --diff     # preview: writes nothing
+ansible-playbook -i inventory/lab.ini site.yml                    # apply
+ansible-playbook -i inventory/lab.ini site.yml                    # second run: expect changed=0
+ansible-vault encrypt group_vars/prod/vault.yml                   # encrypt a whole file
+</pre>
+<p><strong>In real companies:</strong> Ansible usually handles the last mile. Terraform creates the machines; Ansible applies the OS baseline (accounts, hardening, agents, packages) and runs the same role across inventory groups during a patch window. Teams run it from a controller or CI runner with credentials in a vault, not from laptops, and they make <code>--check</code> part of review. <span class="tag info">Direction</span> (my reading of common practice, not a survey).</p>
+<p><strong>Pitfalls you will meet:</strong> <code>shell:</code> with unquoted variables that expand differently on each host; <code>ignore_errors: true</code> hiding a failed task; a run without <code>--limit</code> against the whole production inventory; a handler that never fires because no task reported a change; and secrets printed in debug output, which <code>no_log: true</code> prevents.</p>
+<pre>
+# roles/motd/tasks/main.yml
+- name: Create lab directory
+  ansible.builtin.file:
+    path: /tmp/ansible-lab
+    state: directory
+    mode: "0755"
+
+- name: Render the motd file
+  ansible.builtin.template:
+    src: motd.j2
+    dest: /tmp/ansible-lab/motd
+    mode: "0644"
+
+- name: Create the marker file once
+  ansible.builtin.command: touch /tmp/ansible-lab/initialised
+  args:
+    creates: /tmp/ansible-lab/initialised
+</pre>
+<p><strong>LAB (40 min):</strong> use your own Linux VM with <code>inventory/lab.ini</code> containing <code>localhost ansible_connection=local</code>. Put the tasks above in a role called motd, with a template <code>motd.j2</code> that prints <code>{{ inventory_hostname }}</code>. Run the playbook, run it again, then edit the template and run with <code>--check --diff</code>. <strong>Success looks like:</strong> run 1 reports three changes; run 2 reports <code>changed=0</code>; the check run shows the diff for the template and leaves <code>/tmp/ansible-lab/motd</code> unchanged on disk. <strong>ASSIGNMENT:</strong> take one role or script you already have. List every <code>command</code> and <code>shell</code> task, convert each to a module or add <code>creates:</code>, <code>removes:</code> or <code>changed_when:</code>, and write one sentence on why. Then run it twice and record the second run's recap line.</p>
+<p>Sources: <a href="https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_checkmode.html" target="_blank" rel="noopener">Ansible: check mode and diff mode</a> · <a href="https://docs.ansible.com/ansible/latest/vault_guide/vault_encrypting_content.html" target="_blank" rel="noopener">Ansible Vault: encrypting content</a> · <a href="https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html" target="_blank" rel="noopener">Ansible: releases and maintenance</a> · <a href="https://docs.ansible.com/ansible/latest/tips_tricks/ansible_tips_tricks.html" target="_blank" rel="noopener">Ansible: tips and tricks</a> <span class="tag ok">Confirmed</span> (official pages read on 25 Nov 2026; the idempotency model is standard Ansible behaviour, and the page did not describe it in the part I read).</p>
+</div>
+
+<div class="box" style="--c:#ea580c"><h5>Class 2: Prometheus and Grafana (metrics, alerts and dashboards that answer a question)</h5>
+<p><strong>Objective:</strong> expose metrics from a service, query them correctly with PromQL, alert on user-visible symptoms with a <code>for</code> duration, and build a dashboard that answers three questions in order: is it us, where, and what changed?</p>
+<p><strong>Theory: the data model.</strong> Prometheus pulls (scrapes) an HTTP endpoint at a set interval. Each series is a metric name plus a set of labels. Cardinality, the number of distinct label combinations, is the main cost: a label such as user ID or request ID multiplies series without limit. Counters only go up, so you read them with <code>rate()</code>. Gauges move both ways. A histogram stores cumulative counts in <code>_bucket</code> series with an <code>le</code> label, plus <code>_sum</code> and <code>_count</code>. Histograms can be aggregated across instances, which is why platform teams standardise on them for latency.</p>
+<p><strong>Theory: histogram_quantile, correctly.</strong> The official function page defines <code>histogram_quantile(φ, b)</code> as the φ-quantile from a classic histogram, and says each sample must carry an <code>le</code> label; samples without it are ignored. The senior rule: aggregate the buckets first, then take the quantile. An average of ten pods' p99 values is a number with no meaning.</p>
+<pre>
+histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket{job="checkout"}[5m])))   ✔ right
+avg(histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])))                           ✘ wrong
+</pre>
+<p><strong>Theory: Prometheus 3.x upgrades.</strong> Version 3.0 changed things you will meet during upgrades: range selectors are now left-open and right-closed; <code>.</code> in regular expressions matches newlines; UTF-8 metric and label names are accepted; Alertmanager's v1 API is gone (use Alertmanager 0.16.0 or later); and <code>holt_winters</code> was renamed and moved behind an experimental flag. The migration page lists them all, so read it before an upgrade, not after a dashboard goes blank. The releases page marks 3.16.0 as the latest at the time of writing; check it for the current patch release.</p>
+<p><strong>Theory: rules and alerts.</strong> Recording rules precompute expensive expressions so dashboards and alerts stay fast; name them <code>level:metric:operation</code>. An alerting rule fires when its expression stays true for the <code>for</code> duration, which stops one bad scrape from paging anyone. The Prometheus alerting guidance is short and worth copying into your team's wiki: keep alerting simple, alert on symptoms, have consoles that help pinpoint causes, and avoid pages where there is nothing to do. Page on user-visible errors; put cause-level signals on dashboards or in tickets.</p>
+<p><strong>Theory: Grafana.</strong> Grafana queries Prometheus as a data source and renders dashboards. The production habit is dashboards as code: provisioning files or JSON in Git, reviewed like any other change. The "What's new" pages describe Grafana 13 as the current major and say scripted dashboards are removed in Grafana 14 <span class="tag warn">Reported</span>; check the Grafana release notes before you build anything that depends on them.</p>
+<pre>
+ app /metrics ──scrape 15s──▶ Prometheus (TSDB + rules) ──▶ Alertmanager ──▶ owning team (route, group, silence)
+                                  │ recording rules
+                                  └──PromQL──▶ Grafana dashboard (data source)
+</pre>
+<pre>
+# prometheus.yml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+rule_files:
+  - rules/checkout.yml
+scrape_configs:
+  - job_name: checkout
+    static_configs:
+      - targets: ['localhost:8000']
+
+# rules/checkout.yml
+groups:
+  - name: checkout
+    rules:
+      - record: job:http_request_duration_seconds:p99_5m
+        expr: histogram_quantile(0.99, sum by (le, job) (rate(http_request_duration_seconds_bucket{job="checkout"}[5m])))
+      - alert: CheckoutP99High
+        expr: job:http_request_duration_seconds:p99_5m &gt; 0.8
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: "Checkout p99 above 800 ms for 2 minutes"
+</pre>
+<pre>
+promtool check config prometheus.yml
+promtool check rules rules/checkout.yml
+curl -s http://localhost:9090/api/v1/query --data-urlencode 'query=job:http_request_duration_seconds:p99_5m'
+</pre>
+<p><strong>In real companies:</strong> platform teams usually run one Prometheus per cluster or environment, keep recording and alerting rules in Git, route alerts through Alertmanager to the owning team, and send long-term data to a remote store. <span class="tag info">Direction</span> (common practice as I see it, not a survey).</p>
+<p><strong>LAB (45 min):</strong> start Prometheus with the official image (<code>docker run -d --network host -v "$PWD/prometheus.yml:/etc/prometheus/prometheus.yml" prom/prometheus</code>, using the config above and <code>rules/</code> alongside). Run a sample app that exposes a histogram: <code>pip install prometheus-client</code>, then a script that creates <code>Histogram('http_request_duration_seconds', 'latency', buckets=(0.05,0.1,0.25,0.5,1,2,5))</code>, calls <code>start_http_server(8000)</code>, and records a random sleep of 0.05 to 0.3 seconds in a loop. Query the p99 in the Prometheus UI, then make the sleep 1.5 seconds. <strong>Success looks like:</strong> the p99 query returns a value near 0.2 to 0.3 seconds at first; after the change, <code>CheckoutP99High</code> goes pending, then firing after two minutes. <strong>ASSIGNMENT:</strong> write a three-panel dashboard spec that answers "is it us" (error ratio), "where" (the same ratio by a low-cardinality label such as zone or route), and "what changed" (deploy annotations). Justify your <code>for</code> duration in one sentence.</p>
+<p>Sources: <a href="https://prometheus.io/docs/prometheus/latest/querying/functions/" target="_blank" rel="noopener">Prometheus: querying functions (histogram_quantile)</a> · <a href="https://prometheus.io/docs/practices/alerting/" target="_blank" rel="noopener">Prometheus: alerting practices</a> · <a href="https://prometheus.io/docs/prometheus/latest/migration/" target="_blank" rel="noopener">Prometheus: 3.0 migration guide</a> · <a href="https://github.com/prometheus/prometheus/releases" target="_blank" rel="noopener">Prometheus releases</a> · <a href="https://prometheus.io/docs/prometheus/latest/installation/" target="_blank" rel="noopener">Prometheus: installation</a> <span class="tag ok">Confirmed</span> (the function, alerting and migration pages were read on 25 Nov 2026; the release date on the releases page is ambiguous, so check it yourself).</p>
+</div>
+<h4>3. Scenario practice</h4>
+
+<div class="box" style="--c:#7c3aed"><h5>Scenario A (today's tools): payments crash-loops and reporting cannot pull its image after a credentials rotation</h5>
+<p><strong>Situation.</strong> Wednesday 11:40 IST. At 11:31 IST an Ansible job (role <code>registry-creds</code>, run from the CI runner) rotated the image pull token and re-rendered the secret <code>payments-env</code>. Two alerts fired within four minutes. <code>payments-api</code> (40% of card traffic) is restarting in a loop, and the error rate rose from 0.2% to 9% in ten minutes. <code>reporting-worker</code> cannot pull its image. Constraints: payments must recover within 20 minutes; a change freeze starts at 14:00 today; you may roll back or re-run the role, but you may not edit application code.</p>
+<pre>
+$ kubectl get pods -n payments
+NAME                           READY  STATUS            RESTARTS      AGE
+payments-api-6d8f9c7b5-2hq4x   0/1    CrashLoopBackOff  7 (42s ago)   11m
+payments-api-6d8f9c7b5-9lm2p   0/1    CrashLoopBackOff  7 (39s ago)   11m
+
+$ kubectl logs payments-api-6d8f9c7b5-2hq4x -n payments --previous
+2026-11-25T06:10:02Z FATAL config: required key PAYMENTS_DB_URL is not set
+
+$ kubectl get pods -n reporting
+reporting-worker-5f7d88c9-88xw  0/1  ImagePullBackOff  0  11m
+
+$ kubectl describe pod reporting-worker-5f7d88c9-88xw -n reporting | grep -A1 Failed
+  Warning  Failed  kubelet  Failed to pull image "registry.example.in/reporting/worker:4.2.0": unauthorized: authentication required
+
+$ kubectl get secret payments-env -n payments -o jsonpath='{.data}' | jq 'keys'   # key names only, never values
+["DB_URL"]
+
+Ansible (CI log, 11:31): TASK [registry-creds : render payments-env] changed   (values hidden by no_log)
+Ansible (CI log, 11:31): loop namespaces = [payments, checkout]
+</pre>
+<p><strong>Guiding questions:</strong> 1) Are the payments failure and the reporting failure the same cause, or two causes that happened at the same time? 2) What does the CrashLoopBackOff tell you that the pod status alone does not? 3) Which action restores payments within 20 minutes, and which change to the role stops this happening on the next rotation?</p>
+<details><summary>Show solution</summary>
+<p><strong>Investigation.</strong> (1) Start with blast radius: payments first, because customers are affected; reporting second. (2) The pod is not failing to start; it starts, reads its configuration, and exits. <code>--previous</code> shows the last container's logs, and the message names the missing key. (3) The rendered secret now contains <code>DB_URL</code>, not <code>PAYMENTS_DB_URL</code>. A variable rename merged in the same change caused it. The CI log proves the timing: the render ran at 11:31 and the restarts began at about the same time. Run <code>--check --diff</code> on the role before the rotation to see the rename (the diff must hide values, which <code>no_log: true</code> does). (4) The ImagePullBackOff has a different cause. The kubelet is refused by the registry with "unauthorized". The rotation revoked the old token, and the loop covered only <code>payments</code> and <code>checkout</code>, so <code>reporting</code> kept the old pull secret. Confirm with <code>kubectl get secret -n reporting regcred -o jsonpath='{.type}'</code>, which shows the type without printing the token. (5) Two causes, one run. The shared cause is that the rotation was not checked against the list of namespaces that consume the token.</p>
+<p><strong>Root cause.</strong> The role renamed a secret key and changed the namespace list in one change, with no check-mode review and no assertion that required keys exist before rendering. Rotation revoked the old registry token globally while one consuming namespace was missing from the loop.</p>
+<p><strong>Resolution.</strong> (a) Revert the key rename in Git and re-run the role for payments only, so the secret again contains <code>PAYMENTS_DB_URL</code>. Then <code>kubectl rollout restart deployment/payments-api -n payments</code> and <code>kubectl rollout status deployment/payments-api -n payments</code>. Watch restarts stop and the error rate fall. (b) Re-run the role for <code>reporting</code> to create the new pull secret, then delete the ImagePullBackOff pod so the Deployment creates a new one. (c) Before the freeze, confirm no other namespace uses the old token.</p>
+<p><strong>Long-term prevention.</strong> (1) Generate the namespace list from the cluster (every namespace with a Deployment that references the pull secret), not from a hand-written list. (2) Add an assertion task that fails if a required key is missing before the template renders. (3) Run <code>--check --diff</code> in the pipeline and require approval when a secret's key names change. (4) Rotate in stages: one namespace, a 15-minute pause, then the rest. (5) Alert on <code>kube_pod_container_status_waiting_reason{reason="ImagePullBackOff"}</code> above zero for five minutes, so a missed namespace pages someone within minutes, not after a customer complaint.</p>
+<p><strong>Sample document: Incident report (fictional, standard format)</strong></p>
+<p><strong>Title:</strong> payments-api crash loop and reporting image-pull failure after registry credential rotation, 25 Nov 2026 (IST)<br>
+<strong>Summary:</strong> A credential rotation changed a secret key name and omitted the reporting namespace. Payments restarted in a loop for 17 minutes; reporting could not pull images for 19 minutes. Both recovered at 12:07 IST.<br>
+<strong>Impact:</strong> payments error rate peaked at 9% for about 14 minutes (0.2% baseline); an estimated share of card payments retried successfully on the second attempt <span class="tag bad">Unverified</span> (the payments team has not yet produced the exact count); reporting batch jobs delayed by 40 minutes.<br>
+<strong>Timeline (IST):</strong> 11:31 rotation role runs; 11:34 payments restart alert; 11:36 reporting ImagePullBackOff alert; 11:40 incident declared; 11:48 cause identified (key rename, missing namespace); 11:55 key rename reverted and payments re-rendered; 12:02 payments rollout complete; 12:07 reporting pull secret created and pods recovered.<br>
+<strong>Root cause:</strong> a key rename and a hand-written namespace list were merged together; the role had no assertion on required keys and no check-mode review gate; the old registry token was revoked before every consumer had its new secret.<br>
+<strong>Resolution:</strong> reverted the key rename; re-ran the role per namespace; restarted affected workloads.<br>
+<strong>Action items:</strong> (a) generate the namespace list from the cluster, owner: platform lead, due 2 Dec; (b) required-key assertion and check-mode gate in the pipeline, owner: DevOps engineer, due 1 Dec; (c) staged rotation runbook with a 15-minute pause, owner: SRE lead, due 4 Dec; (d) ImagePullBackOff alert, owner: observability lead, due 28 Nov.</p>
+</details>
+</div>
+
+<div class="box" style="--c:#ea580c"><h5>Scenario B (senior level): intermittent "no such host" errors after a CoreDNS change at 13:30 IST</h5>
+<p><strong>Situation.</strong> Wednesday 14:02 IST. Three services in production (<code>checkout</code>, <code>partner-sync</code>, <code>search</code>) log lookup failures for external partner hosts, including <code>i/o timeout</code> and <code>no such host</code>. The partner-sync error rate is 12%, checkout is 2.1%, and search p99 rose from 800 ms to 6 s. Symptoms started at 13:35. At 13:30 a platform change went out as one Helm release: it moved the CoreDNS forward upstream to a new private resolver endpoint and reduced the CoreDNS autoscaler minimum from 6 replicas to 2. Constraints: no application code changes today; target is under 1% lookup failures within 15 minutes; platform changes are frozen except emergencies with a second approver.</p>
+<pre>
+$ kubectl -n kube-system get deploy coredns
+NAME      READY   UP-TO-DATE   AVAILABLE
+coredns   2/2     2            2
+
+$ kubectl -n kube-system top pods -l k8s-app=kube-dns
+NAME                       CPU(cores)   MEMORY(bytes)
+coredns-7d9f5c6b8-4kz2p    998m         71Mi        (CPU limit 1000m)
+coredns-7d9f5c6b8-w8rjq    1000m        69Mi
+
+$ kubectl -n kube-system logs -l k8s-app=kube-dns --tail=3
+[ERROR] plugin/errors: 2 partner-api.example.com. A: read udp 10.244.1.9:48122-&gt;10.20.0.2:53: i/o timeout
+
+$ kubectl -n partner-sync exec dnsutils -- cat /etc/resolv.conf
+search partner-sync.svc.cluster.local svc.cluster.local cluster.local corp.example.internal
+options ndots:5
+</pre>
+<p><strong>Guiding questions:</strong> 1) Why does a DNS problem look like an application problem to the people who own checkout and search? 2) The change had two parts. Which part caused the timeouts, which part made them worse, and what does <code>ndots:5</code> add to the load? 3) What is the fastest safe fix that does not touch application code, and what would you change so this change could not reach production in one step?</p>
+<details><summary>Show solution</summary>
+<p><strong>Investigation.</strong> (1) Prove the scope with a test pod before blaming anyone: resolve one cluster name (<code>kubernetes.default</code>) and one external name, and time both, using the same resolver path the apps use. Cluster names work and external names fail, which points at the upstream, not at the cluster DNS service. (2) The logs show the upstream <code>10.20.0.2</code> timing out, so the new resolver is not answering from the node subnets. The most likely reason is a network rule that was not part of the same change (confirm with the networking owner; the security-group or route table is the thing to check). (3) With the two-replica minimum, the retries from the timeouts drive both CoreDNS pods to their CPU limit, so healthy lookups queue behind failing ones. (4) <code>ndots:5</code> means any name with fewer than five dots is tried with every search suffix first. A call to <code>partner-api.example.com</code> makes several NXDOMAIN lookups before the one that counts, so the upstream sees a multiple of the real query rate. Compare the request rate and the NXDOMAIN and SERVFAIL rates before and after 13:30 on your CoreDNS dashboard (CoreDNS exports Prometheus metrics; check the names your version exposes).</p>
+<p><strong>Root cause.</strong> One release changed the upstream and the replica floor together, with no canary and no synthetic DNS check. The new upstream was not reachable from the node subnets. The lower replica floor turned retries into CPU saturation, and <code>ndots:5</code> multiplied the query volume for external names.</p>
+<p><strong>Resolution (under the freeze, one emergency change, second approver).</strong> (a) Roll the Helm release back to the previous revision: <code>helm -n kube-system history coredns</code>, then <code>helm -n kube-system rollback coredns REVISION --wait</code>. This restores the old upstream and the replica floor in one step. Use the release name your <code>helm list</code> shows. (b) Scale up while the pods settle: <code>kubectl -n kube-system scale deployment coredns --replicas=6</code>. (c) For partner-sync only, if failures persist, lower ndots for its pods through platform configuration, not code: <code>kubectl -n partner-sync patch deployment partner-sync --type=merge -p '{"spec":{"template":{"spec":{"dnsConfig":{"options":[{"name":"ndots","value":"2"}]}}}}}'</code>. This causes a rolling restart, so do it only if the rollback is not enough. (d) Verify: lookup failures under 1% within 12 minutes, CoreDNS CPU under 60%, partner-sync p99 back to baseline.</p>
+<p><strong>Long-term prevention.</strong> (1) Treat DNS as a tier-0 service: an SLO on successful lookups, a burn-rate alert, and a dashboard with NXDOMAIN, SERVFAIL, upstream latency and request rate per source. (2) Set a minimum replica count and a PodDisruptionBudget for CoreDNS, and consider a node-local DNS cache for latency and resilience. (3) Roll out resolver changes to one node pool first and gate the rollout on synthetic lookups from a test pod. (4) Add a standard for external names: a trailing dot, or <code>dnsConfig</code> for the few workloads that need it. (5) Require an application-owner review for any change to the upstream resolver. The same class of failure is in AWS's own post-event summary for the DynamoDB disruption in us-east-1 in October 2025: AWS disabled its DNS automation worldwide until the race condition was fixed, a reminder that the control path that writes DNS needs the same caution as the data path. <span class="tag ok">Confirmed</span> (<a href="https://aws.amazon.com/message/101925" target="_blank" rel="noopener">AWS post-event summary</a>).</p>
+<p><strong>Sample document: Change record (emergency change, standard format)</strong></p>
+<p><strong>Change ID:</strong> CHG-2026-1125-03 (emergency). <strong>Requested by:</strong> on-call SRE. <strong>Approved by:</strong> incident commander and platform lead (second approver).<br>
+<strong>Summary:</strong> roll back the coredns Helm release to the revision before 13:30 IST, and scale coredns to 6 replicas for the duration of the incident.<br>
+<strong>Impact of change:</strong> a few seconds of DNS resolution disruption during each CoreDNS pod restart; no application restart required.<br>
+<strong>Rollback:</strong> re-apply the release revision from 13:30 with the new upstream and replica floor of 2, only after the new upstream answers from a node subnet test pod for 30 minutes and the networking rule is in place.<br>
+<strong>Verification:</strong> lookup failures 12% to 0.4% (partner-sync) within 11 minutes; coredns CPU 99% to 41%; search p99 back to 830 ms within 18 minutes.<br>
+<strong>Follow-up actions:</strong> networking rule review (owner: network lead, due 27 Nov); resolver change canary and synthetic DNS gate (owner: platform lead, due 4 Dec); CoreDNS SLO and burn-rate alert (owner: SRE lead, due 5 Dec); ndots standard for external names (owner: platform engineer, due 5 Dec).</p>
+</details>
+</div>
+
+<h4>4. Interview practice (CI/CD and Jenkins)</h4>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q1.</strong> "Forty builds sit in the Jenkins queue. The agents look idle in the UI and nobody changed the pipeline. What do you check, in what order?"</p>
+<details><summary>Show answer</summary>
+<p>1. Read the queue reason first. Jenkins shows why each item waits, for example that no executor matches a label, or that the label's nodes are offline. 2. Check the agents: connection state, disk space, Java version and the agent log; an agent that disconnected looks idle. 3. Check the labels. A pipeline that asks for <code>agent { label 'linux-docker' }</code> waits forever if the agents were relabelled. 4. Check the controller. The Jenkins best-practices page says Groovy runs on the controller and uses its CPU and memory, so heavy parsing or HTTP calls in Groovy slow the whole queue; move that work into <code>sh</code> steps on an agent. 5. Check quiet mode and any throttling plugin. 6. Fix and prevent: a label contract written down with the platform team, health alerts on agent connections, and an alert when the queue age passes a threshold. <em>What the interviewer is checking:</em> that you debug in order (queue reason, then agent, then labels, then controller) and know the controller and agent roles, not that you restart Jenkins first. <span class="tag ok">Confirmed</span> (<a href="https://www.jenkins.io/doc/book/pipeline/pipeline-best-practices/" target="_blank" rel="noopener">Jenkins pipeline best practices</a>).</p></details></div>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q2.</strong> "A developer committed a cloud access key to the Jenkinsfile so that a deploy would work. What is your move?"</p>
+<details><summary>Show answer</summary>
+<p><strong>Now (treat it as a leak):</strong> revoke and rotate the key first, because Git history keeps it even after you delete the line. Check the cloud audit logs for use of that key since the commit. Tell the security team. <strong>Then (fix the path):</strong> move the value into the Jenkins credentials store and bind it only where needed with <code>withCredentials</code>. Better still, remove the stored key: let the pipeline assume a short-lived role through OIDC federation, so no long-lived key exists anywhere. Add secret scanning to the pipeline and a pre-commit hook so the next key fails before it reaches the server. Write a short note for the developer: the key was not wrong to need, but storing it in code was the mistake. <em>What the interviewer is checking:</em> incident order (revoke, then audit, then notify), knowledge that history keeps secrets, and a design fix that removes the key instead of hiding it.</p></details></div>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q3.</strong> "A security scan fails on a critical CVE in the base image. The business needs a hotfix in 30 minutes. What do you do?"</p>
+<details><summary>Show answer</summary>
+<p>1. Do not delete the stage and do not mark it as passing. 2. Spend five minutes on the facts: is the vulnerable package in the running path, is it reachable from outside, and is a fixed base image available? 3. If a fixed image exists, rebuild on it and re-run the pipeline; this is the normal path and usually takes less than 30 minutes. 4. If no fix exists, use a time-boxed exception: a named approver from security, a written compensating control (for example a network restriction or a WAF rule), an expiry date of days, not months, and a change record. 5. Use the break-glass path, which is audited, not a manual deploy from a laptop. 6. Open a ticket for the permanent fix and check the exception on its expiry date. <em>What the interviewer is checking:</em> judgement under pressure, no silent bypass, and traceability. A senior engineer makes the risk decision visible and owned, and does not make it quietly.</p></details></div>
+
+<h4>5. Industry pulse</h4>
+
+<div class="box" style="--c:#b91c1c"><h5>Incident 1: Cloudflare, Bring Your Own IP (BYOIP) prefix withdrawals, 20 Feb 2026</h5>
+<p><strong>What happened.</strong> Event date 20 Feb 2026, 17:48 UTC per Cloudflare's report; the timeline gives impact from 17:56 to 23:03 UTC. A regular cleanup sub-task for BYOIP prefixes was changed. Its API query for <code>pending_delete</code> had no value, and the bug read that as a request for all BYOIP prefixes, so the sub-task began withdrawing them. <strong>Root cause (Cloudflare):</strong> "This change caused Cloudflare to unintentionally withdraw customer prefixes." Cloudflare states it was not a cyberattack. <strong>Impact:</strong> 25% of the 4,306 BYOIP prefixes were withdrawn; the affected services were Core CDN and Security, Spectrum, Dedicated Egress and Magic Transit; the public one.one.one.one service returned HTTP 403 "Edge IP Restricted"; DNS over the 1.1.1.1 resolver was not affected. <strong>Recovery:</strong> the broken sub-process was stopped at 18:46 UTC; about 800 prefixes were restored by reverting, and about 300 manually by 23:03 UTC. <strong>Prevention (Cloudflare's list):</strong> standardise the API schema so the flag cannot be read as a string; separate operational state from configured state and deploy through health-mediated rollouts that can be reverted fast; add a circuit breaker that halts any change that withdraws or deletes too much, too fast.</p>
+<p><strong>Lesson for you:</strong> a cleanup job with a broad default is one of the most dangerous code paths you run. Treat any bulk delete or withdraw as a dangerous operation: require a typed count, a rate limit, and a breaker that halts on unusual volume.</p>
+<p>Source: <a href="https://blog.cloudflare.com/cloudflare-outage-february-20-2026/" target="_blank" rel="noopener">Cloudflare: outage on February 20, 2026</a> <span class="tag ok">Confirmed</span> (the page was read in full through a fetch; its stated total duration does not match its own timestamps, so this note quotes the timestamps only).</p></div>
+
+<div class="box" style="--c:#b91c1c"><h5>Incident 2: GitHub, user settings cache change and Git HTTPS proxy exhaustion, 9 Feb 2026</h5>
+<p><strong>What happened.</strong> Event date 9 Feb 2026, two windows: 16:12 to 17:39 UTC and 18:53 to 20:09 UTC, about 2 hours 43 minutes in total. Services affected were github.com, the API, Actions, Git over HTTPS and Copilot; SSH Git was not affected. <strong>Root cause (GitHub):</strong> "a configuration change to a user settings caching mechanism" caused a surge of cache rewrites, which led to connection exhaustion in the Git HTTPS proxy. <strong>Impact:</strong> failed requests across the affected services during both windows. <strong>Prevention (GitHub's follow-ups):</strong> optimise the caching to avoid write amplification and add self-throttling; add rollback safeguards and stronger rollout checks; fix the proxy's connection exhaustion so it recovers without manual restarts.</p>
+<p><strong>Lesson for you:</strong> a cache change can be a write-amplification incident. Before a config change to a cache or a hot path, ask what a single write now costs in writes and connections, and make sure the rollback is one command and tested. The second window is a warning: the first incident was not fully contained.</p>
+<p>Source: <a href="https://github.blog/news-insights/company-news/github-availability-report-february-2026/" target="_blank" rel="noopener">GitHub availability report: February 2026</a> <span class="tag ok">Confirmed</span> (the report was read in full; the GitHub publication date was not read, so it is the February report, not the day it was published).</p></div>
+
+<p><strong>What companies expect from DevOps engineers now</strong></p>
+<ul>
+<li>Change safety as a product: staged rollouts and breakers that halt a change when it touches too much at once. <span class="tag info">Direction</span> (my reading; Cloudflare's stated fixes are the evidence: <a href="https://blog.cloudflare.com/cloudflare-outage-february-20-2026/" target="_blank" rel="noopener">Cloudflare, 20 Feb 2026</a>, which lists health-mediated rollouts and a circuit breaker).</li>
+<li>Owning the dependency chain, not only your service: caches, proxies and DNS are where small config changes become outages. <span class="tag info">Direction</span> (the evidence is the follow-up list in <a href="https://github.blog/news-insights/company-news/github-availability-report-february-2026/" target="_blank" rel="noopener">GitHub's February 2026 report</a>).</li>
+<li>Rehearsed recovery: a restore or rollback you have run once, with a measured time, beats a plan that has never been tested. <span class="tag info">Direction</span> (AWS's post-event summary lists the mitigation steps it took and the changes it made afterwards: <a href="https://aws.amazon.com/message/101925" target="_blank" rel="noopener">AWS, 19-20 Oct 2025</a>; the page does not say whether those steps were rehearsed beforehand).</li>
+</ul>
+<h4>6. AIOps: self-healing infrastructure</h4>
+<p><strong>Lesson.</strong> Kubernetes is self-healing by design. The official page says it "automatically replaces failed containers, reschedules workloads when nodes become unavailable, and ensures that the desired state of the system is maintained." A failed container restarts according to its <code>restartPolicy</code>; a failed Pod in a Deployment or StatefulSet is replaced; and a failed Pod is removed from Service endpoints so traffic goes only to healthy Pods. <span class="tag ok">Confirmed</span> (<a href="https://kubernetes.io/docs/concepts/architecture/self-healing/" target="_blank" rel="noopener">Kubernetes: self-healing</a>). The trap is that restarts can hide a bad release. A crash loop that restarts every 40 seconds looks like healing on a dashboard while customers see errors. The kubelet's restart delay grows exponentially (10 s, 20 s, 40 s, capped at 300 s) <span class="tag warn">Reported</span> (from the <a href="https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/" target="_blank" rel="noopener">pod lifecycle page</a>, read through a summary, so check the page). Automation that restarts without judgement can slow the signal you need.</p>
+<p><strong>How AI helps.</strong> A model is good at one narrow job here: classify a crash loop as likely transient (a restart may help) or change-related (a restart will not help), and cite the log line behind the call. It should not own the restart.</p>
+<pre>
+You are an on-call assistant. Read-only tools: kubectl get/describe/logs, the deploy history from Git.
+For each crash-looping Deployment in the last 30 minutes, return:
+1. classification: transient (restart may help) or change-related (restart will not help) or unsure;
+2. the log line or event that supports it, quoted exactly;
+3. the most recent change in Git that touched that workload, with its commit ID.
+If unsure, say "unsure" and do not recommend a restart. Never print secret values.
+</pre>
+<p><strong>Guardrails.</strong> Bounded automation: at most N automated restarts per Pod per hour, and never automatic action on stateful workloads without approval. A circuit breaker and a kill switch, the same idea Cloudflare describes for mass withdrawals (see the industry pulse above). An audit log of every automated action. <strong>Risks:</strong> a restart loop mistaken for healing, a confident classification with no evidence, and a model that recommends a restart on a database. Rule: the assistant's classification is a lead; the change record and the log line close the incident.</p>
+
+<h4>7. Lab checklist</h4>
+<pre>
+[ ] Ansible: motd role run twice; second run shows changed=0
+[ ] Ansible: check mode and diff run on a changed template, file left unchanged
+[ ] Ansible assignment: converted one command/shell task; wrote one sentence on why
+[ ] Prometheus: scrape target up; p99 query returns a value near 0.2 to 0.3 seconds
+[ ] Prometheus: CheckoutP99High goes pending, then firing after the latency change
+[ ] Prometheus: promtool check config and check rules both pass
+[ ] Prometheus assignment: three-panel dashboard spec and a justified for duration
+[ ] Scenario A: wrote my own 5-line root cause before opening the solution
+[ ] Scenario A: listed the two separate causes and which fix addresses each
+[ ] Scenario B: ran the test-pod lookup for an internal and an external name; timed both
+[ ] Scenario B: wrote the rollback and verification steps as a checklist
+[ ] Interview: answered Q1 (queue waiting, idle agents) aloud in two minutes
+[ ] Interview: wrote the rotate-first steps for Q2 as a checklist
+[ ] Recap: ran one Linux (PSI), one Git and one Jenkins command from the table
+[ ] AI pro: drafted a planner/executor budget for one task of mine
+[ ] Career: wrote the "Say it like this" sentence in my own words for a real change
+</pre>
+
+<h4>8. Career: communicating with developers</h4>
+<p><strong>Lesson.</strong> Developers do not need you to be right first. They need you to be clear, early and specific. A DevOps engineer at your stage often communicates badly in one of two ways. The first is the gatekeeper: "pipeline failed, check the logs" with no reason and no next step, so the developer learns to route around you. The second is the lecturer: a fifteen-minute explanation of the cluster when the developer needed one command and a deadline. The senior pattern is short and repeatable: the symptom in one sentence, what you have ruled out, what you need from them, and when you will update them next.</p>
+<p>Change requests are where this matters most. Compare "I need you to fix your Dockerfile" with "The image is 1.9 GB because the build step copies the whole repo before installing dependencies; moving the copy after the install drops it to about 400 MB in my test build. Can your team review the change by Thursday? I will run the scan on it." The second version names the cost, the fix, and a date, and it gives the developer a reason to say yes. Notice too that the first sentence is about the artifact, not the person.</p>
+<p>When a developer's change breaks production, write the facts before you assign the blame, and let the review ask "what would have caught this?" in a neutral tone. Developers stop hiding failures when the post-incident conversation is about the system. Over a year, this builds the trust that lets you ask for a pipeline change, a deployment window, or a test environment and get it.</p>
+<p><strong>Say it like this</strong> (to a manager or CTO): "Two of our service teams deploy without a canary, and last month's rollout took checkout down for eighteen minutes. I am proposing a shared canary step, owned by the platform team and used by all teams, which takes about one sprint to build and pays back on the next bad release."</p>
+<p><strong>Skill-gap action for today (15 minutes):</strong> pick one developer you work with most. Write three lines: what they need from you that you have not delivered, the one message you have sent them that could have been shorter, and one thing you will ask them this week, not in an emergency. Send the third item tomorrow.</p>
+
+<h4>9. Daily recap of all your tools</h4>
+<p class="meta">Table covers all 19 items you listed (the mod-18 rotation below covers the first 18; AI in DevOps appears here and in sections 6 and 10).</p>
+<div class="tw"><table><thead><tr><th>Tool</th><th>Remember today</th><th>Command or config</th><th>Official doc</th></tr></thead><tbody>
+<tr><td>Linux and shell</td><td>/proc/pressure shows how long tasks stalled for CPU, memory or IO; "full" means all tasks stalled at once.</td><td><code>cat /proc/pressure/memory</code></td><td><a href="https://docs.kernel.org/accounting/psi.html" target="_blank" rel="noopener">PSI</a></td></tr>
+<tr><td>Git/GitHub</td><td>--force-with-lease refuses to push if the remote moved since your last fetch, unlike plain --force.</td><td><code>git push --force-with-lease origin feature/payments-fix</code></td><td><a href="https://git-scm.com/docs/git-push" target="_blank" rel="noopener">git-push</a></td></tr>
+<tr><td>Jenkins</td><td>Set agent none at pipeline level, then an agent per stage, so idle stages do not hold executors.</td><td><code>pipeline { agent none; stages { stage('Build') { agent { label 'docker' } } } }</code></td><td><a href="https://www.jenkins.io/doc/book/pipeline/syntax/" target="_blank" rel="noopener">Pipeline syntax</a></td></tr>
+<tr><td>CI/CD (Actions/GitLab CI)</td><td>Key a dependency cache on the lockfile hash, so the cache invalidates when dependencies change.</td><td><code>key: ${{ hashFiles('**/package-lock.json') }}</code></td><td><a href="https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows" target="_blank" rel="noopener">Caching dependencies</a></td></tr>
+<tr><td>Docker</td><td>docker history shows the size each Dockerfile step added, so you can find the layer that bloats an image.</td><td><code>docker history --no-trunc app:1.4.2</code></td><td><a href="https://docs.docker.com/reference/cli/docker/image/history/" target="_blank" rel="noopener">docker image history</a></td></tr>
+<tr><td>Kubernetes</td><td>kubectl rollout undo returns a Deployment to its previous ReplicaSet revision.</td><td><code>kubectl rollout undo deployment/payments-api -n payments</code></td><td><a href="https://kubernetes.io/docs/concepts/workloads/controllers/deployment/" target="_blank" rel="noopener">Deployments</a></td></tr>
+<tr><td>Terraform</td><td>Save the reviewed plan to a file and apply that file, so the approved plan is exactly what runs.</td><td><code>terraform plan -out=tfplan &amp;&amp; terraform apply tfplan</code></td><td><a href="https://developer.hashicorp.com/terraform/cli/commands/plan" target="_blank" rel="noopener">terraform plan</a></td></tr>
+<tr><td>AWS</td><td>Service last-accessed data shows which services a role really used, the evidence for cutting permissions.</td><td><code>aws iam generate-service-last-accessed-details --arn ROLE_ARN</code></td><td><a href="https://docs.aws.amazon.com/cli/latest/reference/iam/generate-service-last-accessed-details.html" target="_blank" rel="noopener">generate-service-last-accessed-details</a></td></tr>
+<tr><td>Azure</td><td>what-if previews what a Bicep or ARM deployment would change, without changing anything.</td><td><code>az deployment group what-if -g rg-app1-prod -f main.bicep</code></td><td><a href="https://learn.microsoft.com/en-us/cli/azure/deployment/group" target="_blank" rel="noopener">az deployment group</a></td></tr>
+<tr><td>GCP</td><td>Test with a service account's permissions by impersonating it, instead of creating a key file.</td><td><code>gcloud storage ls gs://BUCKET --impersonate-service-account=SA_EMAIL</code></td><td><a href="https://cloud.google.com/docs/authentication/use-service-account-impersonation" target="_blank" rel="noopener">Service account impersonation</a></td></tr>
+<tr><td>Ansible</td><td>Encrypt a single secret value, not a whole file, and keep the value off the command line so it stays out of shell history.</td><td><code>ansible-vault encrypt_string --name db_password</code> (enter the value at the prompt, not as an argument)</td><td><a href="https://docs.ansible.com/ansible/latest/vault_guide/vault_encrypting_content.html" target="_blank" rel="noopener">Vault: encrypting content</a></td></tr>
+<tr><td>Prometheus and Grafana</td><td>histogram_quantile needs the le label: aggregate with sum by (le) first, and never average per-pod p99 values.</td><td><code>histogram_quantile(0.99, sum by (le) (rate(x_bucket[5m])))</code></td><td><a href="https://prometheus.io/docs/prometheus/latest/querying/functions/" target="_blank" rel="noopener">Querying functions</a></td></tr>
+<tr><td>ELK/OpenSearch</td><td>_cat/indices lists every index with health, document count and size, sorted to find the largest first.</td><td><code>GET _cat/indices?v&amp;s=store.size:desc</code></td><td><a href="https://opensearch.org/docs/latest/api-reference/cat/cat-indices/" target="_blank" rel="noopener">cat indices</a></td></tr>
+<tr><td>Python for DevOps</td><td>requests has no default timeout; always pass one, or a hung endpoint blocks your job indefinitely.</td><td><code>requests.get(url, timeout=(3, 10))</code></td><td><a href="https://requests.readthedocs.io/en/latest/user/advanced/#timeouts" target="_blank" rel="noopener">requests: timeouts</a></td></tr>
+<tr><td>GitOps (Argo CD/Helm)</td><td>argocd app diff shows the difference between Git and the live cluster before you sync.</td><td><code>argocd app diff payments-api</code></td><td><a href="https://argo-cd.readthedocs.io/en/stable/user-guide/commands/argocd_app_diff/" target="_blank" rel="noopener">argocd app diff</a></td></tr>
+<tr><td>DevSecOps</td><td>Gate the build on serious findings only: a severity filter plus an exit code makes the step fail.</td><td><code>trivy image --severity HIGH,CRITICAL --exit-code 1 app:1.4.2</code></td><td><a href="https://trivy.dev/latest/docs/" target="_blank" rel="noopener">Trivy docs</a></td></tr>
+<tr><td>SRE (SLI/SLO)</td><td>Toil is manual, repetitive, automatable work that grows with the service; measure its share of your week.</td><td><code># toil log: date | minutes | task | automatable (y/n)</code></td><td><a href="https://sre.google/sre-book/eliminating-toil/" target="_blank" rel="noopener">Eliminating toil</a></td></tr>
+<tr><td>FinOps/Platform</td><td>Cost allocation tags report spend only from the time they are activated, so activate them before you need the report.</td><td><code>aws ce list-cost-allocation-tags --status Active</code></td><td><a href="https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/activating-tags.html" target="_blank" rel="noopener">Activating tags</a></td></tr>
+<tr><td>AI in DevOps</td><td>Start AI tools read-only: a role without delete rights cannot take down what it diagnoses.</td><td><code>kubectl auth can-i delete pods -n payments --as system:serviceaccount:ai:reader</code></td><td><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Building effective agents</a></td></tr>
+</tbody></table></div>
+
+<h5>Linux and shell: pressure stall information (PSI)</h5>
+<p><strong>What it is.</strong> PSI reports the share of time tasks spend stalled waiting for CPU, memory or IO. <strong>Why it matters.</strong> Load average cannot tell you whether processes are waiting for memory or just busy; PSI can, and it shows the wait before the box is dead. <strong>How it works.</strong> The kernel exposes <code>some</code> (at least one task stalled) and <code>full</code> (all non-idle tasks stalled) as averages over 10, 60 and 300 seconds. <span class="tag ok">Confirmed</span> (<a href="https://docs.kernel.org/accounting/psi.html" target="_blank" rel="noopener">kernel PSI docs</a>).</p>
+<pre>
+$ cat /proc/pressure/memory
+some avg10=12.40 avg60=8.10 avg300=3.20 total=...
+full avg10=4.10  avg60=2.30 avg300=0.90 total=...
+  → memory is the bottleneck; check reclaim and the largest RSS before you add RAM
+</pre>
+<p><strong>AI prompt example:</strong> "Here are the three PSI files and top ten processes by RSS from one host, captured at 14:00 IST. Say which resource is the bottleneck, quote the line that shows it, and list the next two commands you would run. Do not recommend a restart before those checks."</p>
+
+<h5>Git/GitHub: the reflog, your safety net after reset and rebase</h5>
+<p><strong>What it is.</strong> The reflog records where HEAD and branch tips have pointed on your machine. <strong>Why it matters.</strong> After a bad reset, rebase or branch delete, the commit is usually still there; the reflog is how you find it. <strong>How it works.</strong> Entries expire under configured limits, so recovery is a matter of days or weeks, not forever. It is local to your clone and is not pushed. <span class="tag ok">Confirmed</span> (<a href="https://git-scm.com/docs/git-reflog" target="_blank" rel="noopener">git-reflog docs</a>).</p>
+<pre>
+git reflog -n 10                  # find the commit before the mistake
+git branch recovered-work 4f2a9c1 # name it so nothing garbage-collects it
+</pre>
+<p><strong>AI prompt example:</strong> "I ran git reset --hard by mistake. Here is git reflog -n 15 output. Identify the commit that had my last good work, give me the two commands to recover it on a new branch, and warn me if any command would discard uncommitted files."</p>
+
+<h5>Jenkins: keep Groovy light and do the work on agents</h5>
+<p><strong>What it is.</strong> In a Jenkins pipeline, Groovy is the glue; the real work happens in steps such as <code>sh</code> on an agent. <strong>Why it matters.</strong> Groovy runs on the controller, which also serves the UI and the queue, so heavy work there slows every team. <strong>How it works.</strong> Parsing large files with JsonSlurper or fetching data with HttpRequest in Groovy both load the controller; a shell step on an agent does the same job without that load. Jenkins also advises against overriding built-in steps such as <code>sh</code> in shared libraries, and against sharing workspaces between builds. <span class="tag ok">Confirmed</span> (<a href="https://www.jenkins.io/doc/book/pipeline/pipeline-best-practices/" target="_blank" rel="noopener">Jenkins pipeline best practices</a>).</p>
+<pre>
+// Heavy: runs on the controller
+def data = new groovy.json.JsonSlurper().parseText(new File('report.json').text)
+// Light: runs on the agent
+sh 'jq ".items | length" report.json'
+</pre>
+<p><strong>AI prompt example:</strong> "Here is a Jenkinsfile with a shared library. List every Groovy step that does file parsing or HTTP work, mark each one as controller-heavy, and propose the equivalent sh step on an agent. Keep any step that overrides a built-in in a separate list."</p>
+
+<h5>Recap questions (answers in the details)</h5>
+<details><summary>Show answers</summary>
+<p><strong>1.</strong> Which file shows whether a host is stalled on memory, and what does "full" mean? <code>/proc/pressure/memory</code>. "full" means every non-idle task is stalled at the same time, which is the thrashing signal.</p>
+<p><strong>2.</strong> Why is --force-with-lease safer than --force? It refuses the push if the remote branch has commits you have not fetched, so you do not overwrite a colleague's work you have never seen.</p>
+<p><strong>3.</strong> Why do you pass a timeout to requests calls? requests has no default timeout, so a stalled endpoint can block the job forever. A timeout turns a hang into an error your retry logic can handle.</p>
+</details>
+
+<h4>10. AI pro: agent architectures (planner/executor, multi-agent, memory)</h4>
+<p><strong>Concept.</strong> Anthropic separates two designs. A <em>workflow</em> is an LLM and tools following predefined code paths. An <em>agent</em> is a model that directs its own process and tool use. The post recommends the simplest solution that works and adds agentic complexity only when needed. Its named workflow patterns are prompt chaining, routing, parallelization, orchestrator-workers and evaluator-optimizer. <span class="tag ok">Confirmed</span> (<a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Anthropic: building effective agents</a>).</p>
+<p><strong>Planner and executor.</strong> A planner produces steps, each with an allowed tool set; an executor runs one step at a time under its limits. This separates "what should happen" from "what the tools can do", and it makes the plan reviewable before anything runs. <strong>Multi-agent.</strong> Anthropic's research system uses an orchestrator-worker design: a lead agent plans, spawns subagents that search in parallel, and passes the findings to a citation step. It reports that a Claude Opus 4 lead with Sonnet 4 subagents beat a single Opus 4 agent by 90.2% on its internal research evaluation, which is an internal eval, not a public benchmark. The same post reports that agents use about four times the tokens of chat, and multi-agent systems about fifteen times <span class="tag ok">Confirmed</span> (<a href="https://www.anthropic.com/engineering/multi-agent-research-system" target="_blank" rel="noopener">Anthropic: multi-agent research system</a>).</p>
+<p><strong>Memory.</strong> The lead saves its plan outside the prompt, because long tasks can overflow the context window. Subagents write their outputs to external storage and return lightweight references, not the full text. For you, that means the plan, the evidence and the decisions live in a store, and the model gets summaries. <span class="tag ok">Confirmed</span> (same post).</p>
+<pre>
+def run(task, plan_fn, exec_fn, budget, store):
+    steps = plan_fn(task)[:budget.max_steps]          # planner: steps with allowed tools
+    for step in steps:
+        if budget.spent() &gt; budget.limit:              # hard stop, not a suggestion
+            return escalate(task, store)              # hand over to a human with notes
+        result = exec_fn(step, tools=step.tools, timeout=60)
+        store.put(step.id, summarise(result))         # memory outside the prompt
+    return verify(task, store)                        # evaluator step before any write
+</pre>
+<p><strong>Trade-offs.</strong> Multi-agent designs suit broad, parallel, read-only research. They are a poor fit for tasks that need one shared context or tight coupling between steps, and their cost is the token multiple above. Workflows are cheaper, easier to test and easier to audit. <strong>Failure modes.</strong> Vague briefs make subagents duplicate work or misread the task; errors compound across steps; retrieved web pages carry prompt injection, so treat tool output as data, not instructions; a loop without a budget runs up cost silently. <strong>Security, evaluation and cost.</strong> Give each step only the tools it needs (least privilege), with an allowlist. Score the system on a golden set of past tasks, including tasks that must be refused, and track tokens per task. Budget every run before it starts.</p>
+<p>Sources: <a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Anthropic: building effective agents</a> · <a href="https://www.anthropic.com/engineering/multi-agent-research-system" target="_blank" rel="noopener">Anthropic: multi-agent research system</a></p>
+</article>
+
 <article class="entry" id="career-2026-11-24"><h3>Study plan: 24 Nov 2026 (Week 1, Day 6)</h3>
 <p class="meta">Tuesday. Classes: Azure production (landing zones, RBAC, Azure Policy, PIM); GCP basics for DevOps (resource hierarchy, IAM, Workload Identity, GKE regional clusters). Scenarios: backup and restore with tested recovery (Azure); autoscaling and failover for a regional GKE cluster. Interview: Terraform in production. Career: how seniors approach production problems. AIOps: automated troubleshooting. Recap tools today (deep): DevSecOps, SRE (SLI/SLO), FinOps/Platform. AI pro: evaluation (golden sets, LLM-as-judge pitfalls).</p>
 
