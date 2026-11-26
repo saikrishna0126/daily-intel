@@ -1617,10 +1617,10 @@ print(msg.content[0].text)</code></pre>
 <h2 style="background:#b45309">Career and industry growth (DevOps to Senior, SRE, Architect)</h2>
 <p class="meta">Daily: industry incidents, corporate documents (HLD, LLD, SOP, RCA, DR), hands-on skills, production scenarios, AIOps, interview practice and career lessons. Weekends: revision and assessment.</p>
 <!-- ROADMAP-START -->
-<div class="box" style="--c:#b45309"><h4>8-week roadmap (you are here: Week 1, Day 7)</h4>
+<div class="box" style="--c:#b45309"><h4>8-week roadmap (you are here: Week 2, Day 1)</h4>
 <div class="tw"><table><thead><tr><th>Week</th><th>Two themes</th><th>Outcome you can show</th></tr></thead><tbody>
-<tr style="background:#fef3c7"><td><strong>W1 (19-25 Nov) ◀ you are here</strong></td><td>Linux production troubleshooting, networking, shell scripting | Git/GitHub workflows</td><td>A triage runbook and a safe production shell script; a protected-branch repo with PR rules</td></tr>
-<tr><td>W2</td><td>Jenkins + CI/CD design (GitHub Actions/GitLab CI) | Docker in production and image security</td><td>A pipeline with test, scan, build and deploy stages; a hardened multi-stage image</td></tr>
+<tr><td>W1 (19-25 Nov)</td><td>Linux production troubleshooting, networking, shell scripting | Git/GitHub workflows</td><td>A triage runbook and a safe production shell script; a protected-branch repo with PR rules</td></tr>
+<tr style="background:#fef3c7"><td><strong>W2 (26 Nov-2 Dec) ◀ you are here</strong></td><td>Jenkins + CI/CD design (GitHub Actions/GitLab CI) | Docker in production and image security</td><td>A pipeline with test, scan, build and deploy stages; a hardened multi-stage image</td></tr>
 <tr><td>W3</td><td>Kubernetes core and production operations | Kubernetes troubleshooting, networking, RBAC, upgrades</td><td>A cluster with probes, limits, HPA, PDB and RBAC; a troubleshooting cheat sheet</td></tr>
 <tr><td>W4</td><td>Terraform and IaC at scale | AWS core (VPC, IAM, EC2/ASG, ELB, RDS, S3)</td><td>A Terraform module stack with remote state that builds a 3-tier AWS setup</td></tr>
 <tr><td>W5</td><td>AWS advanced and Azure core (Entra, VNets, AKS, policy) | GCP basics + Ansible</td><td>A multi-cloud comparison note; an Ansible role run against test hosts</td></tr>
@@ -1630,6 +1630,333 @@ print(msg.content[0].text)</code></pre>
 </tbody></table></div></div>
 <!-- ROADMAP-END -->
 <!-- NEW-CAREER-ENTRY-HERE -->
+<article class="entry" id="career-2026-11-26"><h3>Study plan: 26 Nov 2026 (Week 2, Day 1)</h3>
+<p class="meta">Thursday. Classes: ELK/OpenSearch (index lifecycle, shard sizing, ISM rollover); Python for DevOps (boto3 retries, timeouts, safe subprocess). Scenarios: certificate expiry on a customer-facing domain (today's tools); database failover with replication lag (senior level). Interview: AWS. Career: communicating with managers. AIOps: AI-assisted CI/CD pipeline optimization. Recap tools today (deep): CI/CD (GitHub Actions/GitLab CI), Docker, Kubernetes. AI pro: MCP servers (design, auth and least privilege).</p>
+<h4>1. You are here (roadmap)</h4>
+<p><strong>Week 2, Day 1 of 56.</strong> Week 2 themes in the table above: (1) Jenkins and CI/CD design; (2) Docker in production and image security. <em>Teacher's note:</em> Jenkins, CI/CD design and Docker were taught as classes on 20 to 22 Nov, so this week is a deepening week, not a first look. Today the track moves on to ELK/OpenSearch and Python, the next two unfinished tools in the queue. Week 2 outcomes (a pipeline with test, scan, build and deploy stages; a hardened multi-stage image) are still yours to build. Use the Saturday 28 November assessment to close Week 1 and plan the Week 2 build.</p>
+<p><strong>Progress:</strong> 8 of 56 days done (counting today), 16 classes taught, 16 scenarios solved. Next: Friday covers GitOps (Argo CD and Helm) and DevSecOps (scanning, SBOM, secrets, policy as code), with scenarios on a secret leaked in Git and a Terraform state problem.</p>
+
+<h4>2. Two classes of the day</h4>
+
+<div class="box" style="--c:#7c3aed"><h5>Class 1: ELK and OpenSearch (log pipelines, index lifecycle and shard sizing)</h5>
+<p><strong>Objective:</strong> design a log pipeline whose index sizes, retention and rollover you can defend in a review, and know which of the two stacks you are operating before you touch a setting.</p>
+<p><strong>Theory: the two families.</strong> Elasticsearch and OpenSearch share a lineage, but their lifecycle tooling differs, so check which one a cluster runs before you copy a policy. Elasticsearch uses Index Lifecycle Management (ILM). OpenSearch uses Index State Management (ISM), with its own policy JSON. Both use the same core idea: an index is a unit of management, and a data stream or an alias points writers at the current index. A log pipeline is always the same shape: agents collect, a pipeline parses and enriches, the cluster stores in tiers, and dashboards read.</p>
+<p><strong>Theory: shards are the unit of cost.</strong> Each shard is a Lucene index with its own memory, file handles and merge work. Too many small shards waste heap; oversized shards slow recovery and rebalancing. AWS's operational guidance for OpenSearch Service sets 10 to 30 GiB per shard for search workloads and 30 to 50 GiB for log workloads, and treats 50 GiB as a ceiling to leave room for growth. A small index still gets one shard. The senior habit is to size by the write rate and retention, then count shards, not the other way round.</p>
+<p><strong>Theory: rollover, not daily indices.</strong> A daily index named by date makes sizes unpredictable: a quiet Sunday and a busy Monday produce very different shards. Rollover writes to an alias and creates the next numbered index when a condition is met. ISM's rollover action supports conditions such as minimum index age, size and document count. The docs also warn that ISM checks conditions on a schedule, not continuously, so a 100 GiB threshold may be seen at 99 GiB and fire at the next check. Plan for that slack. Index names must end in a numeric suffix such as <code>logs-000001</code>.</p>
+<pre>
+ agents (Fluent Bit / OTel Collector) ──▶ ingest pipeline (parse, enrich, drop noise)
+                                              │
+                                 alias logs-write ──▶ hot tier: logs-000012  (rollover at 30 GiB or 1 day)
+                                              │                  │ ISM transition
+                                              │            warm / read-only tier: logs-000008 ... 000011
+                                              └──────────▶ delete after retention (14 days here)
+ Dashboards read the alias, never a physical index name.
+</pre>
+<pre>
+PUT _plugins/_ism/policies/logs-hot-delete
+{
+  "policy": {
+    "default_state": "hot",
+    "states": [
+      { "name": "hot",
+        "actions": [ { "rollover": { "min_index_age": "1d", "min_size": "30gb" } } ],
+        "transitions": [ { "state_name": "delete", "conditions": { "min_index_age": "14d" } } ] },
+      { "name": "delete", "actions": [ { "delete": {} } ], "transitions": [] }
+    ]
+  }
+}
+
+PUT logs-000001
+{ "aliases": { "logs-write": { "is_write_index": true } } }
+
+GET _plugins/_ism/explain/logs-000001     # which policy, which state, last action
+</pre>
+<p><strong>In real companies:</strong> platform teams run hot, warm and cold tiers, keep the policies in Git, and give each team a template rather than a manual index. Retention is a business decision with a legal floor, so it is written down per log class. <span class="tag info">Direction</span> (common practice as I see it, not a survey).</p>
+<p><strong>Pitfalls you will meet:</strong> a shard count set once and never revisited, so the index grows past 50 GiB per shard; a mapping explosion from a log field with unbounded keys (for example, one key per user); a rollover alias missing <code>is_write_index</code>, so writes go to an old index; a policy applied to the wrong index pattern by a template priority clash; and a delete step that runs before the compliance team has finished its export.</p>
+<p><strong>LAB (45 min):</strong> use a local single-node OpenSearch container (the official image from docs.opensearch.org; use a lab-only admin password from your password manager, never in shell history). Create the policy above with a shorter retention (for example <code>min_index_age: 2m</code>), create <code>logs-000001</code> with the alias, index 50,000 generated documents with a small script, then call the rollover API by hand: <code>POST logs-write/_rollover { "conditions": { "max_docs": 20000 } }</code>. <strong>Success looks like:</strong> two indices exist behind <code>logs-write</code>; the write index is <code>logs-000002</code>; <code>_plugins/_ism/explain</code> shows the policy state moving from hot to delete after the retention time. <strong>ASSIGNMENT:</strong> take one log stream you know. Write a one-page sizing note: daily volume, retention days, target shard size, resulting primary shard count and replicas, and the single condition that triggers rollover. Then state in one sentence what happens to dashboards if a team queries a physical index name.</p>
+<p>Sources: <a href="https://docs.opensearch.org/3.8/im-plugin/ism/policies/" target="_blank" rel="noopener">OpenSearch: ISM policies and rollover</a> · <a href="https://docs.aws.amazon.com/opensearch-service/latest/developerguide/bp-sharding.html" target="_blank" rel="noopener">Amazon OpenSearch Service: choosing the number of shards</a> · <a href="https://docs.aws.amazon.com/opensearch-service/latest/developerguide/bp.html" target="_blank" rel="noopener">Amazon OpenSearch Service: operational best practices</a> · <a href="https://opensearch.org/blog/" target="_blank" rel="noopener">OpenSearch project blog (release listing)</a> <span class="tag ok">Confirmed</span> for the ISM rollover behaviour and the shard ranges (the policy pages and the AWS best-practice page were read through search results; the example JSON follows the ISM policy format and should be tested on your version). <span class="tag warn">Reported</span> for the release timeline: the project blog lists OpenSearch 3.9 on 29 Sep 2026; its release notes were not read, so check the GitHub release notes before you upgrade.</p>
+</div>
+<div class="box" style="--c:#ea580c"><h5>Class 2: Python for DevOps (automation that is safe to run twice, with timeouts and retries you chose on purpose)</h5>
+<p><strong>Objective:</strong> write a cloud or cluster automation script that makes explicit decisions about timeouts, retries, pagination, failure exit codes and secrets, and that is read-only by default.</p>
+<p><strong>Theory: why scripts hang.</strong> Most automation outages are not clever bugs. They are a call with no timeout, a retry loop that multiplies writes, or a paginated API read on page one only. Python's <code>requests</code> has no default timeout, as the earlier recap explained. Your AWS SDK also needs deliberate settings. boto3 is built on botocore, which offers three retry modes: <code>legacy</code>, <code>standard</code> and <code>adaptive</code>. Standard mode adds a retry quota and exponential backoff with jitter. Adaptive mode adds client-side rate limiting and is marked experimental in the guide. Set the mode and attempt count in code so a library upgrade cannot change your behaviour silently.</p>
+<p><strong>Theory: retries are writes.</strong> A retry on a read is harmless. A retry on a create is how you get two load balancers, two tickets or two charges. Retry only errors that are safe to repeat (throttling, 5xx, connection reset), and where the API offers a client token or idempotency key, pass it. A 4xx such as AccessDenied should fail at once; retrying it only hides the real problem for a minute.</p>
+<p><strong>Theory: subprocess, the quiet risk.</strong> Calling <code>kubectl</code> or <code>aws</code> from Python is common and easy to get wrong. Pass a list of arguments, never a string with <code>shell=True</code> and interpolated input, which is how a branch name becomes a command. Always pass <code>timeout</code>, and use <code>check=True</code> so a failed command raises instead of returning an empty result that the next step trusts.</p>
+<pre>
+ cron / CI runner (OIDC role, read-only)
+   └─ inventory.py ──boto3 (timeouts, standard retries, paginator)──▶ AWS API
+        ├─ subprocess.run([...], timeout=30, check=True) ──▶ kubectl (no shell)
+        └─ exit 0 = report written │ exit 2 = API error │ exit 3 = partial data (never silent)
+</pre>
+<pre>
+import logging, sys
+import boto3
+from botocore.config import Config
+from botocore.exceptions import ClientError
+
+log = logging.getLogger("inventory")
+cfg = Config(region_name="ap-south-1", connect_timeout=3, read_timeout=10,
+             retries={"mode": "standard", "max_attempts": 5})
+ec2 = boto3.client("ec2", config=cfg)
+
+def unattached_untagged_volumes():
+    paginator = ec2.get_paginator("describe_volumes")          # reads every page, not page one
+    pages = paginator.paginate(Filters=[{"Name": "status", "Values": ["available"]}])
+    for page in pages:
+        for v in page["Volumes"]:
+            if not any(t["Key"] == "owner" for t in v.get("Tags", [])):
+                yield v["VolumeId"]
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+    try:
+        ids = list(unattached_untagged_volumes())
+    except ClientError as e:
+        log.error("describe_volumes failed: %s", e.response["Error"]["Code"])
+        sys.exit(2)
+    log.info("found %d unattached volumes without an owner tag", len(ids))
+    sys.exit(0)
+</pre>
+<p><strong>In real companies:</strong> a script like this becomes a small tool: a package with tests, run from CI with a read-only role obtained through OIDC, writing a report and never deleting. Anything that changes state needs an explicit <code>--apply</code> flag, a dry-run output, and a log line that names the resource ID. <span class="tag info">Direction</span> (common practice as I see it, not a survey).</p>
+<p><strong>Pitfalls you will meet:</strong> <code>except Exception: pass</code>, which turns every failure into success; a fixed <code>time.sleep(5)</code> in a retry loop, which makes a thundering herd; forgetting paginators, so the report covers the first 100 resources; <code>datetime.utcnow()</code>, deprecated since Python 3.12 in favour of timezone-aware datetimes; and printing a token or a full response object into logs.</p>
+<p><strong>LAB (40 min):</strong> use a sandbox AWS account with a read-only role, or point <code>endpoint_url</code> at an unreachable address (for example <code>http://10.255.255.1</code>) to test the timeout. Run the script above with <code>read_timeout=1</code>, then with the normal settings, and time both runs. <strong>Success looks like:</strong> the unreachable run fails with a timeout within the retry budget, not after minutes; the normal run exits 0 and logs the count; a deliberate wrong region exits 2 with the error code, not a traceback. <strong>ASSIGNMENT:</strong> take one script you run by hand. Add explicit timeouts, a retry config, a paginator, a <code>check=True</code> on every subprocess call, and an exit code table. Write three tests with <code>botocore.stub.Stubber</code>: a happy path, a paginated result over two pages, and an AccessDenied that must not retry.</p>
+<p>Sources: <a href="https://docs.aws.amazon.com/boto3/latest/guide/retries.html" target="_blank" rel="noopener">boto3: retries guide</a> · <a href="https://aws.amazon.com/blogs/developer/updated-default-retry-behavior-for-aws-sdks-and-tools/" target="_blank" rel="noopener">AWS Developer Tools blog: updated default retry behavior</a> · <a href="https://docs.python.org/3/library/subprocess.html" target="_blank" rel="noopener">Python: subprocess (timeout, check, shell)</a> · <a href="https://requests.readthedocs.io/en/latest/user/advanced/#timeouts" target="_blank" rel="noopener">requests: timeouts</a> <span class="tag ok">Confirmed</span> for the three retry modes and the adaptive-mode warning (the boto3 guide, read via a fetch on 26 Nov 2026, says standard is the default mode and the default maximum is 3 attempts including the first request; the AWS blog agrees on standard; check your installed botocore version). The code is a sketch and has not been run here; run it in your own sandbox before you rely on it.</p>
+</div>
+<h4>3. Scenario practice</h4>
+
+<div class="box" style="--c:#7c3aed"><h5>Scenario A (today's tools): the partner API rejects every call with "certificate has expired"</h5>
+<p><strong>Situation.</strong> Thursday 09:05 IST. Partners report TLS failures on <code>api.partner-gateway.example.in</code>, our B2B order API. The first error in the ingress logs is at 00:14 IST. Partner order sync is due at 11:00 IST and is the only automated path for their stock updates. Constraints: you may not ask partners to disable certificate verification; the change window closes at 18:00 IST; you have admin rights on the ingress and the secret store, but the renewal job belongs to the platform team, which is reachable on chat. Your OpenSearch dashboard shows the following.</p>
+<pre>
+GET ingress-*/_search   (filter: message contains "certificate has expired", last 12 h)
+{ "hits": { "total": { "value": 18432 } },
+  "aggregations": { "per_hour": { "buckets": [
+     { "key_as_string": "2026-11-26T00:00 IST", "doc_count": 3 },
+     { "key_as_string": "2026-11-26T01:00 IST", "doc_count": 6109 },
+     { "key_as_string": "2026-11-26T02:00 IST", "doc_count": 6204 } ] } } }
+
+$ echo | openssl s_client -connect api.partner-gateway.example.in:443 -servername api.partner-gateway.example.in 2&gt;/dev/null | openssl x509 -noout -subject -issuer -enddate
+issuer=C=US, O=Example CA, CN=R10
+notAfter=Nov 25 18:44:07 2026 GMT
+
+CI log, renew-cert job, 27 Oct 2026 02:00 IST:
+  acme: authentication failed: 401 unauthorized (token expired)
+  notify: posted to #infra-alerts (channel archived 2 Nov 2026)
+</pre>
+<p><strong>Guiding questions:</strong> 1) Which signal existed 30 days ago that would have prevented this, and why did nobody act on it? 2) Is the fault in the client, the server or the certificate, and why do only partners fail? 3) What is the fastest safe fix before 11:00 IST, and what stops a renewal failure from going unseen again?</p>
+<details><summary>Show solution</summary>
+<p><strong>Investigation.</strong> (1) Confirm the certificate first, not the application. The <code>openssl</code> output shows <code>notAfter</code> at 18:44 GMT on 25 Nov, which is 00:14 IST on 26 Nov, so the first errors line up with the expiry; the cert was already expired before the first partner call. Use the Python check below from a host outside the cluster, because an expired certificate makes the normal TLS handshake fail before any HTTP. (2) The log timeline matches the expiry: a handful of errors at 00:00, then thousands per hour. Only partner clients fail because only they verify the chain strictly; internal clients on the mesh use a private CA with a longer lifetime. (3) The renewal job is the root of it. It failed on 27 Oct with 401, its token had been rotated, and the alert went to a channel archived on 2 Nov. The certificate was valid for 90 days, so the job had about a month of retries before it expired.</p>
+<pre>
+import socket, ssl, sys
+from datetime import datetime, timezone
+
+def days_left(host, port=443):
+    ctx = ssl.create_default_context()
+    try:
+        with socket.create_connection((host, port), timeout=5) as sock:
+            with ctx.wrap_socket(sock, server_hostname=host) as tls:
+                cert = tls.getpeercert()
+    except ssl.SSLCertVerificationError as e:       # an expired cert lands here: alert on it
+        return f"VERIFY FAILED: {e.verify_message}"
+    not_after = datetime.strptime(cert["notAfter"], "%b %d %H:%M:%S %Y %Z").replace(tzinfo=timezone.utc)
+    return (not_after - datetime.now(timezone.utc)).days
+
+if __name__ == "__main__":
+    print(days_left(sys.argv[1]))
+</pre>
+<p><strong>Root cause.</strong> The renewal job failed on 27 Oct because its ACME token had been rotated. The failure notification went to a channel that no longer existed, and no independent monitor watched certificate expiry. The certificate expired at 00:14 IST on 26 Nov, and the partner gateway had no fallback.</p>
+<p><strong>Resolution (fastest safe path, before 11:00 IST).</strong> (a) Obtain a new certificate for the same names from the CA (manual ACME run from the platform team's runbook, with the new token). Do not use a self-signed certificate; partners would have to change their trust settings, which is the thing you may not ask. (b) Load the new chain into the ingress secret without changing the hostname or the ingress object: <code>kubectl create secret tls partner-gw-tls --cert=fullchain.pem --key=privkey.pem -n partner --dry-run=client -o yaml | kubectl apply -f -</code>. (c) Verify from outside the cluster: run the Python check, expect a positive number of days, and confirm <code>issuer</code> and the SAN list match. (d) Watch the ELK query: the "certificate has expired" count should drop to zero within five minutes of the reload. (e) Ask the platform team to rotate the CI token and re-run the renewal job by hand. (f) Tell partners the time the fix went in, and ask them to retry the queued order sync.</p>
+<p><strong>Long-term prevention.</strong> (1) Independent expiry monitoring: run a blackbox probe on every public name and alert on the <code>probe_ssl_earliest_cert_expiry</code> metric at 21, 14 and 7 days, routed to the owning team, not to a shared channel. (2) Treat a failed renewal as a page, not a log line, with an alert on the renewal job's own failure. (3) Keep a certificate inventory with an owner per name. (4) Plan for shorter lifetimes. The CA/Browser Forum ballot SC-081 caps public TLS certificate validity at 200 days from 15 Mar 2026, 100 days from 15 Mar 2027 and 47 days from 15 Mar 2029 <span class="tag warn">Reported</span> (from a DigiCert knowledge-base table; the ballot text was not read). Let's Encrypt moves its default to 64-day certificates on 10 Feb 2027; its staging switch started on 14 Oct 2026 <span class="tag ok">Confirmed</span> (its own announcement, read via a fetch). Automation that is not tested at 60 days will fail at 6.</p>
+<p><strong>Sample document: Incident report (fictional, standard format)</strong></p>
+<p><strong>Title:</strong> Partner order API TLS failure from an expired certificate, 26 Nov 2026 (IST)<br>
+<strong>Summary:</strong> The certificate for the partner order API expired at 00:14 IST. Partner clients that verify strictly rejected every connection until a renewed certificate was loaded at 09:48 IST; about nine and a half hours of partner traffic failed.<br>
+<strong>Impact:</strong> all partner order API calls failed for about nine and a half hours (about 18,400 failed requests in the ingress logs); a queued order sync ran late at 11:40 IST. No customer-facing web traffic was affected (it uses a different certificate, renewed on time).<br>
+<strong>Timeline (IST):</strong> 27 Oct 02:00 renewal job fails with 401 (token rotated); 2 Nov the alert channel is archived; 26 Nov 00:14 certificate expires; 09:05 partner reports reach the on-call; 09:12 cause confirmed with openssl; 09:31 platform team starts a manual renewal; 09:48 new certificate loaded; 09:55 errors stop in the logs; 11:40 queued order sync completes.<br>
+<strong>Root cause:</strong> the renewal job's token was rotated without updating the job, and its failure notification went to an archived channel. No independent expiry alert existed, so the failure was visible only in the job's own log.<br>
+<strong>Resolution:</strong> manual renewal with the new token; new certificate loaded into the existing ingress secret; CI token rotated and the job re-run.<br>
+<strong>Action items:</strong> (a) blackbox expiry alerts at 21, 14 and 7 days, owner: SRE lead, due 1 Dec; (b) renewal-job failure pages the owning team, owner: platform lead, due 30 Nov; (c) token rotation is a change with a checklist that includes dependent jobs, owner: platform engineer, due 4 Dec; (d) certificate inventory with owners for every public name, owner: service owners, due 11 Dec.</p>
+</details>
+</div>
+
+<div class="box" style="--c:#ea580c"><h5>Scenario B (senior level): order-status reads are 14 minutes stale after a failover during the sale</h5>
+<p><strong>Situation.</strong> Thursday 20:40 IST. During the flash sale, the primary PostgreSQL instance for orders lost its network at 19:52 IST. The managed Multi-AZ failover completed and the write path recovered. Since about 19:58 IST, the order-status API, which reads from a read replica, returns order states that are up to 14 minutes old, and customers have been emailed the wrong delivery status. Constraints: payments are on the primary and must not lose a committed write; order status must be under 60 seconds stale; the sale runs to 23:00 IST; you may not restart the primary; you may change the replica's parameter group and stop queries on the replica.</p>
+<pre>
+-- on the primary, after failover (the new writer)
+SELECT application_name, state, write_lag, flush_lag, replay_lag
+FROM pg_stat_replication;
+ application_name | state     | write_lag   | flush_lag   | replay_lag
+ order-status-ro  | streaming | 00:00:00.01 | 00:00:00.02 | 00:14:21.6
+
+-- on the read replica
+SELECT now() - pg_last_xact_replay_timestamp() AS replay_delay;   -- 00:14:19
+SELECT pid, now() - query_start AS age, state, left(query, 60) AS q
+FROM pg_stat_activity WHERE backend_type = 'client backend' ORDER BY age DESC LIMIT 2;
+ pid   | age      | state  | q
+ 48211 | 00:41:02 | active | SELECT region, sum(total) FROM orders_daily GROUP BY 1
+SHOW max_standby_streaming_delay;   -- -1
+</pre>
+<p><strong>Guiding questions:</strong> 1) What did the failover do to the replica, and why does write_lag look healthy while replay_lag is 14 minutes? 2) Which two queries separate the cause from the symptom, and what would you check in the parameter group? 3) How do you fix the lag without another failover, and how do you stop a reporting query from ever holding back order status again?</p>
+<details><summary>Show solution</summary>
+<p><strong>Investigation.</strong> (1) The PostgreSQL monitoring docs define the three lags: <code>write_lag</code> is the time until the standby has written WAL, <code>flush_lag</code> until it has flushed it, and <code>replay_lag</code> until it has applied it. Here the first two are about 10 ms, so the network and the disk on the standby are fine. The data is received but not applied. That points at replay, not transport. (2) The replica's own <code>replay_delay</code> matches the lag on the primary, so the two agree. The long query is the second clue: a reporting query running 41 minutes on the replica. (3) On a hot standby, WAL replay must wait for queries that could see the rows being changed. <code>max_standby_streaming_delay</code> sets how long replay waits before it cancels such a query. The value <code>-1</code> means replay waits forever. Someone set it to avoid cancelled reports, so replay stopped behind the report. (4) The failover made it worse: the replica reconnected to the new writer, received the backlog, and the same long query blocked the apply of the new WAL. Confirm the setting in the parameter group, not only with <code>SHOW</code>, because a change without a reboot can differ from what you expect.</p>
+<p><strong>Root cause.</strong> A reporting query on the order-status replica ran for 41 minutes under a standby conflict setting of <code>-1</code>, which made WAL replay wait indefinitely. Failover put the replica into catch-up at the moment the sale raised write volume, so the backlog grew to 14 minutes. Writes on the primary were never affected, and no committed transaction was lost.</p>
+<p><strong>Resolution (under the 60-second limit).</strong> (a) Cancel the reporting query on the replica: <code>SELECT pg_cancel_backend(48211);</code>, then watch <code>replay_delay</code> fall. If it does not fall within two minutes, stop the query with <code>pg_terminate_backend</code>. (b) Set <code>max_standby_streaming_delay</code> to a finite value, such as 30 seconds, in the replica's parameter group, and apply it without touching the writer. (c) Route the long report to a separate analytics replica, so order status reads never share a standby with long queries. (d) Until replay_delay is under 60 seconds, have the order-status API read from the primary for the affected order IDs, because that is the only fresh source. (e) Confirm the fix: <code>replay_delay</code> under 1 second and the stale-order count in the application logs back to zero.</p>
+<p><strong>Long-term prevention.</strong> (1) An alert on replay_delay above 60 seconds for the order-status replica, with a page at 120 seconds. (2) A separate replica for analytics and reporting, with its own conflict settings; never let a reporting role share a standby that serves user reads. (3) Read-your-writes rules: the order-status path reads the primary for orders changed in the last few minutes. (4) Failover tested under sale load in staging, measured against the RTO and RPO you document. The RDS docs describe the failover mechanism and its triggers, and state that failover times are typically 60 to 120 seconds <span class="tag ok">Confirmed</span> (<a href="https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.Failover.html" target="_blank" rel="noopener">AWS RDS: failing over a Multi-AZ DB instance</a>). Plan your application retries for that window, not for zero. (5) Keep the lag query in your runbook, and check it during every failover drill.</p>
+<p><strong>Sample document: Incident report (fictional, standard format)</strong></p>
+<p><strong>Title:</strong> Stale order-status reads after primary failover during the flash sale, 26 Nov 2026 (IST)<br>
+<strong>Summary:</strong> After a primary failover at 19:52 IST, the order-status read replica fell up to 14 minutes behind because a 41-minute reporting query blocked WAL replay under a standby setting that waits forever. Writes and payments were not affected. Reads were fresh again by 21:18 IST.<br>
+<strong>Impact:</strong> order-status pages showed stale states from about 19:58 to 21:18 IST for every customer routed to the replica; about 2,300 customers received an incorrect delivery-status email <span class="tag warn">Reported</span> (count from the notification logs, not yet checked by the customer team). No committed writes were lost.<br>
+<strong>Timeline (IST):</strong> 19:52 primary network loss; 19:53 failover starts; 19:55 reporting job starts on the replica; 19:58 replay delay passes 60 s; 20:10 the stale-order alert fires for the first time (no page was configured); 20:40 incident declared; 20:46 long query identified; 20:49 query cancelled; 20:55 replay delay still at 13 minutes, parameter changed; 21:18 replay delay under 1 second.<br>
+<strong>Root cause:</strong> the replica's standby conflict setting was <code>-1</code>, so a long reporting query could block replay indefinitely; the reporting role shared a standby with user-facing reads; no replay-delay alert existed.<br>
+<strong>Resolution:</strong> cancelled the query; parameter group set to 30 seconds; order-status reads served from the primary for recent orders until the replica caught up.<br>
+<strong>Action items:</strong> (a) replay-delay alerts at 60 and 120 seconds, owner: SRE lead, due 28 Nov; (b) analytics replica and role separation, owner: data platform lead, due 4 Dec; (c) customer correction email with the customer team, owner: support lead, due 27 Nov; (d) read-your-writes rule for recent orders, owner: order-service team, due 8 Dec; (e) failover drill under load added to the quarterly runbook, owner: DBA lead, due 15 Dec.</p>
+</details>
+</div>
+<h4>4. Interview practice (AWS)</h4>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q1.</strong> "A checkout service on EKS started getting AccessDenied on an S3 bucket this morning. Nothing changed in the service. A colleague says the bucket policy was tightened yesterday. What do you do?"</p>
+<details><summary>Show answer</summary>
+<p>1. Identify the caller, not the policy: run <code>aws sts get-caller-identity</code> from the pod (or the role the pod assumes) so you know which principal is denied. 2. Read the denial. CloudTrail records the event with the error code; look it up with <code>aws cloudtrail lookup-events</code> filtered by the event name, and read the principal ARN and the error. 3. Test the policy stack without changing anything: <code>aws iam simulate-principal-policy</code> for the role, with the action and bucket ARN, shows whether identity policies allow the action. 4. Check the layers that deny on top of allow: the bucket policy (an explicit Deny wins), a permissions boundary on the role, an organisation SCP, and, for pods reaching S3 through a VPC endpoint, the endpoint policy. 5. Fix the cause: if the bucket policy was tightened on purpose, add the role to the allow list, scoped to the needed actions; if it was accidental, revert the change through the usual review. 6. Prevent it: put bucket policy changes through a plan review that lists who loses access, and add a synthetic check from the workload's own role. <em>What the interviewer is checking:</em> that you find the principal and the deny layer before editing anything, and that you know an explicit Deny beats an Allow. A candidate who edits the bucket policy first and asks questions later has not understood the risk.</p></details></div>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q2.</strong> "Your CI pipelines use long-lived AWS access keys stored as GitHub secrets. Security wants them gone within a quarter. How do you plan the change?"</p>
+<details><summary>Show answer</summary>
+<p>1. Inventory first: find every key, which pipelines use it, and the last-used date (IAM access key last-used data, plus CloudTrail for the principal). 2. Build the replacement: an IAM OIDC identity provider for GitHub, using <code>token.actions.githubusercontent.com</code> as the URL and <code>sts.amazonaws.com</code> as the audience when you use the official action. 3. Scope the trust policy. Use the <code>token.actions.githubusercontent.com:sub</code> condition so only a named repository, branch or environment can assume the role. AWS recommends evaluating this condition, and a role without it lets any repository in the organisation assume it. 4. Give each workflow <code>id-token: write</code> permission and, in the job, use <code>aws-actions/configure-aws-credentials</code> to exchange the GitHub token for temporary credentials. 5. Migrate in phases: one non-production pipeline first, then staging, then production behind an environment with required reviewers. 6. Retire the keys: deactivate them first (reversible), watch for failures for a week, then delete them and record the change. 7. Prevent recurrence: a policy that denies creating long-lived keys for CI users, and secret scanning in the pipeline. <em>What the interviewer is checking:</em> that you scope the trust policy (the common mistake is an OIDC role with no subject condition), and that you deactivate before you delete.</p></details></div>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q3.</strong> "The AWS bill for the production account rose 35% over a weekend. Finance is asking for an explanation by Monday. What is your approach?"</p>
+<details><summary>Show answer</summary>
+<p>1. Scope the spike with Cost Explorer: group by service, then by usage type, for the two weeks before and after the change, and note the date when the line starts. 2. Look at the usual suspects in order: data transfer and NAT Gateway data processing (a workload pulling large data through a NAT path), S3 request and retrieval charges, a stuck auto-scaling group or an unexpectedly large instance family, and a new service enabled by a team. 3. Use tags, but only if they were activated early: cost allocation tags report spend only from the time they are activated, so an untagged weekend may need resource-level evidence from CloudTrail and inventory instead. 4. Contain before you explain: stop the runaway resource if it is safe to do so, through the owning team and the change process, not by deleting resources you do not own. 5. Prevent: AWS Budgets alerts at forecast thresholds, Cost Anomaly Detection on the production accounts, and a tag policy for owners. 6. Report: the cause in one paragraph, the amount, the date it stopped, and the owner of each fix. <em>What the interviewer is checking:</em> method (scope, cause, contain, prevent) and that you do not delete resources you do not own to make a bill look better.</p></details></div>
+
+<h4>5. Industry pulse</h4>
+
+<div class="box" style="--c:#b91c1c"><h5>Incident 1: Lucidworks SaaS platform, expired certificate on the platform domains, 27 Jul 2026</h5>
+<p><strong>What happened.</strong> Event date 27 Jul 2026. The certificate serving the SaaS platform domains expired at 17:56 UTC. Users could not reach the platform user interface and received certificate errors. Beacon signal collection through the API domain was interrupted. Publication date for the postmortem: 28 Jul 2026, after the 27 Jul resolution at 19:24 UTC. <strong>Impact:</strong> beacon signals from 17:56 to 19:01 UTC were not ingested and, according to the status page, cannot be recovered. Query serving by the underlying search services was not affected. <strong>Root cause:</strong> the page's summary says that outage escalations never reached the responsible team; the full cause sits in the postmortem section, which I read only in part, so take the cause as partial. <strong>Prevention:</strong> the postmortem's action items are the place to check; read them there before you copy any of them.</p>
+<p><strong>Lesson for you:</strong> an expired certificate is a simple failure with a messy response. The fix is minutes; the cost is the time before anyone who can renew it hears about it. Route expiry alerts to the owner of the certificate, check the escalation path during a drill, and treat "nobody was told" as an incident finding in its own right.</p>
+<p>Source: <a href="https://status.lucidworks.com/incidents/vxmrbxrlzbcl" target="_blank" rel="noopener">Lucidworks status: SaaS platform certificate incident</a> <span class="tag ok">Confirmed</span> for the timeline and the impact (status page read via a fetch on 26 Nov 2026); the root-cause detail is <span class="tag warn">Reported</span> until you read the postmortem section yourself.</p></div>
+
+<div class="box" style="--c:#b91c1c"><h5>Incident 2: Google Cloud, us-west1 network capacity loss during fibre maintenance, 20 Aug 2026</h5>
+<p><strong>What happened.</strong> Event date 20 Aug 2026 in us-west1 (Oregon). Google's status page lists an incident in which multiple products saw elevated latency, provisioning failures and increased error rates. The affected list in the incident header includes Compute Engine, Google Kubernetes Engine, Cloud SQL, Cloud Run, Cloud Storage, Cloud Key Management Service and Identity and Access Management. Publication dates: the preliminary root cause was posted on 24 Aug 2026 and the final incident report on 27 Aug 2026. <strong>Root cause (final report):</strong> the disruption began during scheduled fibre optic maintenance, which unexpectedly reduced network capacity between data centres in the region. Automated rerouting failed to spread the traffic across the remaining capacity. <strong>Impact:</strong> the page describes elevated latency, provisioning failures and error rates for customers in the region. <strong>Note:</strong> the header and the report give different end times (the header says 12:20 Pacific, the report says service was restored by 10:22 Pacific), so check the page before you quote one.</p>
+<p><strong>Lesson for you:</strong> maintenance can remove capacity, not only a path, and a failover that does not move traffic is not a failover. Your own equivalent: before planned network or power work, check that the remaining capacity can carry the peak, drain traffic before the work starts, and test the reroute. Plan for a degraded state, not only for a total outage.</p>
+<p>Source: <a href="https://status.cloud.google.com/incidents/utF3FMFdQfwBzJcGG6vf" target="_blank" rel="noopener">Google Cloud Service Health: us-west1 incident, 20 Aug 2026</a> <span class="tag ok">Confirmed</span> (status page read via a fetch on 26 Nov 2026; the end-time conflict is on the page itself).</p></div>
+
+<p><strong>What companies expect from DevOps engineers now</strong></p>
+<ul>
+<li>Ownership of expiry and dependency alerts: certificates, lookups, replicas and tokens each need a monitor and a named owner, because the failures above were silent for days. <span class="tag info">Direction</span> (my reading; the evidence is the two incidents above).</li>
+<li>Capacity headroom for maintenance: planned work is a risk event, and the people who run it are expected to show the remaining capacity and the drain plan. <span class="tag info">Direction</span> (my reading of the Google Cloud report above).</li>
+<li>Postmortems that carry timestamps with both the event date and the publication date, written so a non-engineer can follow the timeline. <span class="tag info">Direction</span> (common practice as I see it, not a survey).</li>
+</ul>
+
+<h4>6. AIOps: AI-assisted CI/CD pipeline optimization</h4>
+<p><strong>Lesson.</strong> Pipelines fail in repetitive ways: a flaky test, a cache that never hits, a runner that starts slowly, an action pinned to a version that changed. A model is useful for the repetitive reading: it can group failed runs by their error line, count how often each cause appears, and propose a change for a human to review. Start with analysis, not automation. GitHub's own guidance is to keep workflow permissions minimal and to review every change to a workflow file as code, so any AI suggestion lands as a pull request, never as a direct push to the default branch.</p>
+<p><strong>How AI helps.</strong> Feed the model the last 50 failed runs of one workflow, with logs stripped of secrets, and ask for a clustered report. Here is a prompt you can use.</p>
+<pre>
+You are reviewing GitHub Actions failures for one workflow (deploy.yml). Read-only access: gh run list and gh run view --log-failed.
+From the last 50 failed runs:
+1. Cluster the failures by root cause. Quote the first error line of each cluster exactly.
+2. For each cluster, give the count, the earliest and latest run time, and whether it correlates with a runner label.
+3. Propose at most three workflow changes as a diff against the file. Do not propose changes to permissions, secrets or branch protection.
+4. Mark each proposal "safe to test in a branch" or "needs owner review". Never print a value that looks like a credential; replace it with [REDACTED].
+</pre>
+<p><strong>Guardrails.</strong> The model gets read-only tokens scoped to one repository. Its output is a pull request with the diff, reviewed by the owner of the workflow. It has no access to secrets, environments or branch protection rules. Every run is logged with the prompt, the data it read and the output. <strong>Risks:</strong> a confident fix for a flaky test that hides a real race condition; a suggested cache key that makes the cache useless; and log lines that contain a secret the model then repeats, which is why the redaction step belongs in the pipeline, not in the prompt. Rule: the model proposes, the pipeline verifies with a test run, and a human merges.</p>
+<h4>7. Lab checklist</h4>
+<pre>
+[ ] ELK: created the ISM policy and logs-000001 with the logs-write alias
+[ ] ELK: indexed 50,000 documents and rolled over by hand; write index is logs-000002
+[ ] ELK: _plugins/_ism/explain shows the state moving to delete after the test retention
+[ ] ELK assignment: one-page sizing note with shard count and the rollover condition
+[ ] Python: ran inventory script with read_timeout=1 and timed the failure
+[ ] Python: ran the normal settings, exit code 0, then a wrong region with exit code 2
+[ ] Python assignment: timeouts, retry config, paginator, check=True, exit-code table added
+[ ] Python assignment: three Stubber tests (happy path, two pages, AccessDenied without retry)
+[ ] Scenario A: wrote my own 5-line root cause before opening the solution
+[ ] Scenario A: ran the Python expiry check against a test host and read its output
+[ ] Scenario A: wrote the three-step plan for the reload and the verification
+[ ] Scenario B: ran the three lag queries on a lab primary and replica (or read the output carefully)
+[ ] Scenario B: listed the two causes separately: replay conflict versus failover catch-up
+[ ] Interview: answered Q1 (AccessDenied on S3) aloud in two minutes, principal first
+[ ] Interview: wrote the phased CI key migration in seven steps, deactivate before delete
+[ ] Recap: ran one journalctl, one git bisect and one Jenkins timeout from the table
+[ ] Recap: wrote the CI/CD concurrency rule for deploys versus tests in my own notes
+[ ] AI pro: drafted the MCP scope list (read, write, admin) for one tool of mine
+[ ] Career: wrote the "Say it like this" sentence in my own words for a real change
+</pre>
+
+<h4>8. Career: communicating with managers</h4>
+<p><strong>Lesson.</strong> A manager does not need the mechanism. A manager needs three things: what it costs, what it risks, and what decision they must make. At two to three years, the usual mistake is the engineer's report: a correct account of the failure, in the order it happened, with no money, no date and no ask. The manager hears an hour of detail and cannot tell whether to worry. The senior version is shorter and starts with the decision. "We need one approval today to rotate the registry token in a staged way, or payments may fail on the next rotation" is a sentence a manager can act on.</p>
+<p>Use the same structure for status updates. The first line is the state: green, amber or red, and the next update time. The second line is the impact in customer or business terms, such as orders delayed or partners unable to sync. The third line is the ask, if there is one. Put the technical timeline in a document and link to it. The manager reads the top three lines, and the document answers any question that follows.</p>
+<p>Two habits matter more than polish. First, report bad news early and with a date you will update it, because a manager who learns late will assume you hid it. Second, when you disagree with a decision, say so once, in writing, with the risk you see and the alternative you would take. Then support the decision you were given, and make sure the risk is written down in the record, so when it happens you are not the only person who knew. Managers remember who was clear under pressure. That reputation is the one you will carry into a Senior role and, later, into the team lead's chair.</p>
+<p><strong>Say it like this</strong> (to a manager or CTO): "The partner order API was down for about nine and a half hours last night because a certificate expired and the renewal job had been failing since 27 October. It is fixed. I need one decision from you today: approve a two-week effort to add independent expiry alerts and route renewal failures to the owning team, so this cannot repeat quietly."</p>
+<p><strong>Skill-gap action for today (15 minutes):</strong> open your last status update to a manager. Rewrite its first three lines using the state, impact and ask structure. Then send the rewritten version to a colleague and ask them to tell you, in one sentence, what decision it asks for. If they cannot, change it until they can.</p>
+
+<h4>9. Daily recap of all your tools</h4>
+<p class="meta">Table covers all 19 items you listed (the mod-18 rotation below covers the first 18; AI in DevOps appears here and in sections 6 and 10).</p>
+<div class="tw"><table><thead><tr><th>Tool</th><th>Remember today</th><th>Command or config</th><th>Official doc</th></tr></thead><tbody>
+<tr><td>Linux and shell</td><td>journalctl -p err filters a unit's log to error priority and above, the fastest first pass on a failed service.</td><td><code>journalctl -u nginx --since "1 hour ago" -p err</code></td><td><a href="https://www.freedesktop.org/software/systemd/man/latest/journalctl.html" target="_blank" rel="noopener">journalctl</a></td></tr>
+<tr><td>Git/GitHub</td><td>git bisect finds the commit that introduced a bug in about log2(n) test steps.</td><td><code>git bisect start; git bisect bad; git bisect good v2.4.0</code></td><td><a href="https://git-scm.com/docs/git-bisect" target="_blank" rel="noopener">git-bisect</a></td></tr>
+<tr><td>Jenkins</td><td>A timeout option stops a hung build, so one stuck step cannot hold an executor all night.</td><td><code>options { timeout(time: 30, unit: 'MINUTES') }</code></td><td><a href="https://www.jenkins.io/doc/book/pipeline/syntax/" target="_blank" rel="noopener">Pipeline syntax</a></td></tr>
+<tr><td>CI/CD (Actions/GitLab CI)</td><td>Use cancel-in-progress for test runs only; for deploys, let the queue finish, or you cancel a half-applied change.</td><td><code>concurrency: { group: ci-${{ github.ref }}, cancel-in-progress: true }</code></td><td><a href="https://docs.github.com/en/actions/using-jobs/using-concurrency" target="_blank" rel="noopener">Using concurrency</a></td></tr>
+<tr><td>Docker</td><td>SBOM and provenance attestations need a builder that supports them; the classic image store does not.</td><td><code>docker buildx build --sbom=true --provenance=mode=max -t app:1.4.3 .</code></td><td><a href="https://docs.docker.com/build/metadata/attestations/" target="_blank" rel="noopener">Build attestations</a></td></tr>
+<tr><td>Kubernetes</td><td>Events expire after about an hour by default, so capture them early in an incident, sorted by time.</td><td><code>kubectl get events -n payments --sort-by=.lastTimestamp</code></td><td><a href="https://kubernetes.io/docs/reference/kubectl/quick-reference/" target="_blank" rel="noopener">kubectl quick reference</a></td></tr>
+<tr><td>Terraform</td><td>terraform fmt -check fails when formatting differs, a cheap gate to put before plan in CI.</td><td><code>terraform fmt -check -recursive</code></td><td><a href="https://developer.hashicorp.com/terraform/cli/commands/fmt" target="_blank" rel="noopener">terraform fmt</a></td></tr>
+<tr><td>AWS</td><td>sts get-caller-identity shows the principal your credentials resolve to, the first check in any access problem.</td><td><code>aws sts get-caller-identity</code></td><td><a href="https://docs.aws.amazon.com/cli/latest/reference/sts/get-caller-identity.html" target="_blank" rel="noopener">get-caller-identity</a></td></tr>
+<tr><td>Azure</td><td>az account show confirms the active subscription and tenant before you change anything.</td><td><code>az account show --query "{name:name, id:id}"</code></td><td><a href="https://learn.microsoft.com/en-us/cli/azure/account" target="_blank" rel="noopener">az account</a></td></tr>
+<tr><td>GCP</td><td>gcloud config list shows the active account and project; check it before any command that writes.</td><td><code>gcloud config list</code></td><td><a href="https://cloud.google.com/sdk/gcloud/reference/config/list" target="_blank" rel="noopener">gcloud config list</a></td></tr>
+<tr><td>Ansible</td><td>--syntax-check catches YAML and module mistakes without connecting to any host.</td><td><code>ansible-playbook site.yml --syntax-check</code></td><td><a href="https://docs.ansible.com/ansible/latest/cli/ansible-playbook.html" target="_blank" rel="noopener">ansible-playbook</a></td></tr>
+<tr><td>Prometheus and Grafana</td><td>The readiness endpoint returns ready only when Prometheus can serve queries, a better liveness check than the process.</td><td><code>curl -s localhost:9090/-/ready</code></td><td><a href="https://prometheus.io/docs/prometheus/latest/management_api/" target="_blank" rel="noopener">Management API</a></td></tr>
+<tr><td>ELK/OpenSearch</td><td>Cluster health red means at least one primary shard is unassigned, so search results are incomplete.</td><td><code>GET _cluster/health?pretty</code></td><td><a href="https://opensearch.org/docs/latest/api-reference/cluster-api/cluster-health/" target="_blank" rel="noopener">Cluster health</a></td></tr>
+<tr><td>Python for DevOps</td><td>python -I ignores environment variables, user site packages and the script's own folder on the import path.</td><td><code>python -I inventory.py</code></td><td><a href="https://docs.python.org/3/using/cmdline.html#cmdoption-I" target="_blank" rel="noopener">Command line: -I</a></td></tr>
+<tr><td>GitOps (Argo CD/Helm)</td><td>argocd app get shows sync status and health side by side; both must be healthy before you call a deploy done.</td><td><code>argocd app get payments-api</code></td><td><a href="https://argo-cd.readthedocs.io/en/stable/user-guide/commands/argocd_app_get/" target="_blank" rel="noopener">argocd app get</a></td></tr>
+<tr><td>DevSecOps</td><td>gitleaks scans Git history for secrets and with --redact hides the values in its output.</td><td><code>gitleaks detect --source . --redact</code></td><td><a href="https://github.com/gitleaks/gitleaks" target="_blank" rel="noopener">gitleaks</a></td></tr>
+<tr><td>SRE (SLI/SLO)</td><td>A 99.9% SLO over 30 days leaves an error budget of 43.2 minutes of full outage.</td><td><code>echo "(1-0.999)*30*24*60" | bc -l</code></td><td><a href="https://sre.google/workbook/implementing-slos/" target="_blank" rel="noopener">Implementing SLOs</a></td></tr>
+<tr><td>FinOps/Platform</td><td>Cost Explorer's API returns daily unblended cost by service, the quickest evidence for a bill spike.</td><td><code>aws ce get-cost-and-usage --time-period Start=2026-11-01,End=2026-11-26 --granularity DAILY --metrics UnblendedCost</code></td><td><a href="https://docs.aws.amazon.com/cli/latest/reference/ce/get-cost-and-usage.html" target="_blank" rel="noopener">get-cost-and-usage</a></td></tr>
+<tr><td>AI in DevOps</td><td>Before an AI tool touches a cluster, list exactly what its service account may do.</td><td><code>kubectl auth can-i --list -n payments --as system:serviceaccount:ai:reader</code></td><td><a href="https://kubernetes.io/docs/reference/access-authn-authz/authorization/" target="_blank" rel="noopener">Authorization overview</a></td></tr>
+</tbody></table></div>
+
+<h5>CI/CD (GitHub Actions and GitLab CI): concurrency and least-privilege tokens</h5>
+<p><strong>What it is.</strong> A workflow's <code>concurrency</code> key decides how runs for the same group queue or cancel each other, and the <code>permissions</code> key sets what the GITHUB_TOKEN may do in that run. <strong>Why it matters.</strong> Two deploys to one environment racing each other, or a token that can write to every repository, are two of the most common pipeline incidents. <strong>How it works.</strong> Runs that share a group wait; with <code>cancel-in-progress</code>, a newer run cancels the older one, which is right for a test job and dangerous for a deploy that has already changed infrastructure. GitHub's secure-use guide asks you to give the token only the access the workflow needs, and to set the default to read where you can, then raise it per job.</p>
+<pre>
+permissions:
+  contents: read            # default for the whole workflow
+jobs:
+  deploy:
+    permissions:
+      contents: read
+      id-token: write       # only for OIDC to the cloud
+    concurrency: { group: deploy-prod, cancel-in-progress: false }
+</pre>
+<p><strong>AI prompt example:</strong> "Here is one workflow file. List every permission the token has by default and every permission it needs for each job. Flag any job that can cancel a deploy, and propose the smallest permissions block that still works. Do not change anything; output a table." <span class="tag ok">Confirmed</span> (<a href="https://docs.github.com/en/actions/reference/security/secure-use" target="_blank" rel="noopener">GitHub: secure use</a>).</p>
+
+<h5>Docker: SBOM and provenance attestations in the build</h5>
+<p><strong>What it is.</strong> An SBOM attestation lists the packages inside an image. A provenance attestation records how it was built: source, builder and parameters. <strong>Why it matters.</strong> When a new CVE lands, the SBOM tells you in minutes whether you run the package; provenance tells you which pipeline built the image you deploy. <strong>How it works.</strong> The attestations are added at build time with buildx and stored as in-toto JSON attached to the image index. The classic image store cannot hold image indices, so attestations fail there; use the containerd image store or the docker-container driver. Max-mode provenance records more build detail. Check the attestations after the push, not only at build time.</p>
+<pre>
+docker buildx build --sbom=true --provenance=mode=max -t registry.example.in/app:1.4.3 --push .
+docker buildx imagetools inspect registry.example.in/app:1.4.3 --format '{{ json .SBOM }}' | head -c 300
+</pre>
+<p><strong>AI prompt example:</strong> "Here is the SBOM JSON for app:1.4.3 and this CVE list. Which CVEs match a package present in the image, and which package version fixes each one? Say 'not present' where it is not, and never guess a version." <span class="tag ok">Confirmed</span> (<a href="https://docs.docker.com/build/metadata/attestations/sbom/" target="_blank" rel="noopener">Docker: SBOM attestations</a>; the imagetools format string is a sketch, so check it against your buildx version).</p>
+
+<h5>Kubernetes: kubectl debug without changing the workload</h5>
+<p><strong>What it is.</strong> <code>kubectl debug</code> starts a debug container next to a running container, or creates a copy of the pod with a changed image or command. <strong>Why it matters.</strong> Many production images have no shell and no tools, so <code>kubectl exec</code> fails. A debug container gives you the tools without rebuilding the app. <strong>How it works.</strong> <code>--target</code> joins the process namespace of a named container, so you can see its processes. <code>--copy-to</code> creates a new pod with the same spec, so you can test a fix without touching the original. Use the copy when the original pod keeps restarting, so your debug session is not cut off by each restart. Delete the copy when you finish, because it still consumes resources.</p>
+<pre>
+kubectl debug -it payments-api-6d8f9c7b5-2hq4x -n payments --image=busybox --target=payments-api
+kubectl debug payments-api-6d8f9c7b5-2hq4x -n payments --copy-to=payments-debug --container=payments-api -- sh
+</pre>
+<p><strong>AI prompt example:</strong> "Here is the pod spec and the last 50 lines of its logs. Propose the kubectl debug command that lets me inspect the container's files and environment without changing the Deployment. Name the copy, and tell me the command that deletes it." <span class="tag ok">Confirmed</span> (<a href="https://kubernetes.io/docs/reference/kubectl/generated/kubectl_debug/" target="_blank" rel="noopener">kubectl debug reference</a>).</p>
+
+<h5>Recap questions (answers in the details)</h5>
+<details><summary>Show answers</summary>
+<p><strong>1.</strong> Why does a shared OpenSearch alias matter more than the physical index name? Dashboards and writers keep working through rollover when they use the alias; a physical name stops receiving new data at the first rollover.</p>
+<p><strong>2.</strong> Which boto3 retry mode is the default, and why should you still set it in code? The default is standard (three attempts including the first request, per the boto3 guide). Set the mode and attempt count explicitly, so a library upgrade cannot change your retry behaviour silently, and keep adaptive out of production until you have tested it.</p>
+<p><strong>3.</strong> Why can a deploy job need cancel-in-progress set to false? Cancelling a deploy that has already changed infrastructure leaves it half-applied, so the next run starts from an unknown state; let it finish and queue the next run behind it.</p>
+</details>
+
+<h4>10. AI pro: MCP servers (design, auth and least privilege)</h4>
+<p><strong>Concept.</strong> The Model Context Protocol lets a model call tools and read resources exposed by a server. An MCP server is an API for an agent, and it inherits every problem of an API: authentication, authorisation, input validation, rate limits and audit. The current authorization specification is clear about the baseline: MCP servers must implement OAuth 2.0 Protected Resource Metadata (RFC 9728), and when they return a 401, they point the client to that metadata through the <code>WWW-Authenticate</code> header's <code>resource_metadata</code> parameter. The metadata must name at least one authorization server. The spec revisions differ on details, so pin the revision your client and server both support. <span class="tag ok">Confirmed</span> (<a href="https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization" target="_blank" rel="noopener">MCP specification 2025-11-25: authorization</a>, read via a fetch on 26 Nov 2026).</p>
+<p><strong>Architecture.</strong> Put one server per trust boundary, not one server per company. A read-only server for logs and metrics, a separate server for a deploy action, and a third for ticket writes each hold their own credential, scopes and audit trail. The model reaches tools through the client; the server validates each call against the caller's scopes, not against the model's wishes. Keep write tools out of the default tool list, and require an explicit human approval step for any tool that changes state.</p>
+<pre>
+scopes:  logs.read        → query logs, no export
+         deploy.request  → creates a pending change, never applies it
+         deploy.apply    → NOT granted to any agent; humans only
+audit:   every tool call: caller, scope, arguments (redacted), result code, timestamp
+</pre>
+<p><strong>Trade-offs.</strong> One broad server is simpler to run and far harder to review. Many narrow servers cost more to operate but let you revoke one capability without breaking the others. Remote servers need OAuth and token refresh; local ones often ride on the developer's own credentials, which is convenient and a common way for an agent to inherit more access than anyone intended. <strong>Failure modes.</strong> A tool description that hides a dangerous action; a token passed through to a downstream API unchanged, so the audit trail names the wrong caller; a tool result that carries a prompt injection, such as a log line telling the model to call deploy.apply. Treat tool output as data. <strong>Security, evaluation and cost.</strong> Least-privilege scopes, short-lived tokens, and a deny-by-default tool allowlist per agent. Evaluate with a golden set of requests the server must refuse, and measure calls per task, because every tool call is latency and money. Log every call; the log is the thing you will need after an incident.</p>
+</article>
+
 <article class="entry" id="career-2026-11-25"><h3>Study plan: 25 Nov 2026 (Week 1, Day 7)</h3>
 <p class="meta">Wednesday. Classes: Ansible and configuration management (idempotent roles, check mode, Vault); Prometheus and Grafana (data model, PromQL histograms, alert design, dashboards). Scenarios: CrashLoopBackOff and ImagePullBackOff after a credentials rollout (today's tools); DNS outage in a cluster (senior level). Interview: CI/CD and Jenkins. Career: communicating with developers. AIOps: self-healing infrastructure. Recap tools today (deep): Linux and shell, Git/GitHub, Jenkins. AI pro: agent architectures (planner/executor, multi-agent, memory).</p>
 
