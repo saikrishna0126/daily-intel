@@ -120,10 +120,92 @@ footer{margin-top:3em;color:var(--mut);font-size:.85rem;text-align:center}
 
 <section id="log">
 <h2 class="s-log">Daily log: intelligence reports (newest first)</h2>
-<p class="logidx"><strong>Read the whole report:</strong> <a href="#d-2026-11-26" class="rd">Thu 26 Nov 2026 →</a><a href="#d-2026-11-25" class="rd">Wed 25 Nov 2026 →</a><a href="#d-2026-11-24" class="rd">Tue 24 Nov 2026 →</a><a href="#d-2026-11-23" class="rd">Mon 23 Nov 2026 →</a><a href="#d-2026-11-22" class="rd">Sun 22 Nov 2026 →</a><a href="#d-2026-11-21" class="rd">Sat 21 Nov 2026 →</a><a href="#d-2026-11-20" class="rd">Fri 20 Nov 2026 →</a><a href="#d-2026-11-19" class="rd">Thu 19 Nov 2026 →</a><a href="#d-2026-11-18" class="rd">Wed 18 Nov 2026 →</a> <a href="#d-2026-11-17" class="rd">Tue 17 Nov 2026 →</a></p>
+<p class="logidx"><strong>Read the whole report:</strong> <a href="#d-2026-11-28" class="rd">Sat 28 Nov 2026 →</a><a href="#d-2026-11-26" class="rd">Thu 26 Nov 2026 →</a><a href="#d-2026-11-25" class="rd">Wed 25 Nov 2026 →</a><a href="#d-2026-11-24" class="rd">Tue 24 Nov 2026 →</a><a href="#d-2026-11-23" class="rd">Mon 23 Nov 2026 →</a><a href="#d-2026-11-22" class="rd">Sun 22 Nov 2026 →</a><a href="#d-2026-11-21" class="rd">Sat 21 Nov 2026 →</a><a href="#d-2026-11-20" class="rd">Fri 20 Nov 2026 →</a><a href="#d-2026-11-19" class="rd">Thu 19 Nov 2026 →</a><a href="#d-2026-11-18" class="rd">Wed 18 Nov 2026 →</a> <a href="#d-2026-11-17" class="rd">Tue 17 Nov 2026 →</a></p>
 <!-- NEW-LOG-INDEX-ABOVE -->
 <!-- NEW-LOG-ENTRY-HERE -->
-<details open class="day" id="d-2026-11-26"><summary class="big">Thu 26 Nov 2026 <span class="hint">(click to open / close the full report)</span></summary><div class="entry">
+<details open class="day" id="d-2026-11-28"><summary class="big">Sat 28 Nov 2026 <span class="hint">(click to open / close the full report)</span></summary><div class="entry">
+
+<p class="meta"><strong>Date:</strong> Saturday, 28 Nov 2026 (IST). Markets closed today; newest session Fri 27 Nov. Research: about 55 searches plus one read of 7 pages (Kotak Neo, Business Today, Upstox, Angel One; Business Standard returned HTTP 403; NSE not reachable) · Labels: <span class="tag ok">Confirmed</span><span class="tag warn">Reported</span><span class="tag bad">Unverified</span><span class="tag info">Direction</span></p>
+<div class="note"><strong>Honest limits and corrections:</strong> the 25 to 27 Nov index closes are now found (news sites, not the NSE page). The Wed 25 Nov Nifty close is worked out backwards from Upstox's +65.25 change on Thu 26 Nov. Oracle's advisory is still blocked (pre-release notice only). Not found: Bank Nifty and India VIX closes for 25 to 27 Nov, US closes for 26 to 27 Nov.</div>
+
+<h4>1. Top developments of the day</h4>
+<ol>
+<li><span class="tag warn">Reported</span> <strong>Outlook zero-day CVE-2026-124194 (Patch Tuesday, 10 Nov).</strong> Microsoft says it is under active exploit; it can leak hashed NTLM credentials. CERT-In rates it high and urges November updates now. Why: patch Outlook on desktops and servers, not only Windows. <a href="https://www.csoonline.com/article/4247015/november-2026-patch-tuesday-63-critical-microsoft-fixes-plus-an-outlook-zero-day.html">CSO Online</a> (secondary; MSRC not read) · <a href="https://paidfreedroid.com/2026/11/cert-in-high-severity-advisory-microsoft-products-vulnerabilities-ciad-2026-0059.html/amp">CERT-In CIAD-2026-0059 via Paidfreedroid</a></li>
+<li><span class="tag ok">Confirmed</span> <strong>GitLab critical patch, 10 Nov:</strong> 19.5.4, 19.4.6 and 19.3.8 update the bundled Git to fix CVE-2026-105437 (heap overflow). Self-managed installs that use a distro Git need Git 2.56.1 or later. Why: check self-hosted GitLab and runner images. <a href="https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-4-released/">GitLab patch notes</a></li>
+<li><span class="tag warn">Reported</span> <strong>GitHub-hosted runners: ubuntu-latest moves to Ubuntu 26.04.</strong> The announced rollout window was 19 Oct to 19 Nov (completion not checked). Why: pin the image in workflows that depend on 24.04 packages. <a href="https://github.blog/changelog/2026-09-17-ubuntu-26-generally-available-and-latest-migration">GitHub changelog, 17 Sep</a></li>
+<li><span class="tag warn">Reported</span> <strong>CISA KEV, 18 Nov batch:</strong> Synology DSM, BerriAI LiteLLM, Apache Axis and Vanderbilt REDCap added as actively exploited. Federal due dates: 21 Nov for three, 2 Dec for LiteLLM. No KEV additions found for 24 to 27 Nov. Why: if you run LiteLLM as an AI gateway, upgrade before 2 Dec. <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog">CISA KEV catalog</a> (catalog not read; batch from search summaries)</li>
+<li><span class="tag warn">Reported</span> <strong>Docker Engine security bulletin (Canadian Cyber Centre AV26-1153, 12 Nov):</strong> says Docker Engine is affected as of 10 Nov. CVE list and fixed versions not read. Why: check the Engine version on build hosts and CI runners. <a href="https://www.cyber.gc.ca/fr/alertes-avis/bulletin-securite-docker-av26-1153">Canadian Cyber Centre</a></li>
+<li><span class="tag ok">Confirmed</span> <strong>Node.js security releases (11 Nov): v26.13.1, v24.22.3, v22.23.5</strong> (carried from 26 Nov, no change). Why: rebuild Node images. <a href="https://nodejs.org/en/blog/vulnerability/november-2026-security-releases">Node.js advisory</a></li>
+</ol>
+
+<h4>2. Programming languages and runtimes</h4>
+<ul>
+<li><span class="tag warn">Reported</span> <strong>Python 3.15.1, 3.14.9 and 3.13.17</strong> are expedited security releases. The release date was not found; a third-party note points to late October. Why: update base images to the patched patch level. <a href="https://discuss.python.org/t/python-3-15-1-3-14-9-and-3-13-17-are-out/109595">Python discourse announcement</a></li>
+<li><span class="tag ok">Confirmed</span> <strong>Go 1.27.4 and 1.26.11 (10 Nov):</strong> no change since yesterday. <a href="https://groups.google.com/g/golang-announce/c/iY8TY0wWgbM/m/KsU1KfWgAQAJ">Go security announcement</a></li>
+<li><span class="tag bad">Unverified</span> <strong>"Java4Shell" CVE-2026-114938</strong> is still a claim. Oracle's November pre-release notice does not list this CVE. Why: do not act on the claim alone. <a href="https://www.decryptiondigest.com/blog/java4shell-cve-2026-114938-oracle-java-patch">Decryption Digest</a></li>
+</ul>
+
+<h4>3. DevOps tools and cloud releases</h4>
+<div class="tw"><table>
+<tr><th>Tool</th><th>Latest version found</th><th>Date</th><th>What is new</th><th>Link</th></tr>
+<tr><td>GitLab</td><td>19.5.6 / 19.4.8 / 19.3.9</td><td>16 Nov</td><td>Patch release; fix list not read. 19.5.4 on 10 Nov fixed a Git CVE <span class="tag ok">Confirmed</span></td><td><a href="https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-6-released">GitLab</a></td></tr>
+<tr><td>Node.js</td><td>26.13.1 / 24.22.3 / 22.23.5</td><td>11 Nov</td><td>HTTP/2 and TLS security fixes <span class="tag ok">Confirmed</span></td><td><a href="https://nodejs.org/en/blog/vulnerability/november-2026-security-releases">advisory</a></td></tr>
+<tr><td>Go</td><td>1.27.4 / 1.26.11</td><td>10 Nov</td><td>12 security fixes <span class="tag ok">Confirmed</span></td><td><a href="https://groups.google.com/g/golang-announce/c/iY8TY0wWgbM/m/KsU1KfWgAQAJ">announcement</a></td></tr>
+<tr><td>Terraform</td><td>1.17.2</td><td>11 Nov (aggregator)</td><td>Faster config generation for HCP Terraform; provider dependency-cycle fix <span class="tag warn">Reported</span></td><td><a href="https://releasebot.io/updates/categories/infrastructure-as-code">Releasebot</a></td></tr>
+<tr><td>OpenTofu</td><td>v1.13.9 / v1.12.12</td><td>5 Nov (aggregator)</td><td>Versions listed; contents not confirmed <span class="tag warn">Reported</span></td><td><a href="https://releasebot.io/updates/categories/infrastructure-as-code">Releasebot</a></td></tr>
+<tr><td>Argo CD</td><td>v3.5.6 / v3.4.12 / v3.3.18</td><td>26 Oct to 1 Nov (newsletter)</td><td>Patch releases; contents not read <span class="tag warn">Reported</span></td><td><a href="https://buttondown.com/lwcn/archive/lwcn-week-44-oct-26-nov-1-2026/">Last Week in Cloud Native</a></td></tr>
+<tr><td>Kubernetes</td><td>1.37 stable; 1.38 targeted</td><td>1.38 final target 16 Dec</td><td>No 1.38 release candidate found in indexed sources <span class="tag warn">Reported</span></td><td><a href="https://buttondown.com/LastWeekInKubernetes/archive/lwkd-week-ending-november-7-2026/">LWKD 7 Nov</a></td></tr>
+</table></div>
+<ul>
+<li><span class="tag warn">Reported</span> <strong>AWS:</strong> Step Functions can now be used as tools for AI agents (weekly roundup, 2 Nov). Why: a new option for agent workflows; check the pricing. <a href="https://aws.amazon.com/blogs/aws/">AWS News Blog</a></li>
+<li>No verified November release found for Helm, Prometheus, Grafana, OpenTelemetry, Jenkins or Ansible. Azure: no new verified item.</li>
+</ul>
+
+<h4>4. Cybersecurity</h4>
+<ul>
+<li><span class="tag ok">Confirmed</span> <strong>Vendor patches:</strong> Node.js and GitLab (see top developments).</li>
+<li><span class="tag warn">Suspected (reported, not confirmed by vendor)</span> <strong>Outlook zero-day and Docker Engine bulletin</strong> (see top developments). Ransomware: the Maersk breach (11 Nov) is unchanged; no new confirmed ransomware breach dated 24 to 28 Nov found.</li>
+<li><span class="tag bad">Claimed / Unverified</span> <strong>Kyverno flaw rated 9.9</strong> (tenant can edit neighbours' RoleBindings), from a 5 Nov newsletter. No primary advisory or patched version found. <a href="https://buttondown.com/thedailyreconcile/archive/the-daily-reconcile-thursday-november-5-kyverno/">Daily Reconcile</a></li>
+<li><span class="tag bad">Claimed / Unverified</span> <strong>"KubeBypass" CVE-2026-69120</strong> (CVSS 9.6, one vendor page, patched versions not checked). Do not act on it until a Kubernetes advisory confirms it. <a href="https://dbugs.ptsecurity.com/vulnerability/PT-2026-61066">PT Security</a></li>
+<li><span class="tag warn">Reported</span> <strong>Supply chain:</strong> 13 malicious packages across PyPI, npm and RubyGems, disclosed 2 to 4 Nov. Some PyPI packages ran a RAT through setup.py. Why: pin versions and review install scripts in CI. <a href="https://corgea.com/research/env-test-guard-dynamic-mcp-labelearthengine-qzc690385-gcp-log-poc-november-2026">Corgea research</a></li>
+<li><span class="tag warn">Reported</span> <strong>India:</strong> CERT-In Crafty Falcon advisory (4 Nov) and Chrome advisory (10 Nov) unchanged from yesterday. <a href="https://www.gktoday.in/cert-in-flags-crafty-falcon-cyberattack-campaign/">GK Today</a></li>
+</ul>
+
+<h4>5. AI and AI-in-DevOps</h4>
+<ul>
+<li><span class="tag bad">Unverified</span> <strong>Anthropic Claude Fable 5.2</strong> listed as generally available and <strong>Mythos 5.2</strong> as restricted (both 9 Nov), and <strong>Google Gemini 4 Carbon</strong> on Vertex (10 Nov). One tracker only; not checked against vendor posts. <a href="https://nhimg.org/llm-release-tracker">nhimg tracker</a></li>
+<li>No Anthropic, OpenAI or Google launch dated 20 to 28 Nov was found.</li>
+</ul>
+
+<h4>6. Global IT industry</h4>
+<ul><li>No verified new layoff, deal or data-centre item dated 25 to 28 Nov was found. No change.</li></ul>
+
+<h4>7. India IT</h4>
+<ul>
+<li><span class="tag warn">Reported</span> <strong>Hiring signals conflict.</strong> One report says five large firms added 13,918 staff in Q2 FY27 (HCLTech +6,450, TCS +4,258), while Wipro shed 6,716. Another headline says headcount is falling. Why: treat hiring as a mixed picture. <a href="https://www.freepressjournal.in/business/indian-it-giants-add-14000-employees-in-q2">Free Press Journal</a></li>
+<li><span class="tag ok">Confirmed</span> <strong>India-US interim trade framework (Feb 2026):</strong> US tariff on Indian goods cut to 18%. Business Today's 27 Nov report names proposed US tariffs as a market risk; no new deal item found. <a href="https://www.whitehouse.gov/fact-sheets/2026/02/fact-sheet-the-united-states-and-india-announce-historic-trade-deal">White House fact sheet</a></li>
+</ul>
+
+<h4>8. What changed since yesterday</h4>
+<ul>
+<li>New: 25 to 27 Nov index closes; Outlook zero-day details; GitLab 10 Nov Git CVE; GitHub ubuntu-latest move; KEV 18 Nov batch; Docker Engine bulletin; Kyverno and KubeBypass claims flagged.</li>
+<li>Still not found: Bank Nifty and India VIX closes 25 to 27 Nov, Fri FII/DII flows, US closes 26 to 27 Nov, Infosys and TCS closes on 26 Nov.</li>
+</ul>
+
+<h4>9. Top 5 things to watch (from Mon 30 Nov)</h4>
+<ol>
+<li>NSE open on Mon 30 Nov against Fri's Nifty close of 25,607.20, and Brent after the Saudi refinery reports.</li>
+<li>Oracle's Java pre-release page or final advisory, to confirm the 11 Java SE fixes and the Java4Shell claim.</li>
+<li>LiteLLM upgrade before the 2 Dec KEV deadline, if you run it.</li>
+<li>Kubernetes v1.38 release candidate and schedule (final target 16 Dec).</li>
+<li>Microsoft's final post-incident report for the 12 to 13 Nov Microsoft 365 outage.</li>
+</ol>
+
+<h4>10. Sources</h4>
+<ul><li><a href="https://www.kotakneo.com/news/market-news/sensex-and-nifty-fall-amid-domestic-and-global-headwinds/">Kotak Neo, 27 Nov close</a></li><li><a href="https://www.businesstoday.in/markets/stocks/story/bt-closing-bell-sensex-plunges-989-pts-nifty-ends-at-25607-what-fridays-market-fall-reflects-569980-2026-11-27">Business Today, 27 Nov close</a></li><li><a href="https://upstox.com/news/market-news/stocks/top-gainers-and-losers-nov-26-hcl-tech-bse-surge-6-tcs-rises-5-asian-paints-falls-3-check-list/article-204034/">Upstox, 26 Nov close</a></li><li><a href="https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-4-released/">GitLab patch 19.5.4</a></li><li><a href="https://www.oracle.com/security-alerts/cspunov2026.html">Oracle pre-release notice</a></li><li><a href="https://www.cyber.gc.ca/fr/alertes-avis/bulletin-securite-docker-av26-1153">Canadian Cyber Centre AV26-1153</a></li></ul>
+</div></details>
+
+<details class="day" id="d-2026-11-26"><summary class="big">Thu 26 Nov 2026 <span class="hint">(click to open / close the full report)</span></summary><div class="entry">
 
 <p class="meta"><strong>Date:</strong> Thursday, 26 Nov 2026 (IST). Research: about 38 searches plus one sub-agent read of primary pages (Node.js advisory and CISA 17 Nov bulletin read; Chrome and Oracle pages partly unreadable) · Labels: <span class="tag ok">Confirmed</span><span class="tag warn">Reported</span><span class="tag bad">Unverified</span><span class="tag info">Direction</span></p>
 <div class="note"><strong>Honest limits and corrections:</strong> no NSE or BSE close for Wed 25 Nov was found, so the market section stops at Mon 23 Nov. Oracle's advisory returns HTTP 403, so Java CPU counts stay Reported. <strong>Correction:</strong> Python 3.15.0 was released on 9 Oct 2026 (yesterday's "final not found" was wrong). The Node.js 11 Nov advisory is now read directly.</div>
@@ -996,6 +1078,80 @@ print(r.json())</code></pre>
 <section id="market">
 <h2 class="s-mkt">Market learning (information, not investment advice)</h2>
 <!-- NEW-MARKET-ENTRY-HERE -->
+<article class="entry"><h3>Market News: 28 Nov 2026 (IST)</h3>
+<p>Information only. Not investment advice. Today is Saturday, so the newest session is <strong>Fri 27 Nov</strong>. Words: <em>Nifty 50</em> = 50 large NSE companies (a scoreboard); <em>Sensex</em> = 30 large BSE companies; <em>close</em> = last price of the day; <em>% change</em> = how far the price moved, in percent; <em>crude</em> = oil; <em>rupee</em> = how many rupees one US dollar costs; <em>FII/DII</em> = foreign and domestic big investors buying or selling; <em>India VIX</em> = expected volatility, a "fear gauge"; <em>support/resistance</em> = price levels where buyers or sellers often step in.</p>
+
+<h4>a) Plain-words summary</h4>
+<ul>
+<li><span class="tag ok">Confirmed</span> Fri 27 Nov: Nifty fell 1.07% to 25,607.20 and Sensex fell 1.17% to 83,339.26, the first weekly fall after four weeks of gains (Kotak Neo and Business Today agree).</li>
+<li><span class="tag warn">Reported</span> Why: oil rose after reports of a Houthi attack on a Saudi refinery (Brent about $92 to $98 during the day; sources differ), the rupee weakened toward 92.9 per dollar, traders took profit after the rally, and proposed US tariffs were named as a risk.</li>
+<li><span class="tag warn">Reported</span> Earlier this week: Wed 25 Nov Nifty rose 1.85% (Tue 24 Nov was a holiday), and Thu 26 Nov rose 0.25%, led by IT stocks.</li>
+</ul>
+
+<h4>b2) Start-to-end table: Nifty, Sensex and large stocks (Thu 26 Nov close to Fri 27 Nov close)</h4>
+<div class="tw"><table><thead><tr><th>Name</th><th>Start (Thu 26 Nov close)</th><th>End (Fri 27 Nov close)</th><th>Rupee change</th><th>% change</th><th>Why, plainly</th></tr></thead><tbody>
+<tr><td>Nifty 50</td><td>25,884.50</td><td>25,607.20</td><td>-277.30</td><td>-1.07%</td><td>Oil worries, profit-taking, weaker rupee</td></tr>
+<tr><td>Sensex</td><td>84,328.59</td><td>83,339.26</td><td>-989.33</td><td>-1.17%</td><td>Same reasons; banks and oil stocks fell</td></tr>
+<tr><td>HCLTech</td><td>not found</td><td>1,423.80</td><td>not found</td><td>-2.81%</td><td>IT stocks sold after Thursday's jump (+6.42%)</td></tr>
+<tr><td>Infosys</td><td>not found</td><td>1,152.00</td><td>not found</td><td>-2.55%</td><td>IT selling; Thursday +4.69%</td></tr>
+<tr><td>TCS</td><td>not found</td><td>2,575</td><td>not found</td><td>-2.46%</td><td>IT selling; Thursday +4.89%</td></tr>
+<tr><td>Bharat Electronics</td><td>not found</td><td>not found</td><td>not found</td><td>+1.56%</td><td>Best Sensex stock on Friday; defence</td></tr>
+<tr><td>Titan</td><td>not found</td><td>not found</td><td>not found</td><td>+0.95%</td><td>Small gain against a falling market</td></tr>
+<tr><td>Shriram Finance</td><td>not found</td><td>not found</td><td>not found</td><td>not found</td><td>Named among Nifty's top losers; size of fall not found</td></tr>
+</tbody></table></div>
+<p>Example: Rs 10,000 in the Nifty at the Thu 26 Nov close would be about Rs 9,893 at the Fri 27 Nov close (my arithmetic, -1.07%). Sources: <a href="https://www.businesstoday.in/markets/stocks/story/bt-closing-bell-sensex-plunges-989-pts-nifty-ends-at-25607-what-fridays-market-fall-reflects-569980-2026-11-27" target="_blank" rel="noopener">Business Today, 27 Nov</a> (Confirmed for index and HCLTech, Infosys, TCS prices), <a href="https://www.kotakneo.com/news/market-news/sensex-and-nifty-fall-amid-domestic-and-global-headwinds/" target="_blank" rel="noopener">Kotak Neo, 27 Nov</a>, <a href="https://upstox.com/news/market-news/stocks/top-gainers-and-losers-nov-26-hcl-tech-bse-surge-6-tcs-rises-5-asian-paints-falls-3-check-list/article-204034/" target="_blank" rel="noopener">Upstox, 26 Nov</a> (Thursday moves, no prices). NSE and BSE pages were not reachable.</p>
+
+<h4>Last three sessions (index)</h4>
+<div class="tw"><table><thead><tr><th>Index</th><th>Day-3 (Wed 25 Nov)</th><th>Day-2 (Thu 26 Nov)</th><th>Day-1 = latest (Fri 27 Nov)</th><th>Change % (Fri)</th></tr></thead><tbody>
+<tr><td>Nifty 50</td><td>25,819.25 <span class="tag warn">Reported</span></td><td>25,884.50</td><td>25,607.20</td><td>-1.07%</td></tr>
+<tr><td>Sensex</td><td>83,938.28 <span class="tag warn">Reported</span></td><td>84,328.59</td><td>83,339.26</td><td>-1.17%</td></tr>
+<tr><td>Bank Nifty</td><td>not found</td><td>not found</td><td>not found</td><td>not found</td></tr>
+<tr><td>Nifty IT</td><td>not found</td><td>+3.66% (change only)</td><td>not found</td><td>-1.88%</td></tr>
+<tr><td>India VIX</td><td>not found</td><td>not found</td><td>not found</td><td>not found (16.11 on 19 Nov, last found)</td></tr>
+</tbody></table></div>
+<p>The Wed 25 Nov closes are worked out backwards from the Thu 26 Nov change figures (Nifty +65.25 to 25,884.50; Sensex +390.31 to 84,328.59). Source: <a href="https://upstox.com/news/market-news/stocks/top-gainers-and-losers-nov-26-hcl-tech-bse-surge-6-tcs-rises-5-asian-paints-falls-3-check-list/article-204034/" target="_blank" rel="noopener">Upstox, 26 Nov</a>.</p>
+<p><strong>Other numbers:</strong> FII net buying on Wed 25 Nov Rs 4,479.08 crore; DII net buying Rs 4,018.72 crore (<span class="tag warn">Reported</span>, <a href="https://upstox.com/news/market-news/stocks/top-gainers-and-losers-nov-26-hcl-tech-bse-surge-6-tcs-rises-5-asian-paints-falls-3-check-list/article-204034/" target="_blank" rel="noopener">Upstox</a>). Friday flows not found. Brent crude about $92 (Kotak, mid-afternoon) to $98 (Business Today, intraday). Rupee opened at 92.52 and weakened toward 92.92 per dollar (Kotak, Business Today). US 10-year yield, S&amp;P 500 and Nasdaq closes for 26 to 27 Nov: not found.</p>
+
+<h4>b4) Small-cap study list (for learning, not a tip)</h4>
+<p>Small caps give a higher possible gain <strong>and</strong> a higher possible loss. Falls of 30 to 50% happen, they can be hard to sell, and they can be manipulated. Keep any amount small (money you can afford to lose), buy in parts, check a SEBI-registered adviser, and ignore social-media tips. No fresh small-cap news dated 25 to 27 Nov was found, so the three stocks below are carried from the 26 Nov entry (not re-checked). The Nifty Smallcap 100 rose 0.74% on Thu and 0.56% on Fri, so small caps did not drag on Friday (<a href="https://kotakneo.com/news/market-news/sensex-and-nifty-fall-amid-domestic-and-global-headwinds/" target="_blank" rel="noopener">Kotak Neo</a>).</p>
+<ul>
+<li><strong>SPML Infra (NSE):</strong> Rs 137.73 on 4 Nov (latest found). Why: Rs 186.41 crore Powergrid substation order (<a href="https://www.angelone.in/news/stocks/spml-infra-share-price-in-focus-as-it-secures-186-41-crore-powergrid-order-for-substation-expansion">Angel One</a>); Q2 revenue +20%, profit +46% (<span class="tag warn">Reported</span>, <a href="https://www.arthneeti.com/announcements/spml-infra-announcement-under-regulation-30-lodr-press-release-media-release-13-nov-2026">filing summary</a>). <strong>Biggest risk:</strong> slow government payments and big price swings. <strong>Bull:</strong> orders turn into sales. <strong>Base:</strong> sideways. <strong>Bear:</strong> payments slow and margins fall.</li>
+<li><strong>Mold-Tek Technologies:</strong> Rs 89.16 (19 Nov close). Why: Q2 revenue Rs 60.81 crore (+51%), profit Rs 9.62 crore vs Rs 3.24 crore (<span class="tag warn">Reported</span>, <a href="https://insights.dsij.in/dsijarticledetail/stock-below-rs-100-secures-two-data-centre-assignments-reports-highest-ever-quarterly-profit-watch-out">DSIJ</a>). <strong>Biggest risk:</strong> small revenue base and lumpy orders. <strong>Bull:</strong> data-centre orders repeat. <strong>Base:</strong> mixed quarters. <strong>Bear:</strong> profit falls back after a sharp run.</li>
+<li><strong>Anlon Technology Solutions:</strong> price not found. Why: Q2 FY27 income up about 184%, profit up about 231% (company-reported, <span class="tag warn">Reported</span>, <a href="https://www.equitybulls.com/news/379164/anlon-technology-solutions-reports-183-62-q2-fy27">EquityBulls</a>); plan to move to the NSE Main Board. <strong>Biggest risk:</strong> thin public data. <strong>Bull:</strong> order book converts to profit. <strong>Base:</strong> sideways until the listing move. <strong>Bear:</strong> growth fades.</li>
+</ul>
+<div class="tw"><table><thead><tr><th>Stock</th><th>Growth</th><th>Debt</th><th>Promoter holding</th><th>Liquidity (volume)</th><th>Valuation (P/E)</th></tr></thead><tbody>
+<tr><td>SPML Infra</td><td>PASS (revenue +20%, profit +46%)</td><td>not found</td><td>not found</td><td>not found</td><td>not found</td></tr>
+<tr><td>Mold-Tek</td><td>PASS (revenue +51%)</td><td>not found</td><td>not found</td><td>not found</td><td>not found</td></tr>
+<tr><td>Anlon</td><td>PASS (company-reported)</td><td>not found</td><td>not found</td><td>not found</td><td>not found</td></tr>
+</tbody></table></div>
+<p><em>"Not found" is not a pass. A stock needs verified facts on all five points before it counts as strong.</em></p>
+
+<h4>b3) What may happen next (1 to 4 weeks)</h4>
+<p>Nobody can predict the market; these are possibilities to learn from, not advice.</p>
+<ul>
+<li><strong>Nifty:</strong> <em>Up (less likely):</em> a close back above 25,884.50 (the 26 Nov close) with foreign buying returning. <em>Sideways (more likely):</em> trading between 25,000 and 25,800, the range from an earlier Multibagg read (carried, not re-checked). <em>Down (possible):</em> a close below 25,000, or oil staying high enough to keep pressing banks and the rupee.</li>
+<li><strong>SPML Infra:</strong> <em>Up (less likely):</em> the Powergrid order shows up as sales in results. <em>Sideways (more likely).</em> <em>Down:</em> payments slow. No price levels found.</li>
+<li><strong>Mold-Tek:</strong> <em>Up:</em> new data-centre orders announced. <em>Sideways (more likely).</em> <em>Down:</em> profit-taking after the sharp rise. No price levels found.</li>
+<li><strong>Anlon:</strong> <em>Up:</em> the NSE Main Board move goes ahead. <em>Sideways (more likely).</em> <em>Down:</em> growth slows. No price levels found.</li>
+</ul>
+
+<h4>d) Stocks in focus</h4>
+<p>Thu 26 Nov gainers: HCLTech +6.42%, BSE +5.70%, TCS +4.89%, Infosys +4.69% on IT buying (<a href="https://upstox.com/news/market-news/stocks/top-gainers-and-losers-nov-26-hcl-tech-bse-surge-6-tcs-rises-5-asian-paints-falls-3-check-list/article-204034/" target="_blank" rel="noopener">Upstox</a>). Fri 27 Nov: HCLTech, Infosys and TCS were among the top Nifty losers (<a href="https://www.businesstoday.in/markets/stocks/story/bt-closing-bell-sensex-plunges-989-pts-nifty-ends-at-25607-what-fridays-market-fall-reflects-569980-2026-11-27" target="_blank" rel="noopener">Business Today</a>).</p>
+
+<h4>e) Sector view</h4>
+<p>IT led Thursday (Nifty IT +3.66%) and fell Friday (-1.88%). Metal rose 1.40% on Friday while banks and oil and gas heavyweights fell (<a href="https://www.businesstoday.in/markets/stocks/story/bt-closing-bell-sensex-plunges-989-pts-nifty-ends-at-25607-what-fridays-market-fall-reflects-569980-2026-11-27" target="_blank" rel="noopener">Business Today</a>).</p>
+
+<h4>g) US and global (short)</h4>
+<ul>
+<li>Thu 26 Nov was Thanksgiving in the US, when exchanges are normally closed. No 2026 US close was found for 26 or 27 Nov.</li>
+<li>Next week's Indian and US calendar (RBI, Fed, data releases): not checked today.</li>
+</ul>
+
+<h4>h) Beginner lesson: support and resistance</h4>
+<p><strong>Support</strong> is a price level where a falling price has often stopped and bounced, because buyers tend to step in there. <strong>Resistance</strong> is a level where a rising price has often stalled, because sellers tend to step in there. Example with made-up numbers for learning: if a stock bounced three times near Rs 500, Rs 500 is support. If it later closes above a resistance of Rs 550 and stays there for several sessions, traders call it a <em>breakout</em>. But levels are not laws. Many breakouts fail, so a level is useful only with <em>volume</em> (how many shares traded) and the news behind the move. Practice: on any stock chart, mark three highs and three lows from the last six months, then write down how the price reacted each time. Decide your exit before you buy, not after.</p>
+<p><em>Education only, not investment advice. Nobody can predict the market, and returns are never guaranteed. Consult a SEBI-registered adviser before investing.</em></p>
+</article>
+
 <article class="entry"><h3>Market News: 26 Nov 2026 (IST)</h3>
 <p>Information only. Not investment advice. <strong>Important:</strong> I could not find an NSE or BSE close for <strong>Wed 25 Nov</strong>, so the newest confirmed session is <strong>Mon 23 Nov</strong>. Tue 24 Nov was a market holiday. Words: <em>Index</em> = a basket of shares used as a scoreboard (Nifty 50 = 50 large NSE companies; Sensex = 30 large BSE companies). <em>Bank Nifty</em> = bank shares. <em>P/E</em> = share price divided by profit per share for a year. <em>Volume</em> = how many shares changed hands. <em>Support</em> = a price level where buyers often step in; <em>resistance</em> = where sellers often step in. <em>FII</em> = foreign institutional investors; <em>DII</em> = Indian mutual funds, insurers and other domestic institutions. <em>India VIX</em> = expected volatility, a "fear gauge".</p>
 
@@ -4660,21 +4816,21 @@ On-premises network</code></pre>
 </section>
 
 <section id="today">
-<h2 class="s-today">Today: Thursday 26 Nov 2026 (IST)</h2>
+<h2 class="s-today">Today: Saturday 28 Nov 2026 (IST)</h2>
 <p class="meta">This single page is updated in place every day. New entries go on top, older ones stay below. No new files are created.</p>
 <div class="grid3">
 <div class="box" style="--c:#7c3aed"><h4>🎓 Latest lesson (19 Nov)</h4><p><strong>Seven tools, topic 1 each:</strong> AWS accounts/regions/AZs, Azure tenants/subscriptions, Docker containers vs VMs, Kubernetes cluster architecture, Terraform init/plan/apply, CI vs CD, what an LLM is.</p><p>Plus a deep dive on Kubernetes cluster architecture and an AI Pro note on attention and context windows.</p><p><strong>Career today:</strong> architecture docs, Linux troubleshooting, server-down scenario, AI log analysis. <a href="#career-2026-11-19">Open career entry</a></p><p><a href="#lesson-2026-11-19">Open today's lesson</a> · <a href="#ai-topics">AI in each topic</a></p></div>
 <div class="box" style="--c:#0369a1"><h4>🌍 Tech highlights</h4><ul>
-<li>Node.js v26.13.1, v24.22.3, v22.23.5 security releases, 11 Nov: 16 fixes, HTTP/2 and TLS (confirmed)</li>
-<li>Puppet Enterprise CVE-2026-115731 added to CISA KEV, 17 Nov (confirmed)</li>
-<li>Python 3.15.0 released 9 Oct 2026 (confirmed; corrects earlier note)</li>
-<li>Microsoft 365 outage, 12 to 13 Nov: preliminary root cause only, final report pending (reported)</li>
-<li>Chrome 157.0.8103.50 fixes zero-day CVE-2026-125350, exploited in the wild (reported)</li></ul><p><a href="#d-2026-11-26">Full daily report</a></p></div>
+<li>Outlook zero-day CVE-2026-124194, Patch Tuesday 10 Nov: under active exploit, CERT-In urges patching (reported)</li>
+<li>GitLab 19.5.4 (10 Nov) fixes Git CVE-2026-105437, a critical heap overflow (confirmed)</li>
+<li>CISA KEV 18 Nov batch: LiteLLM due 2 Dec, three others 21 Nov (reported)</li>
+<li>Python 3.15.1, 3.14.9, 3.13.17 security releases; date not found (reported)</li>
+<li>Node.js v26.13.1, v24.22.3, v22.23.5 security releases, 11 Nov (confirmed)</li></ul><p><a href="#d-2026-11-28">Full daily report</a></p></div>
 <div class="box" style="--c:#15803d"><h4>📊 Market snapshot</h4><ul>
-<li>Latest confirmed session, Mon 23 Nov: Sensex 82,435.99 (-1.77%), Nifty 25,349.65 (-1.75%) (reported; carried, not re-checked)</li>
-<li>Fri 20 Nov (confirmed): Sensex 83,919.71 (+1.08%), Nifty 25,800.60 (+1.12%)</li>
-<li>Wed 25 Nov and Thu 26 Nov closes: not found in today's search</li>
-<li>Lesson: market cap and why small caps swing more (education only)</li></ul><p><a href="#market">Market notes + how to analyse stocks</a></p></div>
+<li>Latest session, Fri 27 Nov: Sensex 83,339.26 (-1.17%), Nifty 25,607.20 (-1.07%) (confirmed by two news sites)</li>
+<li>Thu 26 Nov: Sensex 84,328.59 (+0.46%), Nifty 25,884.50 (+0.25%), IT led (reported)</li>
+<li>Mon 23 Nov: Sensex 82,435.99 (-1.77%), Nifty 25,349.65 (-1.75%) (reported)</li>
+<li>Lesson: support and resistance, with a practice exercise (education only)</li></ul><p><a href="#market">Market notes and small-cap list</a></p></div>
 </div>
 </section>
 
