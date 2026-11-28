@@ -1773,10 +1773,10 @@ print(msg.content[0].text)</code></pre>
 <h2 style="background:#b45309">Career and industry growth (DevOps to Senior, SRE, Architect)</h2>
 <p class="meta">Daily: industry incidents, corporate documents (HLD, LLD, SOP, RCA, DR), hands-on skills, production scenarios, AIOps, interview practice and career lessons. Weekends: revision and assessment.</p>
 <!-- ROADMAP-START -->
-<div class="box" style="--c:#b45309"><h4>8-week roadmap (you are here: Week 2, Day 1)</h4>
+<div class="box" style="--c:#b45309"><h4>8-week roadmap (you are here: Week 2, Day 3)</h4>
 <div class="tw"><table><thead><tr><th>Week</th><th>Two themes</th><th>Outcome you can show</th></tr></thead><tbody>
 <tr><td>W1 (19-25 Nov)</td><td>Linux production troubleshooting, networking, shell scripting | Git/GitHub workflows</td><td>A triage runbook and a safe production shell script; a protected-branch repo with PR rules</td></tr>
-<tr style="background:#fef3c7"><td><strong>W2 (26 Nov-2 Dec) ◀ you are here</strong></td><td>Jenkins + CI/CD design (GitHub Actions/GitLab CI) | Docker in production and image security</td><td>A pipeline with test, scan, build and deploy stages; a hardened multi-stage image</td></tr>
+<tr style="background:#fef3c7"><td><strong>W2 (26 Nov-2 Dec) ◀ you are here (Day 3, Sat 28 Nov)</strong></td><td>Jenkins + CI/CD design (GitHub Actions/GitLab CI) | Docker in production and image security</td><td>A pipeline with test, scan, build and deploy stages; a hardened multi-stage image</td></tr>
 <tr><td>W3</td><td>Kubernetes core and production operations | Kubernetes troubleshooting, networking, RBAC, upgrades</td><td>A cluster with probes, limits, HPA, PDB and RBAC; a troubleshooting cheat sheet</td></tr>
 <tr><td>W4</td><td>Terraform and IaC at scale | AWS core (VPC, IAM, EC2/ASG, ELB, RDS, S3)</td><td>A Terraform module stack with remote state that builds a 3-tier AWS setup</td></tr>
 <tr><td>W5</td><td>AWS advanced and Azure core (Entra, VNets, AKS, policy) | GCP basics + Ansible</td><td>A multi-cloud comparison note; an Ansible role run against test hosts</td></tr>
@@ -1786,6 +1786,432 @@ print(msg.content[0].text)</code></pre>
 </tbody></table></div></div>
 <!-- ROADMAP-END -->
 <!-- NEW-CAREER-ENTRY-HERE -->
+<article class="entry" id="career-2026-11-28"><h3>Study plan: 28 Nov 2026 (Week 2, Day 3)</h3>
+<p class="meta">Saturday. Classes: GitOps with Argo CD and Helm; DevSecOps (scanning, SBOM, secrets, policy as code). Scenarios: pipeline outage and runner starvation (today's tools); a long-lived key leaked in Git (senior level). Interview: Azure. Career: communicating with architects and CTOs. AIOps: AI-driven cloud cost optimization. Recap tools today (deep): Terraform, AWS, Azure. AI pro: prompt injection and data exfiltration defences. Weekend learning and assessment included at the end.</p>
+
+<h4>1. You are here (roadmap)</h4>
+<p><strong>Week 2, Day 3 of 56</strong> (calendar: Week 2 runs 26 Nov to 2 Dec). Week 2 themes: (1) Jenkins and CI/CD design; (2) Docker in production and image security. Both were taught on 21 and 22 Nov, so this week is for building, not first exposure. <em>Teacher's note:</em> the class queue is ahead of the roadmap. Today's GitOps and DevSecOps classes belong to the Week 6 and Week 7 themes. They come early because they are next in the queue, and they are exactly what your Week 2 pipeline needs: a deploy stage that Git controls, and scan, SBOM and signing gates. Build the Week 2 pipeline with both in mind.</p>
+<p><strong>Covered so far:</strong> 19 Nov Linux processes and networking; 20 Nov shell scripting and Git; 21 Nov Jenkins and CI/CD design; 22 Nov Docker and Kubernetes in production; 23 Nov Terraform and AWS; 24 Nov Azure and GCP; 25 Nov Ansible and Prometheus/Grafana; 26 Nov ELK/OpenSearch and Python. <strong>Friday 27 Nov has no entry on this page:</strong> that run did not publish, so its two classes (GitOps and DevSecOps) were never delivered. Today delivers them, so nothing is skipped.</p>
+<p><strong>Next (Monday 30 Nov):</strong> cloud security (IAM least privilege, KMS, network) and SRE (SLI, SLO, error budgets), with scenarios on Terraform state drift and a cost spike.</p>
+<p><strong>Progress:</strong> 10 of 56 calendar days elapsed; 9 teaching days published including today; 18 classes and 18 scenarios taught so far.</p>
+
+<h4>2. Two classes of the day</h4>
+
+<div class="box" style="--c:#7c3aed"><h5>Class 1: GitOps with Argo CD and Helm (Git as the only way to change a cluster)</h5>
+<p><strong>Objective:</strong> run a cluster where Git is the only source of desired state, you can prove what is running and why, and a rollback is a Git revert with a time you have measured.</p>
+<p><strong>Theory: pull, reconcile, drift.</strong> A push pipeline runs kubectl or helm from outside the cluster with credentials that can change anything. A GitOps controller runs inside the cluster and pulls. Argo CD compares live state with the desired state in Git, shows the difference, and syncs when a person or a policy says so. Three ideas matter at senior level. (1) The Application is the unit of sync, health and ownership. (2) Automated sync with <code>selfHeal</code> reverts manual edits, and <code>prune</code> deletes anything removed from Git. Both are powerful, and both delete data when the repo is wrong. (3) Sync status and health are separate: an application can be Synced and still Degraded, and the second one is the one users feel.</p>
+<p><strong>Theory: ordering with phases, waves and hooks.</strong> Argo CD runs a sync in phases: PreSync, Sync, PostSync, with SyncFail for cleanup. Inside a phase, the <code>argocd.argoproj.io/sync-wave</code> annotation sets the order: the lowest wave deploys first, the default is wave 0, and negative values are allowed. The official docs state that the delay between waves is 2 seconds, configurable with <code>ARGOCD_SYNC_WAVE_DELAY</code>, and that pruning runs in reverse, so higher waves are removed first <span class="tag ok">Confirmed</span>. A common production failure is a PreSync migration Job that cannot be scheduled, so the whole sync stalls with no error on the Deployment. Scenario A today is exactly that.</p>
+<p><strong>Theory: Helm inside GitOps.</strong> Helm renders templates into manifests. Argo CD can render a chart itself, so the values file in Git is the record of what was deployed. Helm 4.0.0 was released on 12 Nov 2025 with a WebAssembly-based plugin system, server-side apply support and post-renderers as plugins <span class="tag ok">Confirmed</span> (helm.sh release post, read this session). Two upgrade facts matter for you. A search summary of the Helm docs says new installs use server-side apply while upgrades keep the previous apply method of the release <span class="tag warn">Reported</span> (helm.sh overview; the page itself was not fetched). Ansible's Helm module notes that the old <code>--force</code> is split into <code>--force-replace</code> and <code>--force-conflicts</code> <span class="tag warn">Reported</span>. Helm 3 security fixes ended on 11 Nov 2026 <span class="tag ok">Confirmed</span>, so any pipeline still on Helm 3 is now unpatched.</p>
+<p><strong>Version note:</strong> an aggregator lists Argo CD 3.6.1 as released on 4 Nov 2026, with 3.5.7 and 3.4.13 patches on 2 Nov <span class="tag warn">Reported</span> (endoflife.date; check the GitHub release page before any upgrade). Since Argo CD 3.0, annotation tracking is the default instead of label tracking <span class="tag warn">Reported</span>. That matters when you copy old manifests.</p>
+<pre>
+ developer ──PR──▶ Git repo  (apps/, envs/prod/values.yaml)
+                       │ merge to main (protected branch, required checks)
+                       ▼
+ Argo CD root app (app-of-apps) ──renders Helm──▶ desired manifests
+        │  compare (periodic or on webhook)
+        ▼
+ live cluster ◀── sync:  PreSync (wave -1, migration Job)
+                         Sync    (wave 0,  Deployment, Service)
+                         PostSync (smoke test Job)
+        │ diff > 0 and selfHeal: revert manual edits
+        ▼
+ status:  Synced / OutOfSync   ×   Healthy / Degraded   → alert, never silence
+</pre>
+<pre>
+# Read state the way an on-call engineer should
+argocd app get payments-api          # sync status, health, last operation
+argocd app diff payments-api         # what Git would change, before any sync
+argocd app history payments-api      # revision IDs you can roll back to
+argocd app rollback payments-api 41  # roll back to history ID 41
+
+# Helm checks in the PR, before anything reaches the cluster
+helm lint ./charts/payments-api -f envs/prod/values.yaml
+helm template payments ./charts/payments-api -f envs/prod/values.yaml \
+  | kubeconform -strict -summary
+
+# A migration Job that must finish before the Deployment changes
+metadata:
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+</pre>
+<p><strong>In real companies:</strong> platform teams keep one root application that owns child applications, promote by pull request from dev to staging to prod, and keep cluster credentials out of CI. Progressive rollout across many clusters with ApplicationSets is a useful feature but still labelled beta in the upstream docs since v3.3.0 <span class="tag warn">Reported</span>, and it must be switched on explicitly. <span class="tag info">Direction</span> (common practice as I see it, not a survey).</p>
+<p><strong>Pitfalls you will meet:</strong> autosync with prune on a shared namespace, which deletes resources created by another team's tool; a hook Job with no <code>activeDeadlineSeconds</code>, so a stuck pod holds the sync forever; secrets committed in plain text to the repo; a Helm template that renders differently on every run (random values, unordered map iteration in ranges); and a sync window that nobody remembers, so a "successful" sync is blocked by policy at 18:00.</p>
+<p><strong>LAB (50 min):</strong> use kind or minikube. Install Argo CD from the official getting-started manifests. Create a small Git repo with a tiny Helm chart (a Deployment and a Service). Create an Application with automated sync, <code>selfHeal</code> and <code>prune</code> enabled. Steps: (1) sync and note Sync and Health; (2) scale the Deployment by hand with <code>kubectl scale</code> and watch Argo revert it; (3) add a PreSync Job with wave <code>-1</code> that sleeps 20 seconds, and confirm in the resource tree that the Job finishes before the Deployment changes; (4) push a bad image tag, observe Degraded, then roll back with <code>argocd app rollback</code> and time it. <strong>Success looks like:</strong> the manual scale is reverted without you touching Git; the hook completes first; the rollback takes under 5 minutes and you wrote the number down. <strong>ASSIGNMENT:</strong> write a one-page promotion design for payments-api: repository layout (apps/, envs/dev, envs/staging, envs/prod), who may merge to prod, the exact rollback command, and the alert for OutOfSync longer than 30 minutes. Acceptance check: a new engineer can roll back prod in 5 minutes using only that page.</p>
+<p>Sources: <a href="https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/" target="_blank" rel="noopener">Argo CD: sync phases and waves</a> · <a href="https://helm.sh/blog/helm-4-released" target="_blank" rel="noopener">Helm: Helm 4 released (Nov 2025, with Helm 3 end-of-life dates)</a> · <a href="https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Progressive-Syncs/" target="_blank" rel="noopener">Argo CD: ApplicationSet progressive syncs</a> · <a href="https://helm.sh/docs/overview" target="_blank" rel="noopener">Helm: documentation overview</a>. <span class="tag ok">Confirmed</span> for sync phases, waves, the 2-second delay, the Helm 4 feature list and the Helm 3 security date (official pages read this session). <span class="tag warn">Reported</span> for the Helm upgrade behaviour, the Ansible flag split, the Argo CD version and the beta status (search summaries, not fetched).</p>
+</div>
+
+<div class="box" style="--c:#ea580c"><h5>Class 2: DevSecOps: scanning, SBOM, secrets and policy as code (your pipeline is an attack surface too)</h5>
+<p><strong>Objective:</strong> add four gates to a pipeline (secret scan, dependency and image scan, SBOM, signature check) and protect the pipeline itself, so that a compromised tool or a leaked key cannot ship code to production unseen.</p>
+<p><strong>Theory: the pipeline is privileged.</strong> The OWASP Top 10 CI/CD Security Risks project lists the threats that matter most: insufficient flow control, dependency chain abuse, exposed or over-privileged credentials, and insufficient logging and visibility <span class="tag ok">Confirmed</span> for the list names (project page, search summary; the full text was not fetched). Credentials are the one that matters most at your level, because a pipeline token often holds deploy rights to production. The question to ask of every job is: what can this job do if the code it runs is hostile?</p>
+<p><strong>Theory: scan, SBOM, sign, verify.</strong> A scan finds known vulnerabilities in what you built. An SBOM (software bill of materials) records what is inside the artifact, so you can answer "are we affected?" within an hour when the next advisory lands. CISA and partners published a 2026 update to the minimum SBOM elements on 29 Jul 2026, replacing the 2021 baseline <span class="tag warn">Reported</span> (search summary; read the CISA PDF for the field list before you build a template). A signature proves who built the artifact and from which workflow. With Sigstore's cosign in CI, signing can be keyless: the CI job gets a short-lived identity token and the signature is recorded in a transparency log. Verification then checks the identity and issuer, not a shared private key <span class="tag warn">Reported</span> (GitLab and Sigstore guides from search; the cosign docs were not fetched).</p>
+<p><strong>Theory: secrets, blocked before they land.</strong> Secret scanning finds a leak after the fact. Push protection blocks a push that contains a detected secret, and a bypass needs a reason and creates an alert <span class="tag warn">Reported</span> (GitHub docs from search, not fetched). Treat a bypass as an incident-lite event. The stronger fix is to remove the long-lived key: have the CI job exchange a short-lived OIDC token for a cloud role, so there is no key to leak.</p>
+<p><strong>Theory: policy as code.</strong> A policy engine in the cluster or the pipeline turns a standard into a rule that is checked, not a wiki page. Kyverno, a Kubernetes-native engine, was announced as a CNCF graduated project in March 2026 <span class="tag warn">Reported</span> (the CNCF announcement; a secondary source gives a different date). Its CEL-based policy types reached GA in release 1.17 in February 2026 <span class="tag warn">Reported</span>. Azure Policy does the same job for Azure: deny blocks a request, audit only logs it, and deny is evaluated first <span class="tag warn">Reported</span> (Microsoft Learn effects pages, from search). The lesson is the same across tools: start in audit, measure, then enforce.</p>
+<p><strong>The lesson of March 2026.</strong> The security scanner itself was the attack path. Attackers used a misconfiguration in Trivy's GitHub Actions environment to get a privileged token, and in March 2026 they published a malicious Trivy v0.69.4 and pushed malicious Docker Hub images 0.69.5 and 0.69.6 <span class="tag ok">Confirmed</span> (the moved trivy-action tags are a Snyk summary <span class="tag warn">Reported</span>) (GitHub Security Advisory GHSA-69fq-xp46-6x23, read this session). The advisory's fix is to pin Actions to full commit SHAs, not tags, and to rotate any secret the affected pipelines could reach. Use this as your rule: a tag is a mutable pointer, a SHA is a fact.</p>
+<pre>
+ commit ──▶ [1] secret scan (gitleaks, push protection)   fail: block the push
+        ──▶ [2] build image (pinned base by digest, SHA-pinned actions)
+        ──▶ [3] SBOM (syft, CycloneDX)   stored with the artifact
+        ──▶ [4] scan (grype/trivy on image + SBOM)        fail: critical or high, no waiver
+        ──▶ [5] sign (cosign keyless, CI OIDC identity)
+        ──▶ push to registry ──▶ admission policy (Kyverno/CEL): verify signature, reject unsigned
+</pre>
+<pre>
+# .github/workflows/build.yml (excerpt): pin by full SHA, keep the tag as a comment
+- uses: aquasecurity/trivy-action@&lt;full-40-character-commit-sha&gt; # v0.35.0
+- run: gitleaks detect --source . --redact --exit-code 1
+- run: syft ghcr.io/acme/payments:${{ github.sha }} -o cyclonedx-json=sbom.json
+- run: grype sbom:./sbom.json --fail-on high
+- run: cosign sign --yes ghcr.io/acme/payments@${DIGEST}
+- run: >
+    cosign verify ghcr.io/acme/payments@${DIGEST}
+    --certificate-identity-regexp "https://github.com/acme/payments/.github/workflows/build.yml@.*"
+    --certificate-oidc-issuer https://token.actions.githubusercontent.com
+</pre>
+<p><strong>In real companies:</strong> the pipeline template is owned by the platform team, not copied per repo. Exceptions (waivers) are time-boxed and carry an owner. The SBOM is stored with each release so the security team can query it. <span class="tag info">Direction</span> (common practice as I see it, not a survey).</p>
+<p><strong>Pitfalls you will meet:</strong> a scan step that prints results but never fails the build; <code>continue-on-error: true</code> left in from a trial; a waiver that never expires; a tool version floating to <code>latest</code>, so the gate changes without a commit; signing in CI with a long-lived key stored in a secret; and verification that checks only that a signature exists, not who signed it.</p>
+<p><strong>LAB (50 min):</strong> in a throwaway repository, commit a line containing the documented AWS example key <code>AKIAIOSFODNN7EXAMPLE</code> (it is a fake value from AWS docs). Run <code>gitleaks detect --source . --redact</code> and read the finding, then remove the line and commit again. Build a small image, run <code>syft</code> to produce a CycloneDX SBOM, and <code>grype sbom:./sbom.json --fail-on high</code>. If you have a registry you control, sign with cosign and verify with the identity flags above. <strong>Success looks like:</strong> the scan fails on the leaked line and passes after the fix; the SBOM lists the base image packages; the verify command rejects a wrong identity regexp. <strong>ASSIGNMENT:</strong> add the four gates to your Week 2 pipeline. Acceptance checks: a test PR that adds a fake key is blocked before merge; every third-party Action is pinned to a SHA; a deliberately unsigned image is rejected by the admission policy in staging.</p>
+<p>Sources: <a href="https://owasp.org/www-project-top-10-cicd-security-risks/" target="_blank" rel="noopener">OWASP: Top 10 CI/CD Security Risks</a> · <a href="https://github.com/aquasecurity/trivy/security/advisories/GHSA-69fq-xp46-6x23" target="_blank" rel="noopener">GitHub Security Advisory GHSA-69fq-xp46-6x23 (Trivy ecosystem compromise, CVE-2026-33634)</a> · <a href="https://www.cisa.gov/resources-tools/resources/2025-minimum-elements-software-bill-materials-sbom" target="_blank" rel="noopener">CISA: minimum elements for an SBOM (2025 draft page; 2026 update reported)</a> · <a href="https://docs.github.com/en/code-security/secret-scanning/working-with-secret-scanning-and-push-protection" target="_blank" rel="noopener">GitHub Docs: secret scanning and push protection</a> · <a href="https://www.cncf.io/announcements/2026/03/24/cloud-native-computing-foundation-announces-kyvernos-graduation/" target="_blank" rel="noopener">CNCF: Kyverno graduation announcement</a>. <span class="tag ok">Confirmed</span> for the Trivy advisory facts (fetched). <span class="tag warn">Reported</span> for the SBOM 2026 update, push protection behaviour, Kyverno dates and the Azure Policy effects. <span class="tag bad">Unverified</span>: the cosign documentation was not reached in this run; check docs.sigstore.dev before you rely on the verify flags.</p>
+</div>
+
+<h4>3. Scenario practice</h4>
+
+<div class="box" style="--c:#7c3aed"><h5>Scenario A (today's tools): every build waits 40 minutes, and the Monday release is stuck in Argo CD</h5>
+<p><strong>Situation.</strong> Monday 09:20 IST. Developers report CI jobs waiting 35 to 45 minutes before they start. Your self-hosted runners are pods in the <code>ci</code> namespace, on the same <code>general</code> node pool as application workloads, and the autoscaler maximum for that pool is 6 nodes. The payments-api release is "Progressing" in Argo CD. The release must ship before the change freeze at 18:00 IST. Constraints: no extra cloud spend without approval; the autoscaler maximum changes only with the platform lead's sign-off; you may stop jobs in the <code>payments</code> namespace that belong to this release. Dashboards and output:</p>
+<pre>
+Runner queue (GitHub API, sampled 09:20 IST): queued jobs 37, oldest waiting 46 min, runners online 6/6, busy 6/6
+
+Cluster autoscaler, 08:55-09:15 IST:
+  scale-up: max node count reached (6/6) in pool general
+  pod payments-db-migrate-7c9f4 Pending: 0/6 nodes available: Insufficient cpu,
+                                         2 nodes had untolerated taint
+
+Argo CD app payments-api: operation Running for 41m, phase PreSync
+  Job payments-db-migrate (hook, sync-wave -1): Pending, 0 of 1 ready
+
+Terraform apply, 08:40 IST, by a platform engineer:
+  general node pool: max_size 10 -> 6   (cost review ticket CR-2219)
+</pre>
+<p><strong>Guiding questions:</strong> 1) Which two systems compete for the same nodes, and why did this release make the problem visible? 2) Why does a migration Job waiting in PreSync block more than the release? 3) What do you change now, and what do you change so it cannot repeat?</p>
+<details><summary>Show solution</summary>
+<p><strong>Investigation.</strong> (1) Measure the queue shape before guessing: <code>gh run list --status queued --limit 50</code> shows how many jobs and how old. Then <code>kubectl get pods -n ci -o wide</code> and <code>kubectl get nodes -l pool=general</code> show that all 6 nodes are full. (2) Find the blocker: <code>kubectl get pods -A --field-selector=status.phase=Pending</code> lists the migration pod. <code>kubectl describe pod payments-db-migrate-7c9f4 -n payments</code> shows Insufficient cpu. (3) Check Argo CD: <code>argocd app get payments-api</code> shows the operation in PreSync, so the Deployment has not changed yet. The release is blocked by the hook, not by the image. (4) Connect the chain: the Terraform change cut the pool from 10 to 6 nodes. Runners and the migration share one pool, with no PriorityClass and no ResourceQuota. The migration requests 4 vCPU, each runner pod requests 1 vCPU, and the scheduler has no reason to put the release first.</p>
+<p><strong>Root cause.</strong> A capacity reduction in a cost change removed headroom from a shared node pool. The release's PreSync migration Job, which needs 4 vCPU, could not be scheduled, so the sync stalled, and the runners that could have used the same nodes were also starved. Nothing alerted on Pending pods or queue age.</p>
+<p><strong>Resolution (in order).</strong> (a) Confirm the migration is idempotent with the DBA first. Then stop the stalled hook: <code>kubectl delete job payments-db-migrate -n payments</code>. Argo CD recreates it when capacity exists. (b) Restore the maximum to 10 for the release window, with the platform lead's approval, by a revert PR on the Terraform code, not a console change. (c) Verify: the queue drains under 5 minutes within 15 minutes of the change, the migration reaches Completed, and Argo CD moves to Healthy. (d) Confirm the release ships before 18:00 IST.</p>
+<p><strong>Long-term prevention.</strong> (1) PriorityClass: release and hook Jobs at high, runners at low, so the scheduler preempts runners rather than the release. (2) Hook Jobs carry resource requests, <code>activeDeadlineSeconds: 900</code> and a small <code>backoffLimit</code>. (3) Runners move to a dedicated pool with a taint and toleration, so cost changes to application pools cannot starve CI. (4) Alerts: queued jobs older than 10 minutes for 10 minutes; Pending pods older than 5 minutes per namespace; autoscaler at maximum for more than 10 minutes. (5) A Terraform change that lowers max_size must show a capacity check in the PR, approved by the platform owner. Kubernetes documents PriorityClass preemption as the scheduler's way to make room for higher-priority pods <span class="tag warn">Reported</span> (kubernetes.io docs, not fetched in this run).</p>
+<p><strong>Sample document: Incident report (fictional, standard format)</strong></p>
+<p><strong>Title:</strong> CI queue starvation and stalled payments-api release after a node pool reduction, 30 Nov 2026 (IST), fictional<br>
+<strong>Summary:</strong> A cost change reduced the shared node pool maximum from 10 to 6. The payments-api PreSync migration Job could not schedule, which stalled the sync. Runners on the same pool were starved, so builds waited up to 46 minutes. The pool maximum was restored and the release shipped before the freeze.<br>
+<strong>Impact:</strong> build queue of about 40 jobs for 70 minutes; the payments-api release was delayed by 52 minutes and shipped before the 18:00 freeze. No customer-facing errors.<br>
+<strong>Timeline (IST):</strong> 08:40 Terraform apply reduces max_size to 6; 08:55 autoscaler reports maximum reached; 09:05 first developer report; 09:20 queue and sync confirmed; 09:31 hook Job deleted after DBA check; 09:40 pool maximum restored by approved revert PR; 10:05 queue below 5 minutes; 10:40 migration completed; 10:52 Argo CD Healthy.<br>
+<strong>Root cause:</strong> capacity removed from a shared pool with no capacity check in the change review; hook and runner workloads had equal priority and no limits.<br>
+<strong>Resolution:</strong> maximum restored; migration rerun; hook Job deadline and requests added in the release chart.<br>
+<strong>Action items:</strong> (a) capacity check required on Terraform PRs that reduce max_size, owner: platform lead, due 4 Dec; (b) dedicated runner pool with taints, owner: CI platform engineer, due 11 Dec; (c) PriorityClasses and hook Job limits in the chart template, owner: payments service owner, due 4 Dec; (d) queue and Pending-pod alerts, owner: SRE lead, due 1 Dec.</p>
+</details>
+</div>
+
+<div class="box" style="--c:#ea580c"><h5>Scenario B (senior level): a long-lived cloud key was public on GitHub for 9 hours, and CloudTrail shows it was used</h5>
+<p><strong>Situation.</strong> Saturday 22:10 IST. A secret-scanning alert fires for the public mirror of the <code>payments-tools</code> repository. An AWS access key ID and secret for the IAM user <code>svc-ci-deploy</code> were committed in a config file 13 hours earlier. The repository was public for about 9 hours before a contractor made the mirror private. The key can push to ECR and update the production ECS services. Constraints: no freeze has been declared and payments must keep running; you have admin rights in the AWS account and the GitHub organisation; the contractor is reachable by email only; it is Saturday night and the on-call team is small. Evidence:</p>
+<pre>
+CloudTrail (organisation trail), key AKIAXXXXXXXXXXXXXXXX, last 24 h, IST
+  2026-11-27 21:03  GetCallerIdentity     sts    source IP 203.0.113.45 (outside our CI egress)
+  2026-11-27 21:04  DescribeServices      ecs    prod-payments, ap-south-1   ok
+  2026-11-27 21:06  GetAuthorizationToken ecr    ok
+  2026-11-27 21:09  CreateAccessKey       iam    user svc-ci-deploy          (a second key was created)
+  2026-11-27 21:11  UpdateService         ecs    prod-payments  taskDefinition 88 -> 89   ok
+
+Git: config/.env.prod committed 13 h ago (one commit); public mirror existed 2026-11-27 10:30 to 19:30 IST
+</pre>
+<p><strong>Guiding questions:</strong> 1) Is this only a leak, or a compromise too? Which evidence separates the two? 2) What is the blast radius of the original key and of the key the attacker created? 3) What do you do in the next hour, and what do you change so a long-lived key is never the only control?</p>
+<details><summary>Show solution</summary>
+<p><strong>Investigation.</strong> (1) It is a compromise. The key was used from an address outside CI egress, and the attacker changed a production task definition. A leak alone would not explain a UpdateService. Work the key, not the file. (2) Stop the bleeding first, but keep evidence: <code>aws iam list-access-keys --user-name svc-ci-deploy</code>, then set the leaked key to inactive: <code>aws iam update-access-key --user-name svc-ci-deploy --access-key-id AKIAXXXXXXXXXXXXXXXX --status Inactive</code>. Inactive stops it and keeps the record. Deactivate the second key the same way, then delete both after you have exported the evidence. (3) Check what the change did: <code>aws ecs describe-task-definition --task-definition prod-payments:88</code> and the same for :89, then diff the container images, environment variables and any added container. If revision 89 has anything unknown, roll the service back with <code>aws ecs update-service --cluster prod --service payments --task-definition prod-payments:88</code>. (4) Check what was pushed: <code>aws ecr describe-images --repository-name payments --query 'sort_by(imageDetails,&amp;imagePushedAt)[-5:]'</code>. (5) Scope the whole window: <code>aws cloudtrail lookup-events --lookup-attributes AttributeKey=AccessKeyId,AttributeValue=AKIAXXXXXXXXXXXXXXXX --start-time 2026-11-27T04:30:00+05:30 --end-time 2026-11-27T22:00:00+05:30</code>. Lookup covers management events. Data events, such as S3 object reads, appear only if the trail records them, so say so in the report. (6) Git is the easy part and revokes nothing. Find every copy: <code>gitleaks git --log-opts="--all" .</code>. Then rewrite history with git-filter-repo, force-push, and ask the hosting provider to purge cached views and forks. Treat the key as burned whatever the rewrite shows.</p>
+<p><strong>Root cause.</strong> A developer committed a production environment file with a long-lived key. Push protection was not enabled on that repository, and a public mirror was created without a secret-scan gate. The CI identity was a long-lived IAM user that could also call CreateAccessKey on itself. That permission let the attacker mint a new key that outlived the original leak. The real root cause is the design, not the commit: a deploy path that depends on a key that can be copied.</p>
+<p><strong>Resolution.</strong> (a) Deactivate and then delete both keys after evidence capture. (b) Roll back task definition 89 if it is unverified. (c) Review ECR pushes and the ECS event history for the whole window, and report anything unknown as a separate incident. (d) Remove iam:CreateAccessKey from CI identities. (e) Move the CI job to OIDC federation so that no static key exists; GitHub's documentation describes the OIDC trust pattern for cloud roles <span class="tag warn">Reported</span> (not fetched in this run; check the current GitHub and AWS IAM OIDC pages before you implement).</p>
+<p><strong>Long-term prevention.</strong> (1) Push protection enabled across the organisation, with bypasses logged and reviewed weekly. (2) No static keys for CI: OIDC roles with short sessions. (3) A service control policy that denies creating access keys for CI roles. (4) Alerts on CreateAccessKey, on UpdateService from a principal outside the CI role, and on GetCallerIdentity from non-CI addresses. (5) Rotation is useful, but it is not prevention; the key should not exist.</p>
+<p><strong>Sample document: Incident report (fictional, standard format)</strong></p>
+<p><strong>Title:</strong> Leaked CI deploy key used to change a production task definition, 27 to 28 Nov 2026 (IST), fictional<br>
+<strong>Summary:</strong> A long-lived deploy key was committed to a repository that was public for about 9 hours. An unknown source used the key to mint a second key and to update the production task definition. The task definition was rolled back and both keys were disabled.<br>
+<strong>Impact:</strong> one unauthorised task-definition change, reverted after about 40 minutes of exposure of revision 89; no evidence yet of data access (data events to be checked); no customer-facing outage.<br>
+<strong>Timeline (IST):</strong> 27 Nov 10:30 public mirror created; 19:30 mirror made private; 21:03 first use of the key from an external address; 21:09 second key created; 21:11 task definition 89 deployed; 22:10 secret-scanning alert received; 22:25 incident declared; 22:31 original key deactivated; 22:40 task definition rolled back to 88; 23:05 second key deactivated; 23:30 Git history scan started.<br>
+<strong>Root cause:</strong> long-lived CI key committed to a repository without push protection; a public mirror without a secret-scan gate; a CI identity that could create access keys for itself.<br>
+<strong>Resolution:</strong> both keys deactivated and then deleted; task definition rolled back; history rewritten and cached views requested for purge.<br>
+<strong>Action items:</strong> (a) organisation-wide push protection, owner: security lead, due 4 Dec; (b) OIDC migration for all CI deploy roles, owner: platform lead, due 18 Dec; (c) SCP blocking access-key creation for CI roles, owner: cloud governance lead, due 2 Dec; (d) alerts on CreateAccessKey and external UpdateService, owner: SRE lead, due 1 Dec; (e) data-event review of the window, owner: security analyst, due 30 Nov.</p>
+</details>
+</div>
+<h4>4. Interview practice (Azure)</h4>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q1.</strong> "A pipeline that deployed to the production subscription yesterday now fails with AuthorizationFailed on <code>Microsoft.Web/sites/config/write</code>. Nothing changed in the pipeline. What do you do?"</p>
+<details><summary>Show answer</summary>
+<p><strong>Answer.</strong> (1) Reproduce with the identity the pipeline uses, not your own account: confirm the subscription and the principal with <code>az account show</code>, then list its role assignments at the subscription and resource-group scopes with <code>az role assignment list --assignee &lt;principal-object-id&gt; --all</code>. (2) Read the Activity Log for the failed operation, so you know which scope and which action were denied. (3) Check whether the grant changed. Common causes: a PIM-eligible role that expired, a role removed by a Terraform apply that another team ran, or a deny assignment or Azure Policy effect that now blocks the operation. (4) Fix through code. Restore the assignment in the Terraform or Bicep module with a PR, not by clicking in the portal, so the next plan agrees with reality. (5) Never fix it with Owner or Contributor at subscription scope; find the narrowest role that allows the action, here a website contributor role at the app's resource-group scope.</p>
+<p><strong>What the interviewer is checking:</strong> you triage the identity and the scope before you touch permissions; you understand that a CI identity should hold a permanent least-privilege role, not an expiring elevation; and your fix lives in code.</p>
+</details>
+</div>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q2.</strong> "Finance says 18% of last month's Azure spend has no cost-centre tag, so no one owns it. You must enforce the tag, but teams will break if you block them without warning. Plan it."</p>
+<details><summary>Show answer</summary>
+<p><strong>Answer.</strong> Roll out as a staged policy, not a switch. Week 1: an Azure Policy definition with the audit effect on the cost-centre tag, assigned at management-group scope so you see every subscription, and a Cost Management view that shows untagged spend by subscription. Week 2: add the modify effect for resource groups and resources that can inherit the tag from their resource group, and run remediation tasks for existing resources. Week 3: switch the tag rule to deny for new resources, with a named exemption process for the few legitimate cases. Each step has a date, an owner for each subscription and a message to the team leads one week ahead. Keep the policy in code so the exemptions are reviewed. Finance gets the untagged percentage on the same dashboard each week, so the number falls and you can show it.</p>
+<p><strong>What the interviewer is checking:</strong> you know that audit comes before deny; you can name the modify effect and its purpose; you connect a governance rule to a cost outcome and to how teams are told.</p>
+</details>
+</div>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q3.</strong> "After a network hardening change, pods on AKS nodes show ImagePullBackOff with 'unauthorized' when pulling from our Azure Container Registry. Pods in another cluster in the same region are fine. Walk me through it."</p>
+<details><summary>Show answer</summary>
+<p><strong>Answer.</strong> (1) Confirm the symptom at the pod: <code>kubectl describe pod &lt;pod&gt; -n &lt;ns&gt;</code> shows the registry name and the error. (2) Check the integration rather than the pod: <code>az aks check-acr --name &lt;aks&gt; --resource-group &lt;rg&gt; --acr &lt;registry&gt;.azurecr.io</code> tests DNS, network and the pull role from the cluster. (3) If the registry uses a private endpoint, check that the cluster resolves the registry name to the private IP through the privatelink DNS zone; a wrong or missing DNS link is the usual cause after a network change. (4) Check the pull role: the kubelet identity needs AcrPull on the registry. The other cluster works, so compare its role assignments. (5) Check egress: the new firewall or route table must allow the registry's login and data endpoints. A rule that allows the login host but blocks the data host gives exactly this symptom on some pulls. (6) Fix in code, verify with a fresh pod, and add the check to the network change's test plan.</p>
+<p><strong>What the interviewer is checking:</strong> you use the platform's own check before guessing; you can separate DNS, identity and egress; and you know that network hardening breaks pulls when the private endpoint and the firewall are changed without the registry's endpoints in the plan.</p>
+</details>
+</div>
+
+<h4>5. Industry pulse</h4>
+
+<div class="box" style="--c:#b45309"><h5>Incident 1: Cloudflare, BYOIP prefixes withdrawn for six hours, 20 Feb 2026</h5>
+<p><strong>What happened.</strong> On 20 Feb 2026 at 17:48 UTC, a change meant to automate the removal of BYOIP prefixes started a cleanup sub-task that called an API endpoint with an empty filter value. The API read the empty value as "all BYOIP prefixes". About 1,100 prefixes were withdrawn, which Cloudflare puts at 25% of its BYOIP prefixes. Services that depended on those prefixes, including CDN and security, Spectrum, Dedicated Egress and Magic Transit, failed for 6 hours and 7 minutes. Public resolver 1.1.1.1 returned 403 errors for some users <span class="tag ok">Confirmed</span> (Cloudflare post-mortem, read this session).</p>
+<p><strong>Root cause.</strong> A missing parameter in an internal API call, read as a wildcard. The automation had no circuit breaker for a large withdrawal and no separation between operational state (what should be deleted) and configured state (what customers rely on). The post-mortem's note is that the intro gives 17:48 UTC and the timeline lists the impact start at 17:56, so read the timeline for exact times.</p>
+<p><strong>Prevention Cloudflare listed.</strong> Standardised API schemas that reject empty filters; separating operational state from configured state with health-mediated rollouts; a circuit breaker for large withdrawals. These sit under its "Code Orange: Fail Small" programme <span class="tag ok">Confirmed</span>.</p>
+<p><strong>Lesson for you.</strong> An automation with a filter is a blast-radius question. Before any cleanup job runs, print the count it will act on, fail if the count is above a threshold, and require a dry-run diff in the pipeline. An empty string is the most dangerous value in your scripts.</p>
+<p>Source: <a href="https://blog.cloudflare.com/cloudflare-outage-february-20-2026/" target="_blank" rel="noopener">Cloudflare: outage on February 20, 2026 (post-mortem)</a>, published 21 Feb 2026 per page metadata.</p>
+</div>
+
+<div class="box" style="--c:#b45309"><h5>Incident 2: Trivy ecosystem supply-chain compromise, 19 to 23 Mar 2026</h5>
+<p><strong>What happened.</strong> Malicious releases of Trivy v0.69.4 went live on 19 Mar 2026 for about 3 hours. The trivy-action and setup-trivy GitHub Actions were exposed for up to about 12 hours, and, per Snyk, tags were force-pushed in the trivy-action repository <span class="tag warn">Reported</span>. Malicious Trivy images v0.69.5 and v0.69.6 were pushed to Docker Hub from 22 Mar 2026 for about 10 hours. The Go module v0.69.4 was affected, and v0.69.3 was the patched line <span class="tag ok">Confirmed</span> (GHSA-69fq-xp46-6x23, CVE-2026-33634, published 21 Mar 2026, read this session). Vendor reporting says the initial step was a misconfiguration in Trivy's GitHub Actions environment that exposed a privileged token in late February <span class="tag warn">Reported</span> (Aqua Security blog, from search; not fetched).</p>
+<p><strong>Impact.</strong> Any pipeline that ran the affected tags or images could run attacker code with its secrets. The advisory asks users to check pipeline logs from 19 to 20 Mar and to rotate any secret the affected pipelines could reach <span class="tag ok">Confirmed</span>.</p>
+<p><strong>Lesson for you.</strong> The security tool is in the trust boundary. Pin third-party Actions by full commit SHA, pin container images by digest, and give scanner jobs no more token scope than they need. When a tool you use is compromised, your first question is "which of our jobs ran it, with which secrets?", and the answer must come from your logs in minutes, not days.</p>
+<p>Sources: <a href="https://github.com/aquasecurity/trivy/security/advisories/GHSA-69fq-xp46-6x23" target="_blank" rel="noopener">GitHub Security Advisory GHSA-69fq-xp46-6x23</a> · <a href="https://www.aquasec.com/blog/trivy-supply-chain-attack-what-you-need-to-know/" target="_blank" rel="noopener">Aqua Security: Trivy supply-chain attack, what you need to know</a> (search summary, not fetched).</p>
+</div>
+
+<div class="box" style="--c:#b45309"><p><strong>Still open (watch, not a lesson yet):</strong> Microsoft 365 had a global outage from 12 to 13 Nov 2026. Reporting ties it to a defect that made gateway servers unresponsive under load, introduced by a July 2026 change, and Microsoft's own final review was not public at the time of this run <span class="tag warn">Reported</span> (news and blog summaries; not fetched). Check the Microsoft post-incident review when it is published before you use the cause in a report. A two-hour Cloudflare dashboard and API outage on 26 Nov 2026 has no published root cause yet <span class="tag warn">Reported</span>.</p></div>
+
+<div class="box" style="--c:#b45309"><p><strong>What companies expect from DevOps engineers now</strong> <span class="tag info">Direction</span> (common practice as I see it, not a survey):</p>
+<ul>
+<li>Own the supply chain: pinned actions and images, a signed artifact, an SBOM you can query after the next advisory. The Trivy case is the reason.</li>
+<li>Turn standards into checks: policy as code that starts in audit, measures, then enforces, and cost guardrails that a PR must pass.</li>
+<li>Write the incident the way a leader reads it: impact in users and money, timeline with times, action items with owners and dates, and an honest "not yet known" line.</li>
+</ul></div>
+
+<h4>6. AIOps: AI-driven cloud cost optimization</h4>
+<div class="box" style="--c:#0f766e"><p><strong>How AI helps.</strong> Cost data is large, late and full of tags that are missing or wrong. An AI assistant is useful for three narrow jobs: explaining a day-over-day change in a billing export, listing hypotheses for an anomaly, and drafting the read-only commands that confirm each hypothesis. It is not useful as the authority on the number. Billing standards help here: the FinOps Foundation's FOCUS specification, version 1.4, was ratified on 4 Jun 2026 <span class="tag warn">Reported</span> (FinOps Foundation page, from search), and a standard column set makes exports easier to compare across clouds.</p>
+<p><strong>One concrete prompt</strong> (send only the sanitised export, never account IDs):</p>
+<pre>
+You are reviewing a daily cost export. Columns: date, service, team_tag, billed_cost_inr, usage_quantity.
+1) List the three largest day-over-day anomalies by service and team_tag.
+2) For each, give two hypotheses that could explain it.
+3) For each hypothesis, give one READ-ONLY command that would confirm it (aws ce, az consumption, or gcloud billing). No commands that change resources.
+4) Output a table: anomaly | hypothesis | confirming command | what result would reject it.
+</pre>
+<p><strong>Guardrails.</strong> The assistant never holds write credentials. Its output is a list of hypotheses, and every number is checked in the billing console before anyone acts. Rightsizing or deletion needs a human approval recorded on the ticket. Prompts contain no account IDs, personal data or secrets, and your organisation's approved tool is the only one used. Log what was asked and what was returned, so a wrong hypothesis can be traced.</p></div>
+
+<h4>7. Lab checklist (tick in your own notes)</h4>
+<div class="box" style="--c:#0f766e"><p>[ ] Install Argo CD on kind or minikube and sync a tiny Helm chart from Git.<br>
+[ ] Revert a manual scale with selfHeal and record the time.<br>
+[ ] Run a PreSync hook at sync-wave -1 and confirm the order in the resource tree.<br>
+[ ] Roll back a bad image tag with argocd app rollback and time it (target under 5 minutes).<br>
+[ ] Write the one-page promotion design for payments-api and test it on a colleague.<br>
+[ ] Run gitleaks on a repo with the documented fake AWS key; fix and re-scan.<br>
+[ ] Generate a CycloneDX SBOM with syft and fail on high with grype.<br>
+[ ] Sign and verify an image with cosign keyless, and reject a wrong identity.<br>
+[ ] Add the four security gates to your Week 2 pipeline; block a test PR with a fake key.<br>
+[ ] Pin every third-party Action in your pipeline to a full commit SHA.<br>
+[ ] Scenario A: write the RCA for the node pool case in your own words, with owners and dates.<br>
+[ ] Scenario B: list the first ten commands you would run before the key is deactivated, and why each one keeps evidence.<br>
+[ ] Azure interview: answer Q1 aloud in under 3 minutes, then Q3 in under 3 minutes.<br>
+[ ] Recap: run the Terraform, AWS and Azure recap commands in a sandbox account.</p></div>
+
+<h4>8. Career: communicating with architects and CTOs</h4>
+<div class="box" style="--c:#b45309"><p>At two years and three months, you often know what the platform really does, which is exactly why you are asked to explain it upward. Architects and CTOs need different things from you, and mixing them up is a common mid-level mistake. An architect wants the constraints and the trade-off: which option fits the standards already in place, what it locks in, and what breaks at ten times the load. A CTO wants the decision, the risk, the money and the time. Three habits separate senior engineers at this stage.</p>
+<p>First, lead with the decision you need. "I need a yes or no on the break-glass path by Thursday, because the December release depends on it" beats a tour of the problem. Second, quantify in the units they use. Architects think in failure domains and coupling; CTOs think in customer impact, monthly cost and recovery time. "A rollback takes about 40 minutes and we want under 5" is a number you can defend. "It's slow" is not. Third, bring a shortlist with your recommendation and say what you rejected and why. Architects will challenge a single option, but they respect a clear winner with its alternatives.</p>
+<p>Say what you do not know. In the senior scenario above, the honest line is "I can confirm the key was used; I cannot yet confirm data access, and I will know by tomorrow morning." That sentence protects trust better than a guess. Keep the tool to one sentence. Leaders decide on outcomes and exposure, not on the product name.</p>
+<p><strong>Say it like this</strong> (fill in your own measured numbers, never copy these): <em>"We measured rollback at [current] minutes and the GitOps change in staging brings it to [target]. The trade-off is that hotfixes go through Git, so I'd like your approval for a logged break-glass path. I need a yes or no by Thursday for the December release."</em></p>
+<p><strong>Skill-gap action for today (20 minutes):</strong> take the last incident or design review you led. Rewrite its opening as three sentences: the decision, why now, and your recommendation. Say those three sentences aloud to a peer in under 60 seconds, then ask them which one sentence they remember.</p></div>
+
+<h4>9. Daily recap of all your tools</h4>
+<p>The list has 19 entries, so the table covers all 19 (AI in DevOps is the 19th). The three deep blocks rotate through the first 18 entries. Each row is one fact to remember today; commands and links point to the official entry page.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Tool</th><th>Remember today</th><th>One command or config</th><th>Official doc</th></tr></thead>
+<tbody>
+<tr><td>Linux and shell</td><td>A process in state D is waiting on I/O; kill -9 does not clear it.</td><td><code>ps -eo pid,stat,wchan:24,comm | awk '$2 ~ /^D/'</code></td><td><a href="https://man7.org/linux/man-pages/man1/ps.1.html" target="_blank" rel="noopener">ps(1) man page</a></td></tr>
+<tr><td>Git / GitHub</td><td>git restore only changes files; use it to unstage without losing work.</td><td><code>git restore --staged path/to/file</code></td><td><a href="https://git-scm.com/docs/git-restore" target="_blank" rel="noopener">git-restore docs</a></td></tr>
+<tr><td>Jenkins</td><td>Give every pipeline a timeout, so a hung stage cannot hold an agent.</td><td><code>options { timeout(time: 30, unit: 'MINUTES') }</code></td><td><a href="https://www.jenkins.io/doc/book/pipeline/syntax/" target="_blank" rel="noopener">Jenkins pipeline syntax</a></td></tr>
+<tr><td>CI/CD (GitHub Actions, GitLab CI)</td><td>Pin third-party actions to full commit SHAs; tags can be moved.</td><td><code>uses: owner/action@&lt;40-char-sha&gt; # v1.2.3</code></td><td><a href="https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions" target="_blank" rel="noopener">GitHub: hardening Actions</a></td></tr>
+<tr><td>Docker</td><td>Pull fresh base images on build and pin them by digest for repeatable builds.</td><td><code>docker buildx build --pull -t app:1.4 .</code></td><td><a href="https://docs.docker.com/reference/cli/docker/buildx/build/" target="_blank" rel="noopener">docker buildx build</a></td></tr>
+<tr><td>Kubernetes</td><td>A PodDisruptionBudget limits voluntary evictions, such as drains; it does not stop crashes.</td><td><code>kubectl get pdb -A</code></td><td><a href="https://kubernetes.io/docs/concepts/workloads/pods/disruptions/" target="_blank" rel="noopener">Kubernetes: disruptions and PDBs</a></td></tr>
+<tr><td>Terraform</td><td>Refresh-only plan shows drift between state and reality without proposing config changes.</td><td><code>terraform plan -refresh-only</code></td><td><a href="https://developer.hashicorp.com/terraform/cli/commands/plan" target="_blank" rel="noopener">Terraform: plan command</a></td></tr>
+<tr><td>AWS</td><td>Confirm the account and principal before any change; the CLI cannot tell you by itself.</td><td><code>aws sts get-caller-identity</code></td><td><a href="https://docs.aws.amazon.com/cli/latest/reference/sts/get-caller-identity.html" target="_blank" rel="noopener">AWS CLI: get-caller-identity</a></td></tr>
+<tr><td>Azure</td><td>Check the active subscription before running anything that changes resources.</td><td><code>az account show --query "{name:name,id:id}"</code></td><td><a href="https://learn.microsoft.com/en-us/cli/azure/account" target="_blank" rel="noopener">Azure CLI: account</a></td></tr>
+<tr><td>GCP</td><td>Active account and project decide where a command lands; list both first.</td><td><code>gcloud config list</code></td><td><a href="https://cloud.google.com/sdk/gcloud/reference/config/list" target="_blank" rel="noopener">gcloud config list</a></td></tr>
+<tr><td>Ansible</td><td>Check mode with diff shows intended changes; some modules still report changed wrongly.</td><td><code>ansible-playbook site.yml --check --diff</code></td><td><a href="https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_checkmode.html" target="_blank" rel="noopener">Ansible: check mode</a></td></tr>
+<tr><td>Prometheus and Grafana</td><td>Use rate() on counters over a range; graphing a raw counter shows nothing useful.</td><td><code>rate(http_requests_total[5m])</code></td><td><a href="https://prometheus.io/docs/prometheus/latest/querying/functions/" target="_blank" rel="noopener">Prometheus: query functions</a></td></tr>
+<tr><td>ELK / OpenSearch</td><td>Roll over on size or age through an alias, so shard size stays predictable.</td><td><code>POST logs-write/_rollover {"conditions":{"max_age":"1d"}}</code></td><td><a href="https://docs.opensearch.org/3.8/im-plugin/ism/policies/" target="_blank" rel="noopener">OpenSearch: ISM policies</a></td></tr>
+<tr><td>Python for DevOps</td><td>Every network call needs a timeout; requests has none by default.</td><td><code>requests.get(url, timeout=(3, 10))</code></td><td><a href="https://requests.readthedocs.io/en/latest/user/advanced/#timeouts" target="_blank" rel="noopener">requests: timeouts</a></td></tr>
+<tr><td>GitOps (Argo CD, Helm)</td><td>Sync waves run lowest first; PreSync hooks finish before the main resources change.</td><td><code>argocd.argoproj.io/sync-wave: "-1"</code></td><td><a href="https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/" target="_blank" rel="noopener">Argo CD: sync phases and waves</a></td></tr>
+<tr><td>DevSecOps</td><td>Scan for secrets before the push lands; a gate that only reports is not a gate.</td><td><code>gitleaks detect --source . --redact --exit-code 1</code></td><td><a href="https://docs.github.com/en/code-security/secret-scanning/working-with-secret-scanning-and-push-protection" target="_blank" rel="noopener">GitHub: secret scanning and push protection</a></td></tr>
+<tr><td>SRE (SLI and SLO)</td><td>Burn-rate alerts pair a long and a short window so they stop when the problem stops.</td><td><code>sum(rate(http_requests_total{code=~"5.."}[1h])) / sum(rate(http_requests_total[1h]))</code></td><td><a href="https://sre.google/workbook/alerting-on-slos/" target="_blank" rel="noopener">Google SRE Workbook: alerting on SLOs</a></td></tr>
+<tr><td>FinOps and platform engineering</td><td>Cost is a platform feature: put tags and budgets in the golden path, not in a review.</td><td><code>aws ce get-cost-and-usage --time-period Start=2026-11-01,End=2026-11-28 --granularity DAILY --metrics UnblendedCost</code></td><td><a href="https://focus.finops.org/focus-specification/" target="_blank" rel="noopener">FOCUS specification</a></td></tr>
+<tr><td>AI in DevOps</td><td>Give AI read-only evidence and ask for hypotheses; a human runs the change.</td><td><code>kubectl get events -A --sort-by=.lastTimestamp | tail -40</code></td><td><a href="https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/mitigate-jailbreaks" target="_blank" rel="noopener">Anthropic: mitigate jailbreaks and prompt injections</a></td></tr>
+</tbody></table></div>
+
+<h5>TERRAFORM: cost and drift guardrails in the plan</h5>
+<p><strong>What it is.</strong> Terraform records what it created in state. Drift is the gap between that state and the cloud, usually caused by a console change or another tool. A refresh-only plan reads the real resources and shows the gap without proposing config changes. Cost estimation is a separate check on the plan, offered in HCP Terraform, where it is disabled by default until an admin enables it <span class="tag warn">Reported</span> (HashiCorp docs, from search).</p>
+<p><strong>Why it matters.</strong> Drift is how a "harmless" console fix becomes next Tuesday's outage, and an unreviewed cost change is how the bill surprises finance.</p>
+<pre>
+ PR ──▶ terraform plan (normal)   ──▶ cost delta check (fail if > threshold)
+ nightly ──▶ terraform plan -refresh-only  ──▶ drift report to the owning team
+                     state  ◀──▶  cloud reality  (the gap is the report)
+</pre>
+<p><strong>AI prompt example:</strong> "Here is the refresh-only plan output (resource addresses and changed attributes only, no values). Group the drift by owner tag, classify each as console change, provider default or unknown, and suggest a code change for each console change."</p>
+
+<h5>AWS: tag enforcement and cost allocation</h5>
+<p><strong>What it is.</strong> Tags are the only cost-allocation key that works across services. Cost allocation tags must be activated in billing before they appear in cost reports, and a tag that is missing on a resource creates spend nobody owns.</p>
+<p><strong>Why it matters.</strong> Untagged spend cannot be defended in a budget review, and it is the first thing a CTO asks about in a cost spike.</p>
+<pre>
+ resource created ──▶ tag policy / SCP check (deny or audit)
+        │ tags: owner, cost-centre, env
+        ▼
+ billing: activate tag keys ──▶ Cost Explorer grouped by tag ──▶ weekly report
+</pre>
+<p><strong>AI prompt example:</strong> "From this list of resources with missing owner or cost-centre tags (IDs masked), group them by type and creating role, and propose the one tag policy change that would remove most of the gap."</p>
+
+<h5>AZURE: Policy effects, exemptions and a safe rollout</h5>
+<p><strong>What it is.</strong> Azure Policy evaluates resources against rules with an effect. Deny blocks a request. Audit logs non-compliance without blocking. Modify changes a resource, for example to add a tag. Microsoft's effect pages say deny is evaluated before audit, and overlapping assignments are cumulative and most restrictive <span class="tag warn">Reported</span> (Microsoft Learn, from search).</p>
+<p><strong>Why it matters.</strong> A deny assignment set at the wrong scope blocks a whole subscription at once, which is how a governance rule becomes an outage.</p>
+<pre>
+ management group ──▶ policy assignment (audit) ──▶ compliance report
+        │  two weeks later
+        ▼
+ same assignment ──▶ effect: deny  + named exemptions (reviewed in code)
+</pre>
+<p><strong>AI prompt example:</strong> "Here is a list of non-compliant resources from a policy compliance export (resource type, subscription, policy name). Rank the policies by number of resources affected and suggest which should stay in audit for another two weeks, with reasons."</p>
+
+<h4>Recap questions (answers in the details)</h4>
+<div class="box" style="--c:#7c3aed"><p><strong>R1.</strong> Which Argo CD annotation sets the order of resources within a sync, and which direction does pruning run?</p>
+<details><summary>Show answer</summary><p><code>argocd.argoproj.io/sync-wave</code> sets the order; the lowest wave deploys first, the default is 0, and pruning runs in reverse, with higher waves removed first. The delay between waves is 2 seconds by default <span class="tag ok">Confirmed</span> (Argo CD sync-waves docs).</p></details></div>
+<div class="box" style="--c:#7c3aed"><p><strong>R2.</strong> Why should a CI job pin a security scanner by commit SHA rather than a tag?</p>
+<details><summary>Show answer</summary><p>A tag is a movable pointer. In the Trivy incident, tags in the trivy-action repository were force-pushed to malicious code, so a workflow that used a version tag ran attacker code with its secrets. A full SHA names one fixed commit, so the same content runs each time. Pinning also needs review when you update it <span class="tag ok">Confirmed</span> (GHSA-69fq-xp46-6x23).</p></details></div>
+<div class="box" style="--c:#7c3aed"><p><strong>R3.</strong> In Azure Policy, what is the difference between deny and audit, and why roll out audit first?</p>
+<details><summary>Show answer</summary><p>Deny blocks a non-compliant request at creation or update; audit records non-compliance and lets the request succeed. Starting with audit shows the real scope and the teams affected, so exemptions and warnings can be prepared before a deny blocks a deployment <span class="tag warn">Reported</span> (Microsoft Learn effects pages, from search).</p></details></div>
+<h4>10. AI pro: prompt injection and data exfiltration defences</h4>
+<div class="box" style="--c:#4338ca"><p><strong>Objective.</strong> Design an LLM feature that reads untrusted content (tickets, emails, web pages, logs) and can call tools, so that an injected instruction cannot make it leak data or act beyond its scope.</p>
+<p><strong>Concepts.</strong> A direct injection comes from the user typing the attack. An indirect injection hides the instruction in content the model reads: a runbook page, a log line, a PR description. Exfiltration is the goal: the injected text asks the model to send secrets or customer data out through a tool call, a link, or an image URL that carries the data in its query string. OWASP lists prompt injection as LLM01 in its Top 10 for LLM Applications <span class="tag warn">Reported</span> (the 2025 edition page was read this session; its list was not on that page). Anthropic's developer guidance says to keep untrusted content only in tool results, never put your own instructions there, JSON-encode untrusted strings, and apply least privilege so a successful injection does minimal damage <span class="tag ok">Confirmed</span> (read this session).</p>
+<pre>
+ untrusted text (ticket, log, web page)
+        │ only as tool_result data, JSON-encoded, length-capped
+        ▼
+ model ── proposes tool call ──▶ policy gate ──▶ tool
+                                   │  egress allowlist (hosts)
+                                   │  scope check (read-only by default)
+                                   │  human confirmation for send/write
+                                   ▼
+                       audit log: prompt id, tool, args, decision
+</pre>
+<p><strong>Design pattern: the lethal trio.</strong> Watch for a single agent that has all three: access to private data, exposure to untrusted content, and an outbound channel. Remove one of the three, or put a gate between them <span class="tag info">Direction</span> (a widely used design rule; not a published standard).</p>
+<pre>
+import json
+from urllib.parse import urlparse
+
+ALLOWED_HOSTS = {"tickets.internal.example.in", "status.internal.example.in"}  # egress allowlist
+MAX_CHARS = 8000
+
+def tool_result_block(tool_name: str, raw_text: str) -> dict:
+    # Illustrative: untrusted text is JSON-encoded and labelled as data.
+    payload = {"source": tool_name, "data": raw_text[:MAX_CHARS]}
+    return {"type": "tool_result", "content": json.dumps(payload)}
+
+def egress_allowed(url: str) -> bool:
+    return urlparse(url).hostname in ALLOWED_HOSTS     # blocks data sent to unknown hosts
+
+def gate(tool: str, args: dict, human_confirmed: bool) -> str:
+    if tool in {"send_email", "http_post", "update_ticket"} and not human_confirmed:
+        return "needs_confirmation"
+    if tool == "http_post" and not egress_allowed(args["url"]):
+        return "denied"
+    return "allowed"
+</pre>
+<p><strong>Trade-offs.</strong> Screening every tool output with a classifier adds latency and cost, and it is never complete. Allowlists break features that need a new host. Human confirmation is the strongest control and the slowest. Anthropic's browser-use research reports that with its safeguards, the attack success rate for Claude Opus 4.5 was 1.4% in its test set, and it says: "A 1% attack success rate—while a significant improvement—still represents meaningful risk" <span class="tag ok">Confirmed</span> (read this session).</p>
+<p><strong>Failure modes.</strong> An exfiltration through a rendered markdown image whose URL carries the data; a read tool's output that asks a write tool to act (a confused deputy); a summary step that drops the warning that an injection was present; and a long context where the instruction sits in the middle and is ignored or followed unpredictably <span class="tag info">Direction</span>.</p>
+<p><strong>Evaluation, security and cost.</strong> Build a red-team set of 50 to 100 cases: direct attacks, attacks in documents, emails and web pages, and exfiltration attempts through links and images. Track the attack success rate and the false-refusal rate on benign tasks, and run the set on every prompt or model change. Log every gate decision. Put a monthly token budget on screening calls, because a screening step on every tool output doubles the cost of a busy agent.</p>
+<p>Sources: <a href="https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/mitigate-jailbreaks" target="_blank" rel="noopener">Anthropic: mitigate jailbreaks and prompt injections</a> · <a href="https://www.anthropic.com/research/prompt-injection-defenses" target="_blank" rel="noopener">Anthropic: mitigating the risk of prompt injections in browser use (24 Nov 2025)</a> · <a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/" target="_blank" rel="noopener">OWASP: Top 10 for LLM Applications (2025 edition)</a>. The code is an illustrative sketch and has not been run; test it in your own environment.</p></div>
+
+<h4>11. Weekend learning and assessment (Saturday 28 Nov)</h4>
+
+<h5>Weekly revision summary (since the last weekend, 22 Nov)</h5>
+<p><strong>23 Nov (Terraform and AWS):</strong> remote state and locking protect against concurrent applies; a refresh-only plan finds drift; a VPC route table, not the name "public subnet", decides whether traffic is public; cross-account roles need both a trust policy and a permission on the caller.<br>
+<strong>24 Nov (Azure and GCP):</strong> landing zones and management groups set the guardrails; RBAC is assigned at the narrowest scope; PIM gives time-boxed elevation; GCP projects, IAM and Workload Identity replace long-lived keys; a regional GKE cluster survives a zone loss only if its nodes are spread across zones.<br>
+<strong>25 Nov (Ansible and Prometheus/Grafana):</strong> roles and idempotent tasks make configuration safe to repeat; histograms with <code>histogram_quantile</code> give p99; recording rules keep dashboards fast; alerts should name a user-visible symptom.<br>
+<strong>26 Nov (ELK/OpenSearch and Python):</strong> ISM rollover on alias with <code>is_write_index</code>; shard size drives cost; boto3 needs explicit timeouts and retry modes; subprocess calls need <code>check=True</code>, a timeout and no shell string.<br>
+<strong>Not published:</strong> Friday 27 Nov. Its two classes (GitOps and DevSecOps) were taught today, so no content is missing.</p>
+
+<h5>Important interview questions (8), with detailed answers</h5>
+<div class="box" style="--c:#0f766e"><p><strong>Q1.</strong> "A Terraform run was killed midway, and the state is locked. A colleague wants to run force-unlock. What do you check first?"</p>
+<details><summary>Show answer</summary><p>First, read the lock: <code>terraform force-unlock</code> needs the lock ID, and the lock info shows who held it and when. Second, confirm no apply is still running in CI logs or on another laptop; a forced unlock during an apply is how state corrupts. Third, after the process is confirmed dead, unlock with the ID. Fourth, run <code>terraform plan -refresh-only</code>: a killed apply can leave resources created but not in state, or changed but not recorded. Fix the drift through code, then add a CI timeout and a concurrency group so the next killed run is recoverable. <em>Checking:</em> you treat the lock as evidence, not an obstacle.</p></details></div>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q2.</strong> "A rolling update is stuck with one new pod ready out of three. What do you do?"</p>
+<details><summary>Show answer</summary><p>Check the rollout first: <code>kubectl rollout status deploy/payments</code>, then <code>kubectl describe pod</code> for the new pods. Common causes are a readiness probe that fails only under the new config, a request set too high for the nodes (Pending), an image pull error, or <code>maxUnavailable: 0</code> with <code>maxSurge: 0</code>. Read the events and the readiness failures in logs. If users are affected now, run <code>kubectl rollout undo deploy/payments</code>, then fix the probe or the resources in Git. <em>Checking:</em> you stop the damage before you debug, and you can name the three usual causes.</p></details></div>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q3.</strong> "Argo CD says Synced and Degraded for a service that users say is failing. Which one do you believe?"</p>
+<details><summary>Show answer</summary><p>Believe the users, then read the health. Synced means the cluster matches Git; it says nothing about whether the app works. Degraded means a resource reports unhealthy: run <code>argocd app get</code> to see which resource, then <code>kubectl describe</code> on it. Check events, readiness, the ingress and any HPA that scaled to zero or to the maximum. The fix is in the app or the chart, not in the sync. <em>Checking:</em> you know that sync and health are different signals.</p></details></div>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q4.</strong> "A role in account B is denied although its trust policy lists account A. Where do you look?"</p>
+<details><summary>Show answer</summary><p>Work through the layers. The caller's identity policy in account A must allow <code>sts:AssumeRole</code> on the role's ARN. The trust policy in B must name the principal. Organisation service control policies in either account can deny the action even when both policies allow it. A permission boundary on the role or the caller can cap it. Use the IAM policy simulator to test the call, and read the denial in CloudTrail: the error text usually names the layer. <em>Checking:</em> a structured walk through the policy layers, not trial and error.</p></details></div>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q5.</strong> "The image works on a laptop and fails in production with 'exec format error'. What is wrong?"</p>
+<details><summary>Show answer</summary><p>Almost always an architecture mismatch: an arm64 image on amd64 nodes, or the reverse. Check with <code>docker image inspect --format '{{.Architecture}}' image:tag</code> and compare with the node architecture. Fix by building a multi-architecture image with <code>docker buildx build --platform linux/amd64,linux/arm64</code>, then pinning by digest. Add a pipeline check that fails when the architecture does not match the target pool. <em>Checking:</em> you know containers share the host kernel, not the CPU architecture.</p></details></div>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q6.</strong> "The p99 latency alert fires, but the dashboard looks normal. Why?"</p>
+<details><summary>Show answer</summary><p>Usual causes: the dashboard averages over a window that hides a short spike; the alert uses a different time range or a raw query while the dashboard uses a recording rule; <code>histogram_quantile</code> is computed over buckets that were not aggregated with <code>sum by (le)</code>; or the dashboard filters a label the alert does not. Compare the two queries on the same range, then fix the one that is wrong and add a test for the alert query. <em>Checking:</em> you can read a PromQL expression and find the aggregation error.</p></details></div>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q7.</strong> "The pipeline is green, but production runs yesterday's code. Give me your first three checks."</p>
+<details><summary>Show answer</summary><p>(1) Which commit did the deploy job check out? Compare the build's <code>GIT_COMMIT</code> with the deployed image's label. (2) Which image digest did the deploy apply? A tag such as <code>latest</code> can point at an older image; deploy by digest. (3) Did the deploy step succeed, or did it skip and report success because of a condition? Check the job's exit and the rollout status, not only the badge. Then add an assertion that the running digest equals the built digest. <em>Checking:</em> you verify what is running, not what the pipeline says.</p></details></div>
+
+<div class="box" style="--c:#0f766e"><p><strong>Q8.</strong> "Your 99.9% monthly SLO has used 60% of its error budget in three days. What do you do?"</p>
+<details><summary>Show answer</summary><p>Find the cause first with the burn-rate alert and the error breakdown by route and version. Then apply the error-budget policy the team agreed in advance: pause risky changes, allow only fixes that lower the burn, and tell product the cost in customer terms. Fix the root cause, then decide on reliability work with a date. Make the decision with data, not with the loudest voice. <em>Checking:</em> you use a policy agreed beforehand, and you can explain the trade-off to a non-engineer.</p></details></div>
+
+<h5>Two troubleshooting exercises (full solutions)</h5>
+<div class="box" style="--c:#ea580c"><p><strong>T1.</strong> Monday 07:50 IST. A Kubernetes node is in DiskPressure. Pods are being evicted, and the node's image filesystem is 96% full. Your task: find what is filling the disk and stop the eviction storm without deleting data someone needs.</p>
+<details><summary>Show solution</summary><p><strong>Steps.</strong> (1) <code>kubectl describe node &lt;node&gt;</code> confirms the condition and the thresholds. (2) On the node: <code>df -h /var/lib/containerd /var/log</code> shows which filesystem is full, and <code>sudo du -xh /var/log --max-depth=1 | sort -h | tail</code> finds large logs. (3) Check container logs: a crash-looping app that writes large logs is the usual cause. (4) Check unused images: <code>sudo crictl images</code> and <code>sudo crictl rmi --prune</code> remove unused images, which is safe for images no pod uses. (5) Cordon the node so no new pods land there: <code>kubectl cordon &lt;node&gt;</code>. (6) Fix the source: rotate or cap the logs of the crash-looping app, and set a log size limit in the container runtime. <strong>Acceptance:</strong> disk below 80%, DiskPressure cleared, node uncordoned, and an alert exists for disk above 80% on every node. Kubernetes documents eviction signals and thresholds <span class="tag warn">Reported</span> (kubernetes.io node-pressure eviction page, not fetched in this run).</p></details></div>
+
+<div class="box" style="--c:#ea580c"><p><strong>T2.</strong> A Terraform apply on the staging stack fails with "Error acquiring the state lock" after a CI job timed out. The lock has been there for 3 hours. Your task: recover the stack safely and prevent the repeat.</p>
+<details><summary>Show solution</summary><p><strong>Steps.</strong> (1) Read the lock details from the error: lock ID, operation, who and when. (2) Check CI: the timed-out job must be dead, and no other apply should be running. (3) Confirm with the team on the change channel, and record the approval. (4) Unlock with the ID: <code>terraform force-unlock &lt;LOCK_ID&gt;</code>. (5) Run <code>terraform plan -refresh-only</code> to see what the killed apply left behind, then fix drift in code. (6) Re-run the plan, read it, and apply. <strong>Prevention:</strong> a concurrency group in CI that cancels a stale run, a job timeout set below the lock's expected life, and a lock-age alert. <strong>Acceptance:</strong> the plan shows no unexpected changes, the apply completes, and the next killed run in a test stack releases the lock automatically or is reported within 15 minutes.</p></details></div>
+
+<h5>Practical assignment (mini-project): a hardened service delivered by GitOps</h5>
+<div class="box" style="--c:#0f766e"><p><strong>Goal.</strong> Build a small HTTP service, deliver it through a pipeline with four gates, and deploy it with Argo CD using a migration hook.</p>
+<p><strong>Steps.</strong> (1) Create a repo with a tiny service, a multi-stage Dockerfile with a pinned base digest, and a non-root user. (2) Write the pipeline: secret scan with gitleaks, build, SBOM with syft, scan with grype (fail on high), sign with cosign keyless, and push. Pin every third-party Action by SHA. (3) Create a Helm chart with requests and limits, a readiness probe, and a PreSync migration Job at sync-wave -1 with <code>activeDeadlineSeconds</code>. (4) Create a second repo for environments that holds only values files. Argo CD watches it. (5) Promote from dev to staging by pull request. (6) Write a rollback runbook of five lines.</p>
+<p><strong>Acceptance checks.</strong> [ ] A test PR that adds a fake key is blocked before merge. [ ] A deliberately high-severity dependency fails the scan. [ ] The image in the cluster is the digest produced by the pipeline. [ ] The migration Job completes before the Deployment changes, visible in the Argo CD resource tree. [ ] Manually scaling the Deployment is reverted by Argo CD. [ ] Rollback by Git revert completes in under 5 minutes, measured.</p></div>
+
+<h5>Three advanced questions (with answers)</h5>
+<div class="box" style="--c:#7c3aed"><p><strong>A1.</strong> "Enforce signed images across 40 clusters. How?"</p>
+<details><summary>Show answer</summary><p>Verify at admission, not in the pipeline alone, so a manual push cannot bypass the check. Use an admission policy engine (Kyverno with its CEL-based policies, or a native validating policy) that checks the image signature and the identity of the signer. Roll out in audit mode first, then enforce per cluster group. Keep an exception list with owners and expiry. Measure the unsigned-image count per cluster until it reaches zero. Test admission failures in staging, because a bad policy blocks all deploys.</p></details></div>
+<div class="box" style="--c:#7c3aed"><p><strong>A2.</strong> "Product wants a feature this week, but the error budget is exhausted. How do you decide?"</p>
+<details><summary>Show answer</summary><p>Apply the policy that was agreed in advance: a feature may ship only if it does not add risk to the failing service, or if it comes with a fix that lowers the burn. Show the numbers: budget spent, the cost in customer terms, and the time to recover. Offer two options with a date each, and let product choose the trade-off in writing. Your job is to make the trade-off visible, not to say no.</p></details></div>
+<div class="box" style="--c:#7c3aed"><p><strong>A3.</strong> "200 Terraform stacks, 15 teams, one shared state backend. How do you keep it safe?"</p>
+<details><summary>Show answer</summary><p>Separate state per stack with a remote backend and locking; one role per team with access only to its own state key; module versions pinned and promoted through a registry; plan in CI on every PR with policy checks; a drift report nightly; a concurrency group per stack; and an owner per stack in the repository. Keep the blast radius small: a stack should be one environment and one ownership boundary. Review the design every quarter with the teams that use it.</p></details></div>
+
+<h5>Self-assessment (10 questions, close your notes)</h5>
+<div class="box" style="--c:#0f766e"><ol>
+<li>Name the three Argo CD sync phases in order.</li>
+<li>What does selfHeal do, and what does prune do?</li>
+<li>Why pin a CI Action by commit SHA?</li>
+<li>What is the difference between SBOM and a vulnerability scan?</li>
+<li>What does push protection do that secret scanning alone does not?</li>
+<li>What is the difference between deny and audit in Azure Policy?</li>
+<li>Give two causes of a Pending pod that a PreSync hook can cause.</li>
+<li>What is the difference between a refresh-only plan and a normal plan?</li>
+<li>What does <code>sum by (le)</code> do before <code>histogram_quantile</code>?</li>
+<li>Why should an LLM agent that reads untrusted content not also hold a send tool without a gate?</li>
+</ol>
+<details><summary>Show answer key</summary><ol>
+<li>PreSync, Sync, PostSync (with SyncFail for cleanup).</li>
+<li>selfHeal reverts manual changes in the cluster to match Git; prune deletes resources removed from Git.</li>
+<li>A tag can be moved to malicious code; a full SHA names one fixed commit.</li>
+<li>An SBOM lists what is inside the artifact; a scan checks that list against known vulnerabilities.</li>
+<li>It blocks a push that contains a detected secret before it reaches the repository; secret scanning finds it after.</li>
+<li>Deny blocks a non-compliant request; audit logs it and lets the request succeed.</li>
+<li>Insufficient CPU or memory on the nodes; a taint with no toleration; a missing PriorityClass so the hook loses to other workloads.</li>
+<li>A refresh-only plan reads real resources and shows drift without proposing config changes; a normal plan proposes changes to reach the config.</li>
+<li>It sums the buckets across series for each le boundary, so the quantile is computed over the whole fleet, not one instance.</li>
+<li>Prompt injection can make it send data out through the send tool; a human or policy gate stops that.</li>
+</ol></details>
+<p><strong>Scoring guide.</strong> 9 to 10: you are ready to lead a design review on these topics; move on to the cloud security and SRE track. 7 to 8: solid; repeat the two answers you missed and do the Week 2 pipeline. 5 to 6: review the classes for the topics you missed and redo the lab. 0 to 4: go back to the class labs before the Monday session, and ask a senior colleague to walk through one of them with you.</p></div>
+</article>
+
 <article class="entry" id="career-2026-11-26"><h3>Study plan: 26 Nov 2026 (Week 2, Day 1)</h3>
 <p class="meta">Thursday. Classes: ELK/OpenSearch (index lifecycle, shard sizing, ISM rollover); Python for DevOps (boto3 retries, timeouts, safe subprocess). Scenarios: certificate expiry on a customer-facing domain (today's tools); database failover with replication lag (senior level). Interview: AWS. Career: communicating with managers. AIOps: AI-assisted CI/CD pipeline optimization. Recap tools today (deep): CI/CD (GitHub Actions/GitLab CI), Docker, Kubernetes. AI pro: MCP servers (design, auth and least privilege).</p>
 <h4>1. You are here (roadmap)</h4>
